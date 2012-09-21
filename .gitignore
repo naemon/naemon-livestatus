@@ -1,0 +1,13 @@
+Makefile.in
+autom4te.cache/
+configure
+aclocal.m4
+Makefile
+config.h
+config.h.in
+config.log
+config.status
+src/Makefile
+src/unixcat
+stamp-h1
+*.o
