@@ -97,11 +97,6 @@ int g_service_authorization = AUTH_LOOSE;
 int g_group_authorization = AUTH_STRICT;
 int g_data_encoding = ENCODING_UTF8;
 
-/* simple statistics data for TableStatus */
-#define g_num_hosts num_objects.hosts
-#define g_num_services num_objects.services;
-
-
 void* voidp;
 
 void livestatus_count_fork()

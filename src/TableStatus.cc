@@ -54,8 +54,6 @@ extern int process_performance_data;
 extern int check_external_commands;
 extern int num_cached_log_messages;
 extern int interval_length;
-extern int g_num_hosts;
-extern int g_num_services;
 extern int livechecks_performed;
 extern int livecheck_overflows;
 
@@ -146,9 +144,9 @@ TableStatus::TableStatus()
                 "The default interval length from nagios.cfg", (int*)&interval_length));
 
     addColumn(new IntPointerColumn("num_hosts",
-                "The total number of hosts", (int*)&g_num_hosts));
+                "The total number of hosts", (int*)&num_objects.hosts));
     addColumn(new IntPointerColumn("num_services",
-                "The total number of services", (int*)&g_num_services));
+                "The total number of services", (int*)&num_objects.services));
 
     addColumn(new StringPointerColumn("program_version",
                 "The version of the monitoring daemon", get_program_version()));
