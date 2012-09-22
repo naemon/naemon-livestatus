@@ -40,8 +40,8 @@ extern char g_livecheck_path[];
 extern int host_check_timeout;
 extern int service_check_timeout;
 
-int g_num_livehelpers = 20;
-int g_livecheck_enabled = 0;
+extern int g_num_livehelpers;
+extern int g_livecheck_enabled;
 
 #define LH_WAITING 0
 #define LH_READY   1
