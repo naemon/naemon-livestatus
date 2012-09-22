@@ -26,6 +26,7 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <sys/resource.h>
+#include <fcntl.h>
 
 #include "nagios.h"
 #include "logger.h"
