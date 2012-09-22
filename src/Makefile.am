@@ -48,7 +48,7 @@ livestatus_so_SOURCES = \
 	OffsetStringHostMacroColumn.cc StatsColumn.cc IntAggregator.cc CountAggregator.cc \
 	DoubleAggregator.cc AttributelistColumn.cc AttributelistFilter.cc \
 	global_counters.c  module.c  logger.c waittriggers.c TimeperiodsCache.cc pnp4nagios.cc \
-	ContactgroupsColumn.cc opids.cc auth.cc
+	ContactgroupsColumn.cc opids.cc auth.cc livechecking.c
 
 if HAVE_DIET
 	diet -v $(CC) -x c -Wno-deprecated-declarations $(CFLAGS) $(LDFLAGS) -I.. -s -o $@ $^
