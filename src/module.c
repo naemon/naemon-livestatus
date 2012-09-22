@@ -98,30 +98,8 @@ int g_group_authorization = AUTH_STRICT;
 int g_data_encoding = ENCODING_UTF8;
 
 /* simple statistics data for TableStatus */
-int g_num_hosts;
-int g_num_services;
-
-
-void count_hosts()
-{
-    g_num_hosts = 0;
-    host *h = (host *)host_list;
-    while (h) {
-        g_num_hosts ++;
-        h = h->next;
-    }
-}
-
-void count_services()
-{
-    g_num_services = 0;
-    service *s = (service *)service_list;
-    while (s) {
-        g_num_services ++;
-        s = s->next;
-    }
-}
-
+#define g_num_hosts num_objects.hosts
+#define g_num_services num_objects.services;
 
 
 void* voidp;
@@ -225,9 +203,6 @@ void *client_thread(void *data __attribute__ ((__unused__)))
 
 void start_threads()
 {
-    count_hosts();
-    count_services();
-
     if (!g_thread_running) {
         /* start thread that listens on socket */
         pthread_atfork(livestatus_count_fork, NULL, livestatus_cleanup_after_fork);
