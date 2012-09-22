@@ -27,6 +27,8 @@
 #include "logger.h"
 #include <ctype.h>
 #include "OutputBuffer.h"
+#include <strings.h>
+#include <string.h>
 
     CustomVarsFilter::CustomVarsFilter(CustomVarsColumn *column, int opid, char *value)
     : _column(column)

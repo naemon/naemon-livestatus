@@ -23,6 +23,8 @@
 // Boston, MA 02110-1301 USA.
 
 #include <time.h>
+#include <pthread.h>
+#include <syslog.h>
 
 #include "TimeperiodsCache.h"
 #include "nagios.h"

@@ -25,6 +25,8 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <syslog.h>
+#include <string.h>
 #include "Logfile.h"
 #include "logger.h"
 #include "LogEntry.h"

@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <errno.h>
+#include <syslog.h>
 
 #include "logger.h"
 #include "opids.h"

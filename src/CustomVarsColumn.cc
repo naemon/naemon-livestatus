@@ -27,6 +27,7 @@
 #include "logger.h"
 #include "CustomVarsFilter.h"
 #include "Query.h"
+#include <string.h>
 
 void CustomVarsColumn::output(void *data, Query *query)
 {

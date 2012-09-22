@@ -27,6 +27,8 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <stddef.h>
+#include <stdarg.h>
+#include <syslog.h>
 
 #include "nagios.h"
 #include "logger.h"

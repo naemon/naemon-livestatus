@@ -38,6 +38,7 @@
 #include <errno.h>
 #include <signal.h>
 #include <fcntl.h>
+#include <syslog.h>
 
 #include "nagios.h"
 #include "livestatus.h"

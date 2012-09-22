@@ -29,6 +29,7 @@
 #include <string.h>
 #include <time.h>
 #include <pthread.h>
+#include <syslog.h>
 
 extern char g_logfile_path[];
 pthread_t g_mainthread_id;
