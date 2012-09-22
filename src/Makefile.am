@@ -56,8 +56,8 @@ else
 	$(CC) -x c -Wno-deprecated-declarations $(CFLAGS) $(LDFLAGS) -I.. -s -o $@ $^
 endif
 
-livestatus_so_CXXFLAGS = -I$(top_srcdir)/nagios -fPIC
-livestatus_so_CFLAGS   = $(livestatus_so_CXXFLAGS) 
+livestatus_so_CXXFLAGS = -fPIC
+livestatus_so_CFLAGS   = $(livestatus_so_CXXFLAGS)
 
 livestatus.o: $(livestatus_so_OBJECTS) $(livestatus_so_DEPENDENCIES)
 	-rm -f plugin.so
