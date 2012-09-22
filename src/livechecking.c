@@ -220,7 +220,7 @@ int broker_host_livecheck(int event_type __attribute__ ((__unused__)), void *dat
     grab_host_macros(hst);
 
     char *raw_command;
-    get_raw_command_line(hst->check_command_ptr, hst->host_check_command, &raw_command,0);
+    get_raw_command_line(hst->check_command_ptr, hst->check_command, &raw_command,0);
     char *processed_command;
     process_macros(raw_command, &processed_command, 0);
 
@@ -258,7 +258,7 @@ int broker_service_livecheck(int event_type __attribute__ ((__unused__)), void *
     grab_host_macros(svc->host_ptr);
     grab_service_macros(svc);
     char *raw_command;
-    get_raw_command_line(svc->check_command_ptr, svc->service_check_command, &raw_command,0);
+    get_raw_command_line(svc->check_command_ptr, svc->check_command, &raw_command,0);
     char *processed_command;
     process_macros(raw_command, &processed_command, 0);
 
