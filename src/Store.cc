@@ -146,9 +146,7 @@ bool Store::answerRequest(InputBuffer *input, OutputBuffer *output)
 
 void Store::answerCommandRequest(const char *command)
 {
-    int buffer_items = -1;
-    /* int ret = */
-    submit_external_command((char *)command, &buffer_items);
+    process_external_command1((char *)command);
 }
 
 
