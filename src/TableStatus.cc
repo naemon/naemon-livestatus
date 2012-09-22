@@ -37,7 +37,6 @@
 
 extern time_t program_start;
 extern int nagios_pid;
-extern time_t last_command_check;
 extern time_t last_log_rotation;
 extern int enable_notifications;
 extern int execute_service_checks;
@@ -136,8 +135,6 @@ TableStatus::TableStatus()
                 "Whether Nagios checks for external commands at its command pipe (0/1)", &check_external_commands));
     addColumn(new TimePointerColumn("program_start",
                 "The time of the last program start as UNIX timestamp", (int*)&program_start));
-    addColumn(new TimePointerColumn("last_command_check",
-                "The time of the last check for a command as UNIX timestamp", (int*)&last_command_check));
     addColumn(new TimePointerColumn("last_log_rotation",
                 "Time time of the last log file rotation", (int*)&last_log_rotation));
     addColumn(new IntPointerColumn("interval_length",
