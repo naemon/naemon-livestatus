@@ -32,11 +32,6 @@
 #include "tables.h"
 #include "TableHosts.h"
 
-/* this might be a hack (accessing Nagios' internal structures.
-   Hi Ethan: please help me here: how should this be code to be
-   portable? */
-extern hostgroup *hostgroup_list;
-
 TableHostgroups::TableHostgroups()
 {
     addColumns(this, "", -1);

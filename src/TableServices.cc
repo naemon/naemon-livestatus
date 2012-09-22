@@ -46,10 +46,6 @@
 #include "auth.h"
 #include "strutil.h"
 
-extern service *service_list;
-extern servicegroup *servicegroup_list;
-extern hostgroup *hostgroup_list;
-
 struct servicebygroup {
     service _service;
     servicegroup *_servicegroup;

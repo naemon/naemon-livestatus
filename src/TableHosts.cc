@@ -47,9 +47,6 @@
 #include "tables.h"
 #include "auth.h"
 
-extern host *host_list;
-extern hostgroup *hostgroup_list;
-
 struct hostbygroup {
     host       _host;
     hostgroup *_hostgroup;

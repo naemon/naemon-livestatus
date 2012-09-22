@@ -31,8 +31,6 @@
 #include "AttributelistColumn.h"
 #include "CustomVarsColumn.h"
 
-extern contact *contact_list;
-
 TableContacts::TableContacts()
 {
     addColumns(this, "", -1);

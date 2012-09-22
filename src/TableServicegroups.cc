@@ -32,10 +32,6 @@
 #include "tables.h"
 #include "TableServices.h"
 
-/* this might be a hack (accessing Nagios' internal structures.
-Ethan: please help me here: how should this be code to be
-portable? */
-extern servicegroup *servicegroup_list;
 
 TableServicegroups::TableServicegroups()
 {

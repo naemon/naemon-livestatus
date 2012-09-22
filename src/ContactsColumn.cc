@@ -29,8 +29,6 @@
 #include "Query.h"
 #include "tables.h"
 
-extern contact *contact_list;
-
 void *ContactsColumn::getNagiosObject(char *name)
 {
     return (void *)find_contact(name);

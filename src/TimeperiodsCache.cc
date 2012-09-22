@@ -28,8 +28,6 @@
 #include "nagios.h"
 #include "logger.h"
 
-extern timeperiod *timeperiod_list;
-
 TimeperiodsCache::TimeperiodsCache()
 {
     pthread_mutex_init(&_cache_lock, 0);

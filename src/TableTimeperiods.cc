@@ -28,8 +28,6 @@
 #include "OffsetTimeperiodColumn.h"
 #include "TableTimeperiods.h"
 
-extern timeperiod *timeperiod_list;
-
 TableTimeperiods::TableTimeperiods()
 {
     addColumns(this, "", -1);

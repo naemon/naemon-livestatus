@@ -31,9 +31,6 @@
 #include "TableCommands.h"
 
 
-
-extern command *command_list;
-
 TableCommands::TableCommands()
 {
     addColumns(this, "", -1);

@@ -28,8 +28,6 @@
 #include "TableContactgroups.h"
 #include "ContactgroupsMemberColumn.h"
 
-extern contactgroup *contactgroup_list;
-
 TableContactgroups::TableContactgroups()
 {
     addColumns(this, "", -1);
