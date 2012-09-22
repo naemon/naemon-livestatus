@@ -65,7 +65,7 @@
 #endif
 
 NEB_API_VERSION(CURRENT_NEB_API_VERSION)
-extern int event_broker_options;
+extern unsigned long event_broker_options;
 extern char *log_file;
 
 int g_idle_timeout_msec = 300 * 1000; /* maximum idle time for connection in keep alive state */
@@ -98,8 +98,6 @@ int g_group_authorization = AUTH_STRICT;
 int g_data_encoding = ENCODING_UTF8;
 
 /* simple statistics data for TableStatus */
-extern struct host *host_list;
-extern struct service *service_list;
 int g_num_hosts;
 int g_num_services;
 
