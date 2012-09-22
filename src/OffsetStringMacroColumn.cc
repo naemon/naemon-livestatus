@@ -96,7 +96,7 @@ const char *OffsetStringMacroColumn::expandMacro(const char *macroname, host *hs
     else if (!strcmp(macroname, "HOSTPERFDATA"))
         return hst->perf_data;
     else if (!strcmp(macroname, "HOSTCHECKCOMMAND"))
-        return hst->host_check_command;
+        return hst->check_command;
 
     else if (!strncmp(macroname, "_HOST", 5)) // custom macro
         return expandCustomVariables(macroname + 5, hst->custom_variables);
@@ -114,7 +114,7 @@ const char *OffsetStringMacroColumn::expandMacro(const char *macroname, host *hs
         else if (!strcmp(macroname, "SERVICEPERFDATA"))
             return svc->perf_data;
         else if (!strcmp(macroname, "SERVICECHECKCOMMAND"))
-            return svc->service_check_command;
+            return svc->check_command;
         else if (!strncmp(macroname, "_SERVICE", 8)) // custom macro
             return expandCustomVariables(macroname + 8, svc->custom_variables);
     }

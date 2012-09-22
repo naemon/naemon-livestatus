@@ -191,7 +191,7 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
     table->addColumn(new OffsetStringColumn(prefix + "display_name",
                 "An optional display name (not used by Nagios standard web pages)", (char *)(&svc.display_name) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "check_command",
-                "Nagios command used for active checks", (char *)(&svc.service_check_command) - ref, indirect_offset));
+                "Nagios command used for active checks", (char *)(&svc.check_command) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "event_handler",
                 "Nagios command used as event handler", (char *)(&svc.event_handler) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "plugin_output",
@@ -279,7 +279,7 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
     table->addColumn(new OffsetIntColumn(prefix + "checks_enabled",
                 "Whether active checks are enabled for the service (0/1)", (char *)(&svc.checks_enabled) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "accept_passive_checks",
-                "Whether the service accepts passive checks (0/1)", (char *)(&svc.accept_passive_service_checks) - ref, indirect_offset));
+                "Whether the service accepts passive checks (0/1)", (char *)(&svc.accept_passive_checks) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "event_handler_enabled",
                 "Whether and event handler is activated for the service (0/1)", (char *)(&svc.event_handler_enabled) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "notifications_enabled",
@@ -296,8 +296,8 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
                 "Whether flap detection is enabled for the service (0/1)", (char *)(&svc.flap_detection_enabled) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "check_freshness",
                 "Whether freshness checks are activated (0/1)", (char *)(&svc.check_freshness) - ref, indirect_offset));
-    table->addColumn(new OffsetIntColumn(prefix + "obsess_over_service",
-                "Whether 'obsess_over_service' is enabled for the service (0/1)", (char *)(&svc.obsess_over_service) - ref, indirect_offset));
+    table->addColumn(new OffsetIntColumn(prefix + "obsess",
+                "Whether 'obsess' is enabled for the service (0/1)", (char *)(&svc.obsess) - ref, indirect_offset));
     table->addColumn(new AttributelistColumn(prefix + "modified_attributes",
                 "A bitmask specifying which attributes have been modified", (char *)(&svc.modified_attributes) - ref, indirect_offset, false));
     table->addColumn(new AttributelistColumn(prefix + "modified_attributes_list",
