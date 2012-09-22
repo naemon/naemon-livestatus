@@ -26,6 +26,8 @@ bin_PROGRAMS = unixcat
 unixcat_SOURCES = unixcat.c
 unixcat_LDADD = -lpthread
 
+EXTRA_DIST = *.h
+
 pkglib_LIBRARIES = livestatus.so
 
 livestatus_so_SOURCES = \
