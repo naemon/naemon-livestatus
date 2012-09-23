@@ -197,6 +197,8 @@ void TableHosts::addColumns(Table *table, string prefix, int indirect_offset)
                 "Whether active checks are enabled for the host (0/1)", (char *)(&hst.checks_enabled) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "check_options",
                 "The current check option, forced, normal, freshness... (0-2)", (char *)(&hst.check_options) - ref, indirect_offset));
+    table->addColumn(new OffsetIntColumn(prefix + "obsess_over_host",
+                "The current obsess setting... (0/1)", (char *)(&hst.obsess) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "obsess",
                 "The current obsess setting... (0/1)", (char *)(&hst.obsess) - ref, indirect_offset));
     table->addColumn(new AttributelistColumn(prefix + "modified_attributes",

@@ -296,6 +296,8 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
                 "Whether flap detection is enabled for the service (0/1)", (char *)(&svc.flap_detection_enabled) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "check_freshness",
                 "Whether freshness checks are activated (0/1)", (char *)(&svc.check_freshness) - ref, indirect_offset));
+    table->addColumn(new OffsetIntColumn(prefix + "obsess_over_service",
+                "Whether 'obsess' is enabled for the service (0/1)", (char *)(&svc.obsess) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "obsess",
                 "Whether 'obsess' is enabled for the service (0/1)", (char *)(&svc.obsess) - ref, indirect_offset));
     table->addColumn(new AttributelistColumn(prefix + "modified_attributes",

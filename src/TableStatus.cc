@@ -135,6 +135,8 @@ TableStatus::TableStatus()
                 "Whether Nagios checks for external commands at its command pipe (0/1)", &check_external_commands));
     addColumn(new TimePointerColumn("program_start",
                 "The time of the last program start as UNIX timestamp", (int*)&program_start));
+    addColumn(new TimePointerColumn("last_command_check",
+                "The time of the last check for a command as UNIX timestamp", (int*)(&last_log_rotation)));
     addColumn(new TimePointerColumn("last_log_rotation",
                 "Time time of the last log file rotation", (int*)&last_log_rotation));
     addColumn(new IntPointerColumn("interval_length",
