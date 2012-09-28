@@ -26,14 +26,14 @@ class Query;
 
 class RowSortedSet
 {
-/*
+
     struct _sort_col_t {
         Column *col;
         bool desc;
         _sort_col_t( Column *in_col, bool in_desc ) : col(in_col), desc(in_desc) {}
     };
-*/
-    typedef vector<Column *> _columns_t;
+
+    typedef vector<_sort_col_t> _columns_t;
     typedef vector<void*> rowset_t;
 
     rowset_t    _heap;

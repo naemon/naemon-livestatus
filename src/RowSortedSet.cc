@@ -26,7 +26,7 @@ RowSortedSet::RowSortedSet()
 
 void RowSortedSet::addSortColumn( Column *col, bool desc )
 {
-    _sort_cols.push_back( col );
+    _sort_cols.push_back( _sort_col_t( col, desc ) );
 }
 
 void RowSortedSet::setQuery( Query *query )
@@ -40,7 +40,10 @@ int RowSortedSet::compare( void *dataa, void *datab )
     int i;
     int diff;
     for (i=0; i<_sort_cols.size(); i++) {
-        diff = _sort_cols[i]->compare( dataa, datab, _query );
+        diff = _sort_cols[i].col->compare( dataa, datab, _query );
+        if( _sort_cols[i].desc ) {
+        	diff = -diff;
+        }
         if( diff != 0 ) {
             return diff;
         }
