@@ -503,20 +503,24 @@ void Query::parseSortLine(char *line)
     dir         = next_field(&line);
 
     desc = false;
-    if( 0==strcmp( dir, "desc" ) ) {
-        desc = true;
+    if( dir != 0 ) {
+        if( 0==strcmp( dir, "desc" ) ) {
+            desc = true;
+        }
     }
 
-    Column *column = _table->column(column_name);
-    if (column == 0) {
-        _output->setError(RESPONSE_CODE_INVALID_HEADER,
-               "Table '%s' has no column '%s'", _table->name(), column_name);
-        column = createDummyColumn(column_name);
-    }
+    if( column_name != 0 ) {
+        Column *column = _table->column(column_name);
+        if (column == 0) {
+            _output->setError(RESPONSE_CODE_INVALID_HEADER,
+                   "Table '%s' has no column '%s'", _table->name(), column_name);
+            column = createDummyColumn(column_name);
+        }
 
-    _sorter.addSortColumn( column, desc );
-    
-    _do_sorting=true;
+        _sorter.addSortColumn( column, desc );
+
+        _do_sorting=true;
+    }
 }
 
 void Query::parseAuthUserHeader(char *line)
