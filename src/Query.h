@@ -35,6 +35,7 @@ using namespace std;
 
 #include "AndingFilter.h"
 #include "global_counters.h"
+#include "RowSortedSet.h"
 
 class Table;
 class Column;
@@ -74,6 +75,7 @@ class Query
     bool          _need_ds_separator;
     int           _output_format;
     int           _limit;
+    int           _skip;
     unsigned      _current_line;
     int           _timezone_offset;
 
@@ -81,6 +83,9 @@ class Query
     typedef vector<Column *> _columns_t;
     _columns_t _columns;
     _columns_t _dummy_columns; // dynamically allocated. Must delete them.
+
+    bool          _do_sorting;
+    RowSortedSet  _sorter;
 
     // stats queries
     typedef vector<StatsColumn *> _stats_columns_t;
@@ -137,6 +142,7 @@ private:
     void computeStatsGroupSpec(_stats_group_spec_t &groupspec, void *data);
     Filter *createFilter(Column *column, int operator_id, char *value);
     void parseFilterLine(char *line, bool filter /* and not cond */);
+    void parseSortLine(char *line);
     void parseStatsLine(char *line);
     void parseStatsGroupLine(char *line);
     void parseAndOrLine(char *line, int andor, bool filter /* and not cond */);
@@ -146,6 +152,7 @@ private:
     void parseColumnsLine(char *line);
     void parseColumnHeadersLine(char *line);
     void parseLimitLine(char *line);
+    void parseSkipLine(char *line);
     void parseSeparatorsLine(char *line);
     void parseOutputFormatLine(char *line);
     void parseKeepAliveLine(char *line);
@@ -157,6 +164,7 @@ private:
     void parseLocaltimeLine(char *line);
     int lookupOperator(const char *opname);
     Column *createDummyColumn(const char *name);
+    void printRow(void *data);
 };
 
 

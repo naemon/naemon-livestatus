@@ -11,6 +11,8 @@
 // This file is part of Check_MK.
 // The official homepage is at http://mathias-kettner.de/check_mk.
 //
+// Updated 2012 by Max Sikström - op5: Added compare interface
+//
 // check_mk is free software;  you can redistribute it and/or modify it
 // under the  terms of the  GNU General Public License  as published by
 // the Free Software Foundation in version 2.  check_mk is  distributed
@@ -39,6 +41,7 @@ public:
     void output(void *, Query *);
     int type() { return COLTYPE_STRING; }
     Filter *createFilter(int operator_id, char *value);
+    int compare(void *dataa, void*datab, Query *query);
 };
 
 #endif // StringColumn_h
