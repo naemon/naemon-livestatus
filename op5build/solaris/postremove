@@ -1,0 +1,7 @@
+#!/bin/sh
+
+nagios_cfg=/opt/monitor/etc/nagios.cfg
+
+/opt/csw/bin/gsed -i '/broker_module=.*livestatus.o/d' /opt/monitor/etc/nagios.cfg
+
+svcadm restart monitor
