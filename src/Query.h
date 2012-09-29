@@ -75,7 +75,7 @@ class Query
     bool          _need_ds_separator;
     int           _output_format;
     int           _limit;
-    int           _skip;
+    int           _offset;
     unsigned      _current_line;
     int           _timezone_offset;
 
@@ -152,7 +152,7 @@ private:
     void parseColumnsLine(char *line);
     void parseColumnHeadersLine(char *line);
     void parseLimitLine(char *line);
-    void parseSkipLine(char *line);
+    void parseOffsetLine(char *line);
     void parseSeparatorsLine(char *line);
     void parseOutputFormatLine(char *line);
     void parseKeepAliveLine(char *line);

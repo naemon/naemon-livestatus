@@ -11,7 +11,7 @@
 // This file is part of Check_MK.
 // The official homepage is at http://mathias-kettner.de/check_mk.
 //
-// Updated 2012 by Max Sikström - op5: Added Sort: and Skip:
+// Updated 2012 by Max Sikström - op5: Added Sort: and Offset:
 //
 // check_mk is free software;  you can redistribute it and/or modify it
 // under the  terms of the  GNU General Public License  as published by
@@ -69,7 +69,7 @@ Query::Query(InputBuffer *input, OutputBuffer *output, Table *table) :
     _need_ds_separator(false),
     _output_format(OUTPUT_FORMAT_CSV),
     _limit(-1),
-    _skip(0),
+    _offset(0),
     _do_sorting(0),
     _current_line(0),
     _timezone_offset(0)
@@ -122,8 +122,8 @@ Query::Query(InputBuffer *input, OutputBuffer *output, Table *table) :
         else if (!strncmp(buffer, "Limit:", 6))
             parseLimitLine(lstrip(buffer + 6));
 
-        else if (!strncmp(buffer, "Skip:", 5))
-            parseSkipLine(lstrip(buffer + 5));
+        else if (!strncmp(buffer, "Offset:", 7))
+            parseOffsetLine(lstrip(buffer + 7));
 
         else if (!strncmp(buffer, "AuthUser:", 9))
             parseAuthUserHeader(lstrip(buffer + 9));
@@ -658,19 +658,19 @@ void Query::parseLimitLine(char *line)
     }
 }
 
-void Query::parseSkipLine(char *line)
+void Query::parseOffsetLine(char *line)
 {
     char *value = next_field(&line);
     if (!value) {
-        _output->setError(RESPONSE_CODE_INVALID_HEADER, "Header Skip: missing value");
+        _output->setError(RESPONSE_CODE_INVALID_HEADER, "Header Offset: missing value");
     }
     else {
-        int skip = atoi(value);
-        if (!isdigit(value[0]) || skip < 0)
+        int offset = atoi(value);
+        if (!isdigit(value[0]) || offset < 0)
             _output->setError(RESPONSE_CODE_INVALID_HEADER,
-                    "Invalid value for Skip: must be non-negative integer");
+                    "Invalid value for Offset: must be non-negative integer");
         else
-            _skip = skip;
+            _offset = offset;
     }
 }
 
@@ -838,10 +838,10 @@ bool Query::processDataset(void *data)
     if (_filter.accepts(data) && (!_auth_user || _table->isAuthorized(_auth_user, data))) {
         _current_line++;
         if (!_do_sorting) {
-            if (_limit >= 0 && (int)_current_line > _limit)
+            if (_limit >= 0 && (int)_current_line > _offset+_limit)
                 return false;
 
-            if ((int)_current_line <= _skip)
+            if ((int)_current_line <= _offset)
                 return true;
         }
 
@@ -867,7 +867,7 @@ bool Query::processDataset(void *data)
         else
         {
             if( _do_sorting ) {
-                _sorter.insert( data, _limit );
+                _sorter.insert( data, _limit+_offset );
             } else {
                 printRow( data );
             }
@@ -958,7 +958,7 @@ void Query::finish()
     if( _do_sorting ) {
         vector<void *> outbuf; /* Used to reverse display order */
 
-        numelems = _sorter.size()-_skip;
+        numelems = _limit;
         while( ((data = _sorter.extract()) != 0) && numelems-- ) {
             outbuf.push_back( data );
         }
