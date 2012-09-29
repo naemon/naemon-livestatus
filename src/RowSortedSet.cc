@@ -42,7 +42,7 @@ int RowSortedSet::compare( void *dataa, void *datab )
     for (i=0; i<_sort_cols.size(); i++) {
         diff = _sort_cols[i].col->compare( dataa, datab, _query );
         if( _sort_cols[i].desc ) {
-        	diff = -diff;
+            diff = -diff;
         }
         if( diff != 0 ) {
             return diff;
@@ -53,14 +53,14 @@ int RowSortedSet::compare( void *dataa, void *datab )
 
 void RowSortedSet::insert( void *data, int limit )
 {
-	int cur;
+    int cur;
     _heap.push_back( data ); /* Make space for object */
 
     for( cur=_heap.size()-1;
          cur != 0 && compare( _heap[(cur-1)>>1], data ) < 0;
          cur=(cur-1)>>1 )
     {
-		_heap[cur] = _heap[(cur-1)>>1];
+        _heap[cur] = _heap[(cur-1)>>1];
     }
     _heap[cur] = data;
 
@@ -85,17 +85,17 @@ void *RowSortedSet::extract()
     _heap.pop_back();
 
     for( cur=0; (cur<<1)+1 < _heap.size(); cur=child ) {
-    	child = (cur<<1)+1;
+        child = (cur<<1)+1;
 
-    	if( child+1 < _heap.size() )
-    		if( compare( _heap[child+1], _heap[child] ) > 0 )
-    			child++;
+        if( child+1 < _heap.size() )
+            if( compare( _heap[child+1], _heap[child] ) > 0 )
+                child++;
 
-    	if( compare( _heap[child], last ) > 0 ) {
-    		_heap[cur] = _heap[child];
-    	} else {
-    		break;
-    	}
+        if( compare( _heap[child], last ) > 0 ) {
+            _heap[cur] = _heap[child];
+        } else {
+            break;
+        }
     }
 
     _heap[cur] = last;
