@@ -51,30 +51,6 @@ int RowSortedSet::compare( void *dataa, void *datab )
     return 0;
 }
 
-void RowSortedSet::bubbleUp()
-{
-    int child;
-    int parent;
-    int diff;
-    void *tmp;
-
-    child = _heap.size()-1;
-    while( child != 0 ) {
-        parent = (child-1)>>1;
-        diff = compare( _heap[child], _heap[parent] );
-
-        if( diff > 0 ) {
-            tmp           = _heap[parent];
-            _heap[parent] = _heap[child];
-            _heap[child]  = tmp;
-        } else {
-            /* No need to continue... */
-            break;
-        }
-        child=parent;
-    }
-}
-
 void RowSortedSet::bubbleDown()
 {
     int parent;
@@ -89,7 +65,7 @@ void RowSortedSet::bubbleDown()
         if( child >= _heap.size() ) {
             break;
         }
-        child = child;
+
         if( child+1 < _heap.size() ) {
             /* Two children exists */
             diff = compare( _heap[child+1], _heap[child] );
@@ -113,10 +89,19 @@ void RowSortedSet::bubbleDown()
 
 void RowSortedSet::insert( void *data, int limit )
 {
-    _heap.push_back( data ); /* Add to last */
-    bubbleUp(); /* Ensure heap consistancy */
+	int cur;
+    _heap.push_back( data ); /* Make space for object */
 
-    while( _heap.size() > limit ) {
+    for( cur=_heap.size()-1;
+         cur != 0 && compare( _heap[(cur-1)>>1], data ) < 0;
+         cur=(cur-1)>>1 )
+    {
+		_heap[cur] = _heap[(cur-1)>>1];
+    }
+    _heap[cur] = data;
+
+
+    if( _heap.size() > limit ) {
         extract();
     }
 }

@@ -42,7 +42,6 @@ class RowSortedSet
     Query      *_query;
 
     int  compare( void *dataa, void *datab );
-    void bubbleUp();
     void bubbleDown();
 
 public:
