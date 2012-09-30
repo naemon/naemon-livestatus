@@ -504,7 +504,7 @@ void Query::parseSortLine(char *line)
 
     desc = false;
     if( dir != 0 ) {
-        if( 0==strcmp( dir, "desc" ) ) {
+        if( 0==strcasecmp( dir, "desc" ) ) {
             desc = true;
         }
     }
