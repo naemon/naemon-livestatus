@@ -11,6 +11,8 @@
 // This file is part of Check_MK.
 // The official homepage is at http://mathias-kettner.de/check_mk.
 //
+// Updated 2012 by Max Sikström - op5: Added Sort: and Offset:
+//
 // check_mk is free software;  you can redistribute it and/or modify it
 // under the  terms of the  GNU General Public License  as published by
 // the Free Software Foundation in version 2.  check_mk is  distributed
@@ -43,6 +45,7 @@
 #include "Aggregator.h"
 #include "OringFilter.h"
 #include "NegatingFilter.h"
+#include "RowSortedSet.h"
 #include "waittriggers.h"
 #include "data_encoding.h"
 #include "auth.h"
@@ -66,9 +69,13 @@ Query::Query(InputBuffer *input, OutputBuffer *output, Table *table) :
     _need_ds_separator(false),
     _output_format(OUTPUT_FORMAT_CSV),
     _limit(-1),
+    _offset(0),
+    _do_sorting(0),
     _current_line(0),
     _timezone_offset(0)
 {
+    _sorter.setQuery( this );
+
     while (input->moreLines())
     {
         string line = input->nextLine();
@@ -78,6 +85,9 @@ Query::Query(InputBuffer *input, OutputBuffer *output, Table *table) :
             logger(LG_INFO, "Query: %s", buffer);
         if (!strncmp(buffer, "Filter:", 7))
             parseFilterLine(lstrip(buffer + 7), true);
+
+        else if (!strncmp(buffer, "Sort:", 5))
+            parseSortLine(lstrip(buffer + 5));
 
         else if (!strncmp(buffer, "Or:", 3))
             parseAndOrLine(lstrip(buffer + 3), ANDOR_OR, true);
@@ -111,6 +121,9 @@ Query::Query(InputBuffer *input, OutputBuffer *output, Table *table) :
 
         else if (!strncmp(buffer, "Limit:", 6))
             parseLimitLine(lstrip(buffer + 6));
+
+        else if (!strncmp(buffer, "Offset:", 7))
+            parseOffsetLine(lstrip(buffer + 7));
 
         else if (!strncmp(buffer, "AuthUser:", 9))
             parseAuthUserHeader(lstrip(buffer + 9));
@@ -477,6 +490,39 @@ void Query::parseFilterLine(char *line, bool is_filter)
     }
 }
 
+void Query::parseSortLine(char *line)
+{
+    if (!_table)
+        return;
+
+    char *column_name;
+    char *dir;
+    bool desc;
+
+    column_name = next_field(&line);
+    dir         = next_field(&line);
+
+    desc = false;
+    if( dir != 0 ) {
+        if( 0==strcasecmp( dir, "desc" ) ) {
+            desc = true;
+        }
+    }
+
+    if( column_name != 0 ) {
+        Column *column = _table->column(column_name);
+        if (column == 0) {
+            _output->setError(RESPONSE_CODE_INVALID_HEADER,
+                   "Table '%s' has no column '%s'", _table->name(), column_name);
+            column = createDummyColumn(column_name);
+        }
+
+        _sorter.addSortColumn( column, desc );
+
+        _do_sorting=true;
+    }
+}
+
 void Query::parseAuthUserHeader(char *line)
 {
     if (!_table)
@@ -609,6 +655,22 @@ void Query::parseLimitLine(char *line)
                     "Invalid value for Limit: must be non-negative integer");
         else
             _limit = limit;
+    }
+}
+
+void Query::parseOffsetLine(char *line)
+{
+    char *value = next_field(&line);
+    if (!value) {
+        _output->setError(RESPONSE_CODE_INVALID_HEADER, "Header Offset: missing value");
+    }
+    else {
+        int offset = atoi(value);
+        if (!isdigit(value[0]) || offset < 0)
+            _output->setError(RESPONSE_CODE_INVALID_HEADER,
+                    "Invalid value for Offset: must be non-negative integer");
+        else
+            _offset = offset;
     }
 }
 
@@ -775,8 +837,13 @@ bool Query::processDataset(void *data)
 
     if (_filter.accepts(data) && (!_auth_user || _table->isAuthorized(_auth_user, data))) {
         _current_line++;
-        if (_limit >= 0 && (int)_current_line > _limit)
-            return false;
+        if (!_do_sorting) {
+            if (_limit >= 0 && (int)_current_line > _offset+_limit)
+                return false;
+
+            if ((int)_current_line <= _offset)
+                return true;
+        }
 
         if (doStats())
         {
@@ -799,30 +866,42 @@ bool Query::processDataset(void *data)
         }
         else
         {
-            // output data of current row
-            if (_need_ds_separator && _output_format != OUTPUT_FORMAT_CSV)
-                _output->addBuffer(",\n", 2);
-            else
-                _need_ds_separator = true;
-
-            outputDatasetBegin();
-            for (_columns_t::iterator it = _columns.begin();
-                    it != _columns.end();
-                    ++it)
-            {
-                if (it != _columns.begin())
-                    outputFieldSeparator();
-                Column *column = *it;
-                column->output(data, this);
+            if( _do_sorting ) {
+                _sorter.insert( data, _limit+_offset );
+            } else {
+                printRow( data );
             }
-            outputDatasetEnd();
         }
     }
     return true;
 }
 
+void Query::printRow( void *data ) {
+    // output data of current row
+    if (_need_ds_separator && _output_format != OUTPUT_FORMAT_CSV)
+        _output->addBuffer(",\n", 2);
+    else
+        _need_ds_separator = true;
+
+    outputDatasetBegin();
+    for (_columns_t::iterator it = _columns.begin();
+            it != _columns.end();
+            ++it)
+    {
+        if (it != _columns.begin())
+            outputFieldSeparator();
+        Column *column = *it;
+        column->output(data, this);
+    }
+    outputDatasetEnd();
+}
+
 void Query::finish()
 {
+    void *data;
+    long i;
+    long numelems;
+
     // grouped stats
     if (doStats() && _columns.size() > 0)
     {
@@ -852,7 +931,7 @@ void Query::finish()
             }
 
             Aggregator **aggr = it->second;
-            for (unsigned i=0; i<_stats_columns.size(); i++) {
+            for (i=0; i<_stats_columns.size(); i++) {
                 outputFieldSeparator();
                 aggr[i]->output(this);
                 delete aggr[i]; // not needed any more
@@ -865,7 +944,7 @@ void Query::finish()
     // stats without group column
     else if (doStats()) {
         outputDatasetBegin();
-        for (unsigned i=0; i<_stats_columns.size(); i++)
+        for (i=0; i<_stats_columns.size(); i++)
         {
             if (i > 0)
                 outputFieldSeparator();
@@ -874,6 +953,19 @@ void Query::finish()
         }
         outputDatasetEnd();
         delete _stats_aggregators;
+    }
+   
+    if( _do_sorting ) {
+        vector<void *> outbuf; /* Used to reverse display order */
+
+        numelems = _limit;
+        while( ((data = _sorter.extract()) != 0) && numelems-- ) {
+            outbuf.push_back( data );
+        }
+        while( !outbuf.empty() ) {
+            printRow( outbuf.back() );
+            outbuf.pop_back();
+        }
     }
 
     // normal query

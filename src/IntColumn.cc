@@ -11,6 +11,8 @@
 // This file is part of Check_MK.
 // The official homepage is at http://mathias-kettner.de/check_mk.
 //
+// Updated 2012 by Max Sikström - op5: Added compare interface
+//
 // check_mk is free software;  you can redistribute it and/or modify it
 // under the  terms of the  GNU General Public License  as published by
 // the Free Software Foundation in version 2.  check_mk is  distributed
@@ -42,4 +44,12 @@ string IntColumn::valueAsString(void *data, Query *query)
     char i[16];
     snprintf(i, sizeof(i), "%d", getValue(data, query));
     return i;
+}
+
+int IntColumn::compare(void *dataa, void*datab, Query *query) {
+    /* return a-b; would work, but isn't overflow-safe */
+    int32_t a = getValue(dataa, query);
+    int32_t b = getValue(datab, query);
+    if( a==b ) return 0;
+    return (a>b)?(1):(0);
 }
