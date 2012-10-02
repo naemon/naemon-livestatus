@@ -837,13 +837,6 @@ bool Query::processDataset(void *data)
 
     if (_filter.accepts(data) && (!_auth_user || _table->isAuthorized(_auth_user, data))) {
         _current_line++;
-        if (!_do_sorting) {
-            if (_limit >= 0 && (int)_current_line > _offset+_limit)
-                return false;
-
-            if ((int)_current_line <= _offset)
-                return true;
-        }
 
         if (doStats())
         {
@@ -852,8 +845,12 @@ bool Query::processDataset(void *data)
             // of aggregators for the current group
             if (_columns.size() > 0) {
                 _stats_group_spec_t groupspec;
+                bool is_new;
                 computeStatsGroupSpec(groupspec, data);
-                aggr = getStatsGroup(groupspec);
+                aggr = getStatsGroup(groupspec, &is_new);
+                if( is_new ) {
+                    _sorter.insert( data, _limit+_offset );
+                }
             }
             else
                 aggr = _stats_aggregators;
@@ -864,11 +861,17 @@ bool Query::processDataset(void *data)
             // No output is done while processing the data, we only
             // collect stats.
         }
-        else
-        {
-            if( _do_sorting ) {
+        else {
+            if (_do_sorting) {
                 _sorter.insert( data, _limit+_offset );
-            } else {
+            }
+            else {
+                if (_limit >= 0 && (int)_current_line > _offset+_limit)
+                    return false;
+
+                if ((int)_current_line <= _offset)
+                    return true;
+
                 printRow( data );
             }
         }
@@ -901,23 +904,36 @@ void Query::finish()
     void *data;
     long i;
     long numelems;
+    long currow;
 
     // grouped stats
     if (doStats() && _columns.size() > 0)
     {
-        // output values of all stats groups (output has been post poned until now)
-        for (_stats_groups_t::iterator it = _stats_groups.begin();
-                it != _stats_groups.end();
-                ++it)
-        {
+        vector<void *> outbuf; /* Used to reverse display order */
+
+        numelems = _limit;
+        if( _limit+_offset > _sorter.size() ) {
+            numelems = _sorter.size()-_offset;
+        }
+        while( ((data = _sorter.extract()) != 0) && numelems-- ) {
+            outbuf.push_back( data );
+        }
+        currow=0;
+        while( !outbuf.empty() ) {
+            data = outbuf.back();
+            outbuf.pop_back();
+            currow++;
+
             // dataset separator after first group
-            if (it != _stats_groups.begin() && _output_format != OUTPUT_FORMAT_CSV)
+            if (currow>1 && _output_format != OUTPUT_FORMAT_CSV)
                 _output->addBuffer(",\n", 2);
 
             outputDatasetBegin();
 
             // output group columns first
-            _stats_group_spec_t groupspec = it->first;
+            _stats_group_spec_t groupspec;
+            computeStatsGroupSpec(groupspec, data);
+
             bool first = true;
             for (_stats_group_spec_t::iterator iit = groupspec.begin();
                     iit != groupspec.end();
@@ -930,13 +946,23 @@ void Query::finish()
                 outputString((*iit).c_str());
             }
 
-            Aggregator **aggr = it->second;
+            Aggregator **aggr;
+            aggr = getStatsGroup(groupspec, 0);
             for (i=0; i<_stats_columns.size(); i++) {
                 outputFieldSeparator();
                 aggr[i]->output(this);
-                delete aggr[i]; // not needed any more
             }
             outputDatasetEnd();
+        }
+        // output values of all stats groups (output has been post poned until now)
+        for (_stats_groups_t::iterator it = _stats_groups.begin();
+                it != _stats_groups.end();
+                ++it)
+        {
+            Aggregator **aggr = it->second;
+            for (i=0; i<_stats_columns.size(); i++) {
+                delete aggr[i];
+            }
             delete aggr;
         }
     }
@@ -955,10 +981,13 @@ void Query::finish()
         delete _stats_aggregators;
     }
    
-    if( _do_sorting ) {
+    else if( _do_sorting ) {
         vector<void *> outbuf; /* Used to reverse display order */
 
         numelems = _limit;
+        if( _limit+_offset > _sorter.size() ) {
+            numelems = _sorter.size()-_offset;
+        }
         while( ((data = _sorter.extract()) != 0) && numelems-- ) {
             outbuf.push_back( data );
         }
@@ -1231,7 +1260,7 @@ void Query::outputEndDict()
 }
 
 
-Aggregator **Query::getStatsGroup(Query::_stats_group_spec_t &groupspec)
+Aggregator **Query::getStatsGroup(Query::_stats_group_spec_t &groupspec, bool *is_new)
 {
     _stats_groups_t::iterator it = _stats_groups.find(groupspec);
     if (it == _stats_groups.end()) {
@@ -1239,10 +1268,15 @@ Aggregator **Query::getStatsGroup(Query::_stats_group_spec_t &groupspec)
         for (unsigned i=0; i<_stats_columns.size(); i++)
             aggr[i] = _stats_columns[i]->createAggregator();
         _stats_groups.insert(make_pair(groupspec, aggr));
+        if( is_new != 0 )
+            *is_new = true;
         return aggr;
     }
-    else
+    else {
+        if( is_new != 0 )
+            *is_new = false;
         return it->second;
+    }
 }
 
 void Query::computeStatsGroupSpec(Query::_stats_group_spec_t &groupspec, void *data)
