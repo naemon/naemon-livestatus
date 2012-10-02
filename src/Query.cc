@@ -769,6 +769,13 @@ void Query::start()
 
     _need_ds_separator = false;
 
+    if( _do_sorting || doStats() ) {
+        Column *natsort = _table->natSortColumn();
+        if( natsort != 0 ) {
+            _sorter.addSortColumn( natsort, false );
+        }
+    }
+
     if (_output_format != OUTPUT_FORMAT_CSV)
         _output->addChar('[');
 

@@ -28,6 +28,13 @@
 #include "Query.h"
 #include "logger.h"
 
+void Table::setNatSort(string colname)
+{
+    _columns_t::iterator it = _columns.find(colname);
+    if (it != _columns.end())
+        _nat_sort = it->second;
+}
+
 void Table::addColumn(Column *col)
 {
     // do not insert column if one with that name
