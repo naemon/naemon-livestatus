@@ -357,6 +357,8 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
                 "A list of all service groups the service is in", (char *)(&svc.servicegroups_ptr) - ref, indirect_offset));
     table->addColumn(new ContactgroupsColumn(prefix + "contact_groups",
                 "A list of all contact groups this service is in", (char *)(&svc.contact_groups) - ref, indirect_offset));
+
+    table->setNatSort( prefix + "description" );
 }
 
 

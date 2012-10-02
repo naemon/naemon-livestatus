@@ -42,9 +42,10 @@ public:
     typedef map<string, Column *> _columns_t;
 private:
     _columns_t _columns;
+    Column    *_nat_sort; /* Natural sort order column */
 
 public:
-    Table() {}
+    Table() :_nat_sort(0) {}
     virtual ~Table();
     virtual Column *column(const char *name);
     virtual void answerQuery(Query *) = 0;
@@ -52,10 +53,12 @@ public:
     virtual const char *prefixname() { return name(); }
     virtual bool isAuthorized(contact *, void *) { return true; }
     virtual void *findObject(char *objectspec __attribute__ ((__unused__))) { return 0; } // objectspec may be modified while parsing
+    void setNatSort(string);
     void addColumn(Column *);
     bool hasColumn(Column *);
     void addAllColumnsToQuery(Query *);
     _columns_t *columns() { return &_columns; }
+    Column *natSortColumn() { return _nat_sort; }
 };
 
 
