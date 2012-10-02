@@ -138,7 +138,7 @@ public:
 private:
     bool doStats();
     void doWait();
-    Aggregator **getStatsGroup(_stats_group_spec_t &groupspec);
+    Aggregator **getStatsGroup(_stats_group_spec_t &groupspec, bool *is_new);
     void computeStatsGroupSpec(_stats_group_spec_t &groupspec, void *data);
     Filter *createFilter(Column *column, int operator_id, char *value);
     void parseFilterLine(char *line, bool filter /* and not cond */);
