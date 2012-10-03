@@ -99,7 +99,8 @@ void TableHostgroups::addColumns(Table *table, string prefix, int indirect_offse
     table->addColumn(new HostlistStateColumn(prefix + "num_services_hard_unknown",
                 "The total number of services with the state UNKNOWN of hosts in this group", HLSC_NUM_SVC_HARD_UNKNOWN, (char *)(&hgr.members) - ref, indirect_offset));
 
-    table->setNatSort( prefix + "name" );
+    table->clearNatSort();
+    table->addNatSort( prefix + "name" );
 }
 
 void TableHostgroups::answerQuery(Query *query)

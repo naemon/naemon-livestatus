@@ -307,7 +307,8 @@ void TableHosts::addColumns(Table *table, string prefix, int indirect_offset)
     table->addColumn(new ServicelistColumn(prefix + "services_with_info",
                 "A list of all services including detailed information about each service",    (char *)(&hst.services) - ref, indirect_offset, false, 2));
 
-    table->setNatSort( prefix + "name" );
+    table->clearNatSort();
+    table->addNatSort( prefix + "name" );
 }
 
 void *TableHosts::findObject(char *objectspec)
