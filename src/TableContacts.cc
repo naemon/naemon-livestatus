@@ -82,7 +82,8 @@ void TableContacts::addColumns(Table *table, string prefix, int indirect_offset)
     table->addColumn(new AttributelistColumn(prefix + "modified_attributes_list",
                 "A list of all modified attributes", (char *)(&ctc.modified_attributes) - ref, indirect_offset, true));
 
-    table->setNatSort( prefix + "name" );
+    table->clearNatSort();
+    table->addNatSort( prefix + "name" );
 }
 
 
