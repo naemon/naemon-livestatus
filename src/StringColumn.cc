@@ -11,6 +11,8 @@
 // This file is part of Check_MK.
 // The official homepage is at http://mathias-kettner.de/check_mk.
 //
+// Updated 2012 by Max Sikström - op5: Added compare interface
+//
 // check_mk is free software;  you can redistribute it and/or modify it
 // under the  terms of the  GNU General Public License  as published by
 // the Free Software Foundation in version 2.  check_mk is  distributed
@@ -25,6 +27,7 @@
 #include "StringColumn.h"
 #include "StringColumnFilter.h"
 #include "Query.h"
+#include <string.h>
 
 void StringColumn::output(void *data, Query *query)
 {
@@ -39,4 +42,8 @@ Filter *StringColumn::createFilter(int operator_id, char *value)
     return new StringColumnFilter(this, operator_id, value);
 }
 
+
+int StringColumn::compare(void *dataa, void*datab, Query *query) {
+    return strcmp( getValue(dataa), getValue(datab) );
+}
 

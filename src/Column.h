@@ -11,6 +11,8 @@
 // This file is part of Check_MK.
 // The official homepage is at http://mathias-kettner.de/check_mk.
 //
+// Updated 2012 by Max Sikström - op5: Added compare interface
+//
 // check_mk is free software;  you can redistribute it and/or modify it
 // under the  terms of the  GNU General Public License  as published by
 // the Free Software Foundation in version 2.  check_mk is  distributed
@@ -59,6 +61,7 @@ public:
     virtual void output(void *data, Query *) = 0;
     virtual Filter *createFilter(int opid __attribute__ ((__unused__)), char *value __attribute__ ((__unused__))) { return 0; }
     void *shiftPointer(void *data);
+    virtual int compare(void *dataa, void *datab, Query *query);
 };
 
 #endif // Column_h

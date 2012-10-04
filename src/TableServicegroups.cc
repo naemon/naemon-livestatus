@@ -79,6 +79,9 @@ void TableServicegroups::addColumns(Table *table, string prefix, int indirect_of
                 "The number of services in the group that are CRIT",    SLSC_NUM_HARD_CRIT,    (char *)(&sgr.members) - ref, indirect_offset));
     table->addColumn(new ServicelistStateColumn(prefix + "num_services_hard_unknown",
                 "The number of services in the group that are UNKNOWN", SLSC_NUM_HARD_UNKNOWN, (char *)(&sgr.members) - ref, indirect_offset));
+
+    table->clearNatSort();
+    table->addNatSort( prefix + "name" );
 }
 
 void TableServicegroups::answerQuery(Query *query)

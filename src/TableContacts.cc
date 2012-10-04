@@ -81,6 +81,9 @@ void TableContacts::addColumns(Table *table, string prefix, int indirect_offset)
                 "A bitmask specifying which attributes have been modified", (char *)(&ctc.modified_attributes) - ref, indirect_offset, false));
     table->addColumn(new AttributelistColumn(prefix + "modified_attributes_list",
                 "A list of all modified attributes", (char *)(&ctc.modified_attributes) - ref, indirect_offset, true));
+
+    table->clearNatSort();
+    table->addNatSort( prefix + "name" );
 }
 
 
