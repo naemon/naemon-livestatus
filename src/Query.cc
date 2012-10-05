@@ -601,9 +601,11 @@ void Query::parseOutputFormatLine(char *line)
         _output_format = OUTPUT_FORMAT_JSON;
     else if (!strcmp(format, "python"))
         _output_format = OUTPUT_FORMAT_PYTHON;
+    else if (!strcmp(format, "wrapped_json"))
+        _output_format = OUTPUT_FORMAT_WRAPPED_JSON;
     else
         _output->setError(RESPONSE_CODE_INVALID_HEADER,
-               "Invalid output format. Only 'csv' and 'json' are available.");
+               "Invalid output format. Only 'csv', 'json' and 'wrapped_json' are available.");
 }
 
 void Query::parseColumnHeadersLine(char *line)
@@ -775,9 +777,6 @@ void Query::start()
             _sorter.addSortColumn( (*natsort)[i], false );
     }
 
-    if (_output_format != OUTPUT_FORMAT_CSV)
-        _output->addChar('[');
-
     if (doStats())
     {
         // if we have no StatsGroupBy: column, we allocate one only row of Aggregators,
@@ -785,6 +784,7 @@ void Query::start()
         // will be created each time a new group is found.
         if (_columns.size() == 0)
         {
+            _current_line = 1; /* There is only one line... */
             _stats_aggregators = new Aggregator *[_stats_columns.size()];
             for (unsigned i=0; i<_stats_columns.size(); i++)
                 _stats_aggregators[i] = _stats_columns[i]->createAggregator();
@@ -793,6 +793,11 @@ void Query::start()
 
     if (_show_column_headers)
     {
+        if (_output_format == OUTPUT_FORMAT_WRAPPED_JSON)
+            _output->addString("{\"columns\":");
+        if (_output_format != OUTPUT_FORMAT_CSV)
+            _output->addChar('[');
+
         outputDatasetBegin();
         bool first = true;
 
@@ -826,7 +831,16 @@ void Query::start()
 
         outputDatasetEnd();
         _need_ds_separator = true;
+
+        if (_output_format == OUTPUT_FORMAT_WRAPPED_JSON)
+            _output->addString("],\"data\":[");
+    } else {
+        if (_output_format == OUTPUT_FORMAT_WRAPPED_JSON)
+            _output->addString("{\"data\":");
+        if (_output_format != OUTPUT_FORMAT_CSV)
+            _output->addChar('[');
     }
+
 }
 
 
@@ -842,7 +856,6 @@ bool Query::processDataset(void *data)
 
 
     if (_filter.accepts(data) && (!_auth_user || _table->isAuthorized(_auth_user, data))) {
-        _current_line++;
 
         if (doStats())
         {
@@ -855,6 +868,7 @@ bool Query::processDataset(void *data)
                 computeStatsGroupSpec(groupspec, data);
                 aggr = getStatsGroup(groupspec, &is_new);
                 if( is_new ) {
+                    _current_line++;
                     _sorter.insert( data, _limit+_offset );
                 }
             }
@@ -868,12 +882,18 @@ bool Query::processDataset(void *data)
             // collect stats.
         }
         else {
+            _current_line++;
             if (_do_sorting) {
                 _sorter.insert( data, _limit+_offset );
             }
             else {
-                if (_limit >= 0 && (int)_current_line > _offset+_limit)
-                    return false;
+                if (_limit >= 0 && (int)_current_line > _offset+_limit) {
+                    if (_output_format == OUTPUT_FORMAT_WRAPPED_JSON) {
+                        return true; /* wrapped_json also outputs total row count */
+                    } else {
+                        return false;
+                    }
+                }
 
                 if ((int)_current_line <= _offset)
                     return true;
@@ -1004,8 +1024,15 @@ void Query::finish()
     }
 
     // normal query
-    if (_output_format != OUTPUT_FORMAT_CSV)
-        _output->addBuffer("]\n", 2);
+    if (_output_format != OUTPUT_FORMAT_CSV) {
+        _output->addChar(']');
+        if (_output_format == OUTPUT_FORMAT_WRAPPED_JSON) {
+            _output->addString(",\"total_count\":");
+            outputInteger(_current_line);
+            _output->addString("}");
+        }
+        _output->addChar('\n');
+    }
 }
 
 
