@@ -605,7 +605,7 @@ void Query::parseOutputFormatLine(char *line)
         _output_format = OUTPUT_FORMAT_WRAPPED_JSON;
     else
         _output->setError(RESPONSE_CODE_INVALID_HEADER,
-               "Invalid output format. Only 'csv' and 'json' are available.");
+               "Invalid output format. Only 'csv', 'json' and 'wrapped_json' are available.");
 }
 
 void Query::parseColumnHeadersLine(char *line)
