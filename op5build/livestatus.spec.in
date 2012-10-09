@@ -1,0 +1,93 @@
+%define mod_path /opt/monitor/op5/livestatus
+%define nagios_cfg /opt/monitor/etc/nagios.cfg
+
+# prevent stripping of binaries
+%define __spec_install_post /usr/lib/rpm/brp-compress
+
+%{?dgroup:%define daemon_group %{dgroup}}
+
+Summary: MK-Livestatus is a module for fetching status data from Nagios
+Name: monitor-livestatus
+Version: @@VERSION@@
+Release: @@RELEASE@@
+License: GPL
+Group: op5/Monitor
+URL: http://www.op5.se
+Source0: %name-%version.tar.gz
+Prefix: /opt/monitor
+Requires: monitor
+BuildRequires: libstdc++-devel
+BuildRoot: /override/%name-%version
+
+
+%description
+%name is an eventbroker module for op5 Monitor which allows
+external programs to use the running Nagios daemon as a specialized
+database. %name is a shallow fork of mk-livestatus by
+Mathias Kettner.
+
+
+%package -n unixcat
+Summary: unixcat is a utility used to send data to a unix domain socket
+Group: op5/system-addons
+
+%description -n unixcat
+
+%prep
+%setup -q
+
+
+%build
+rm -rf %buildroot
+# FIXME! Autoconf version 2.61 or higher is required but since 
+# we have 2.59 on our build system we ignore that...
+sed -i 's#2\.61#2\.59#' configure.ac
+aclocal && autoheader && automake -a
+# FIXME! We ignore autoconf errors for now since build seems ok.
+autoconf || :
+./configure CFLAGS=-I/opt/monitor/include CXXFLAGS=-I/opt/monitor/include
+make
+
+
+%install
+mkdir -p %buildroot%mod_path
+mkdir -p %buildroot%_bindir
+cp -a src/livestatus.o %buildroot%mod_path
+cp -a src/unixcat %buildroot%_bindir
+
+
+%post
+if ! grep -q 'broker_module.*livestatus.o' %nagios_cfg; then
+	sed -i "s#^log_file.*#broker_module=%mod_path/livestatus.o pnp_path=/opt/monitor/op5/pnp/perfdata /opt/monitor/var/rw/live\\n\\n&#" \
+		%nagios_cfg
+elif ! grep -q 'broker_module.*pnp_path.*livestatus.o' %nagios_cfg; then
+	sed -i "s#broker_module=%mod_path/livestatus.o#broker_module=%mod_path/livestatus.o pnp_path=/opt/monitor/op5/pnp/perfdata#" \
+		%nagios_cfg
+fi
+/etc/init.d/monitor restart
+
+
+%postun
+# remove module from Nagios cfg if uninstalling
+if test $1 -eq 0; then
+	sed -i '#^broker_module=%mod_path/livestatus.o#d' %nagios_cfg
+fi
+/etc/init.d/monitor restart
+
+
+%files
+%defattr(-,root,root)
+%mod_path
+
+
+%files -n unixcat
+%defattr(755,root,root)
+%_bindir/unixcat
+
+
+%clean
+rm -rf %buildroot
+
+%changelog
+* Tue Jun 14 2011 Andreas Ericsson <ae@op5.se>
+- Initial specfile creation.
