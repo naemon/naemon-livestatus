@@ -51,5 +51,5 @@ int IntColumn::compare(void *dataa, void*datab, Query *query) {
     int32_t a = getValue(dataa, query);
     int32_t b = getValue(datab, query);
     if( a==b ) return 0;
-    return (a>b)?(1):(0);
+    return (a>b)?(1):(-1);
 }
