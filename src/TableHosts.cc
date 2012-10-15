@@ -155,6 +155,9 @@ void TableHosts::addColumns(Table *table, string prefix, int indirect_offset)
                 "Time of the last hard state change (Unix timestamp)", (char *)(&hst.last_hard_state_change) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "has_been_checked",
                 "Whether the host has already been checked (0/1)", (char *)(&hst.has_been_checked) - ref, indirect_offset));
+    /* FIXME: hourly_value is an unsigned int... */
+    table->addColumn(new OffsetIntColumn(prefix + "hourly_value",
+	             "Hourly Value", (char *)(&hst.hourly_value) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "current_notification_number",
                 "Number of the current notification", (char *)(&hst.current_notification_number) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "pending_flex_downtime",
