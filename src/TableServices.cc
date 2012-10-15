@@ -257,6 +257,9 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
                 "The last time the service was CRITICAL (Unix timestamp)", (char *)&svc.last_time_critical - ref, indirect_offset));
     table->addColumn(new OffsetTimeColumn(prefix + "last_time_unknown",
                 "The last time the service was UNKNOWN (Unix timestamp)", (char *)&svc.last_time_unknown - ref, indirect_offset));
+    /* FIXME: hourly_value is an unsigned int... */
+    table->addColumn(new OffsetIntColumn(prefix + "hourly_value",
+                "Hourly Value", (char *)(&svc.hourly_value) - ref, indirect_offset));
 
     table->addColumn(new OffsetTimeColumn(prefix + "last_check",
                 "The time of the last check (Unix timestamp)", (char *)&svc.last_check - ref, indirect_offset));
