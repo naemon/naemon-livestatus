@@ -17,7 +17,8 @@ Source0: %name-%version.tar.gz
 Prefix: /opt/monitor
 Requires: monitor
 BuildRequires: libstdc++-devel
-BuildRoot: /override/%name-%version
+BuildRequires: g++
+BuildRoot: %{_tmppath}/%{name}-%{version}
 
 
 %description
