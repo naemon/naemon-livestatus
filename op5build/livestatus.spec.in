@@ -1,5 +1,6 @@
 %define mod_path /opt/monitor/op5/livestatus
 %define nagios_cfg /opt/monitor/etc/nagios.cfg
+%define debug_package %{nil}
 
 # prevent stripping of binaries
 %define __spec_install_post /usr/lib/rpm/brp-compress
