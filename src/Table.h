@@ -52,6 +52,7 @@ public:
     virtual ~Table();
     virtual Column *column(const char *name);
     virtual void answerQuery(Query *) = 0;
+	 void cleanupQuery() {}
     virtual const char *name() = 0;
     virtual const char *prefixname() { return name(); }
     virtual bool isAuthorized(contact *, void *) { return true; }

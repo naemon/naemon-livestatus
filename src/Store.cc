@@ -173,6 +173,7 @@ void Store::answerGetRequest(InputBuffer *input, OutputBuffer *output, const cha
         query.start();
         table->answerQuery(&query);
         query.finish();
+		  table->cleanupQuery();
         gettimeofday(&after, 0);
         unsigned long ustime = (after.tv_sec - before.tv_sec) * 1000000 + (after.tv_usec - before.tv_usec);
         if (g_debug_level > 0)

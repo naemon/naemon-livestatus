@@ -30,12 +30,22 @@
 #include "Table.h"
 #include "nagios.h"
 
+using namespace std;
+
 class TableContacts;
 class TableDownComm;
+
+struct hostbygroup {
+    host      *_host;
+    hostgroup *_hostgroup;
+    struct hostbygroup *_next;
+};
 
 class TableHosts : public Table
 {
     bool _by_group;
+
+    struct hostbygroup *_hg_tmp_storage;
 public:
     TableHosts(bool by_group);
     const char *name() { return _by_group ? "hostsbygroup" : "hosts"; }
@@ -44,6 +54,7 @@ public:
     void *findObject(char *objectspec);
     void addColumns(Table *, string prefix, int indirect_offset);
     void answerQuery(Query *query);
+    void cleanupQuery();
 };
 
 #endif // TableHosts_h

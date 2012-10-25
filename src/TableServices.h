@@ -36,11 +36,27 @@ class TableHosts;
 class TableContacts;
 class TableDowntimes;
 
+struct servicebygroup {
+    service               *_service;
+    host                  *_host;
+    servicegroup          *_servicegroup;
+    struct servicebygroup *_next;
+};
+
+struct servicebyhostgroup {
+    service                   *_service;
+    host                  *_host;
+    hostgroup                 *_hostgroup;
+    struct servicebyhostgroup *_next;
+};
+
 class TableServices : public Table
 {
     bool _by_group;
     bool _by_hostgroup; // alternative to _by_group
 
+    struct servicebygroup     *_sg_tmp_storage;
+    struct servicebyhostgroup *_shg_tmp_storage;
 public:
     TableServices(bool by_group, bool by_hostgroup);
     const char *name() { return _by_group ? "servicesbygroup" : \
@@ -50,6 +66,7 @@ public:
     void *findObject(char *objectspec);
     void add(service *svc);
     void answerQuery(Query *);
+    void cleanupQuery();
     void addColumns(Table *, string prefix, int indirect_offset, bool add_hosts);
 };
 

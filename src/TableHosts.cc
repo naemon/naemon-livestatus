@@ -49,11 +49,6 @@
 #include "tables.h"
 #include "auth.h"
 
-struct hostbygroup {
-    host       _host;
-    hostgroup *_hostgroup;
-};
-
 
 bool TableHosts::isAuthorized(contact *ctc, void *data)
 {
@@ -64,11 +59,15 @@ bool TableHosts::isAuthorized(contact *ctc, void *data)
 
 TableHosts::TableHosts(bool by_group)
     : _by_group(by_group)
+    , _hg_tmp_storage(0)
 {
     struct hostbygroup ref;
-    addColumns(this, "", -1);
     if (by_group) {
+        addColumns(this, "", (char *)&(ref._host) - (char *)&ref);
         g_table_hostgroups->addColumns(this, "hostgroup_", (char *)&(ref._hostgroup) - (char *)&ref);
+    }
+    else {
+        addColumns(this, "", -1);
     }
 }
 
@@ -157,7 +156,7 @@ void TableHosts::addColumns(Table *table, string prefix, int indirect_offset)
                 "Whether the host has already been checked (0/1)", (char *)(&hst.has_been_checked) - ref, indirect_offset));
     /* FIXME: hourly_value is an unsigned int... */
     table->addColumn(new OffsetIntColumn(prefix + "hourly_value",
-	             "Hourly Value", (char *)(&hst.hourly_value) - ref, indirect_offset));
+                "Hourly Value", (char *)(&hst.hourly_value) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "current_notification_number",
                 "Number of the current notification", (char *)(&hst.current_notification_number) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "pending_flex_downtime",
@@ -325,13 +324,16 @@ void TableHosts::answerQuery(Query *query)
     // Table hostsbygroup iterates over host groups
     if (_by_group) {
         hostgroup *hgroup = hostgroup_list;
-        hostbygroup hg;
+        hostbygroup *hg;
         while (hgroup) {
-            hg._hostgroup = hgroup;
             hostsmember *mem = hgroup->members;
             while (mem) {
-                memcpy(&hg._host, mem->host_ptr, sizeof(host));
-                if (!query->processDataset(&hg))
+                hg = new hostbygroup;
+                hg->_hostgroup = hgroup;
+                hg->_host = mem->host_ptr;
+                hg->_next = _hg_tmp_storage;
+                _hg_tmp_storage = hg;
+                if (!query->processDataset(hg))
                     break;
                 mem = mem->next;
             }
@@ -359,4 +361,14 @@ void TableHosts::answerQuery(Query *query)
             break;
         hst = hst->next;
     }
+}
+
+void TableHosts::cleanupQuery()
+{
+   struct hostbygroup *cur;
+   while( _hg_tmp_storage ) {
+      cur = _hg_tmp_storage;
+      _hg_tmp_storage = cur->_next;
+      delete cur;
+   }
 }
