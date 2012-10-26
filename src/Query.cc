@@ -940,6 +940,7 @@ void Query::finish()
         numelems = _limit;
         if( _limit+_offset > _sorter.size() ) {
             numelems = _sorter.size()-_offset;
+            if( numelems < 0 ) numelems = 0;
         }
         while( ((data = _sorter.extract()) != 0) && numelems-- ) {
             outbuf.push_back( data );
@@ -1013,6 +1014,7 @@ void Query::finish()
         numelems = _limit;
         if( _limit+_offset > _sorter.size() ) {
             numelems = _sorter.size()-_offset;
+            if( numelems < 0 ) numelems = 0;
         }
         while( ((data = _sorter.extract()) != 0) && numelems-- ) {
             outbuf.push_back( data );

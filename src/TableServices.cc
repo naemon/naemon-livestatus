@@ -48,27 +48,23 @@
 #include "auth.h"
 #include "strutil.h"
 
-struct servicebygroup {
-    service _service;
-    servicegroup *_servicegroup;
-};
-struct servicebyhostgroup {
-    service _service;
-    hostgroup *_hostgroup;
-};
-
 void TableServices::answerQuery(Query *query)
 {
     // Table servicesbygroup iterate over service groups
     if (_by_group) {
         servicegroup *sgroup = servicegroup_list;
-        servicebygroup sg;
+        servicebygroup *sg;
         while (sgroup) {
-            sg._servicegroup = sgroup;
             servicesmember *mem = sgroup->members;
             while (mem) {
-                memcpy(&sg._service, mem->service_ptr, sizeof(service));
-                if (!query->processDataset(&sg))
+                sg = new servicebygroup;
+                sg->_service      = mem->service_ptr;
+                sg->_host         = mem->service_ptr->host_ptr;
+                sg->_servicegroup = sgroup;
+                sg->_next         = _sg_tmp_storage;
+                _sg_tmp_storage   = sg;
+
+                if (!query->processDataset(sg))
                     break;
                 mem = mem->next;
             }
@@ -81,17 +77,22 @@ void TableServices::answerQuery(Query *query)
     else if (_by_hostgroup)
     {
         hostgroup *hgroup = hostgroup_list;
-        servicebyhostgroup shg;
+        servicebyhostgroup *shg;
         while (hgroup) {
-            shg._hostgroup = hgroup;
             hostsmember *mem = hgroup->members;
             while (mem) {
                 host *hst = mem->host_ptr;
                 servicesmember *smem = hst->services;
                 while (smem) {
                     service *svc = smem->service_ptr;
-                    memcpy(&shg._service, svc, sizeof(service));
-                    if (!query->processDataset(&shg))
+                    shg = new servicebyhostgroup;
+                    shg->_service      = svc;
+                    shg->_host         = svc->host_ptr;
+                    shg->_hostgroup    = hgroup;
+                    shg->_next         = _shg_tmp_storage;
+                    _shg_tmp_storage   = shg;
+
+                    if (!query->processDataset(shg))
                         break;
                     smem = smem->next;
                 }
@@ -166,15 +167,23 @@ bool TableServices::isAuthorized(contact *ctc, void *data)
 TableServices::TableServices(bool by_group, bool by_hostgroup)
   : _by_group(by_group)
   , _by_hostgroup(by_hostgroup)
+  , _sg_tmp_storage(0)
+  , _shg_tmp_storage(0)
 {
     struct servicebygroup     sgref;
     struct servicebyhostgroup hgref;
-    addColumns(this, "", -1, true);
     if (by_group) {
+        addColumns(this, "", (char *)&(sgref._service) - (char *)&sgref, false);
+        g_table_hosts->addColumns(this, "host_", (char *)(&sgref._host) - (char *)&sgref);
         g_table_servicegroups->addColumns(this, "servicegroup_", (char *)&(sgref._servicegroup) - (char *)&sgref);
     }
     else if (by_hostgroup) {
+        addColumns(this, "", (char *)&(hgref._service) - (char *)&hgref, false);
+        g_table_hosts->addColumns(this, "host_", (char *)(&hgref._host) - (char *)&hgref);
         g_table_hostgroups->addColumns(this, "hostgroup_", (char *)&(hgref._hostgroup) - (char *)&hgref);
+    }
+    else {
+        addColumns(this, "", -1, true);
     }
 }
 
@@ -257,6 +266,9 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
                 "The last time the service was CRITICAL (Unix timestamp)", (char *)&svc.last_time_critical - ref, indirect_offset));
     table->addColumn(new OffsetTimeColumn(prefix + "last_time_unknown",
                 "The last time the service was UNKNOWN (Unix timestamp)", (char *)&svc.last_time_unknown - ref, indirect_offset));
+    /* FIXME: hourly_value is an unsigned int... */
+    table->addColumn(new OffsetIntColumn(prefix + "hourly_value",
+                "Hourly Value", (char *)(&svc.hourly_value) - ref, indirect_offset));
 
     table->addColumn(new OffsetTimeColumn(prefix + "last_check",
                 "The time of the last check (Unix timestamp)", (char *)&svc.last_check - ref, indirect_offset));
@@ -387,4 +399,21 @@ void *TableServices::findObject(char *objectspec)
         description = objectspec;
     }
     return find_service(host_name, description);
+}
+
+void TableServices::cleanupQuery()
+{
+   struct servicebygroup *sg_cur;
+   while( _sg_tmp_storage ) {
+      sg_cur = _sg_tmp_storage;
+      _sg_tmp_storage = sg_cur->_next;
+      delete sg_cur;
+   }
+
+   struct servicebyhostgroup *shg_cur;
+   while( _shg_tmp_storage ) {
+      shg_cur = _shg_tmp_storage;
+      _shg_tmp_storage = shg_cur->_next;
+      delete shg_cur;
+   }
 }
