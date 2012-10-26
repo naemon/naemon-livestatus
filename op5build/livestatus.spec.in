@@ -60,10 +60,10 @@ cp -a src/unixcat %buildroot%_bindir
 
 
 %post
-if ! grep -q 'broker_module.*livestatus.o' %nagios_cfg; then
+if ! grep -q 'broker_module.*livestatus\.o' %nagios_cfg; then
 	sed -i "s#^log_file.*#broker_module=%mod_path/livestatus.o pnp_path=/opt/monitor/op5/pnp/perfdata /opt/monitor/var/rw/live\\n\\n&#" \
 		%nagios_cfg
-elif ! grep -q 'broker_module.*pnp_path.*livestatus.o' %nagios_cfg; then
+elif ! grep -q 'broker_module.*livestatus\.o.*pnp_path' %nagios_cfg; then
 	sed -i "s#broker_module=%mod_path/livestatus.o#broker_module=%mod_path/livestatus.o pnp_path=/opt/monitor/op5/pnp/perfdata#" \
 		%nagios_cfg
 fi
