@@ -395,7 +395,7 @@ class MultiSiteConnection(Helpers):
             for name, site, connection in self.connections:
                 if name == sitename:
                     del self.connections[i]
-		    return
+                    return
                 i += 1
 
 
