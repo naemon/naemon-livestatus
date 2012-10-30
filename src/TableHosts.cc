@@ -181,6 +181,8 @@ void TableHosts::addColumns(Table *table, string prefix, int indirect_offset)
                 "Time of the last check (Unix timestamp)", (char *)(&hst.last_check) - ref, indirect_offset));
     table->addColumn(new OffsetTimeColumn(prefix + "last_state_change",
                 "Time of the last state change - soft or hard (Unix timestamp)", (char *)(&hst.last_state_change) - ref, indirect_offset));
+    table->addColumn(new OffsetIntColumn(prefix + "should_be_scheduled",
+                "Whether nagios still tries to run checks on this host (0/1)", (char *)(&hst.should_be_scheduled) - ref, indirect_offset));
 
     table->addColumn(new OffsetTimeColumn(prefix + "last_time_up",
                 "The last time the host was UP (Unix timestamp)", (char *)&hst.last_time_up - ref, indirect_offset));

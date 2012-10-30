@@ -269,6 +269,9 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
     /* FIXME: hourly_value is an unsigned int... */
     table->addColumn(new OffsetIntColumn(prefix + "hourly_value",
                 "Hourly Value", (char *)(&svc.hourly_value) - ref, indirect_offset));
+    table->addColumn(new OffsetIntColumn(prefix + "should_be_scheduled",
+                "Whether nagios still tries to run checks on this service (0/1)", (char *)(&svc.should_be_scheduled) - ref, indirect_offset));
+
 
     table->addColumn(new OffsetTimeColumn(prefix + "last_check",
                 "The time of the last check (Unix timestamp)", (char *)&svc.last_check - ref, indirect_offset));
