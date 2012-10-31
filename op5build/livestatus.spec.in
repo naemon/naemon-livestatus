@@ -89,12 +89,12 @@ fi
 %files
 %defattr(-,root,root)
 %mod_path
+%{python_sitelib}/livestatus
 
 
 %files -n unixcat
 %defattr(755,root,root)
 %_bindir/unixcat
-%{python_sitelib}/livestatus
 
 
 %clean
