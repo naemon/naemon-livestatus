@@ -63,7 +63,7 @@ livestatus_so_CFLAGS   = $(livestatus_so_CXXFLAGS)
 
 livestatus.o: $(livestatus_so_OBJECTS) $(livestatus_so_DEPENDENCIES)
 	-rm -f plugin.so
-	$(CXX) $(LDFLAGS) -s -fPIC -shared $(livestatus_so_OBJECTS) -o $@ -lpthread -lstdc++
+	$(CXX) $(LDFLAGS) -fPIC -shared $(livestatus_so_OBJECTS) -o $@ -lpthread -lstdc++
 
 all-local: livestatus.o
 
