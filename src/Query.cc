@@ -990,7 +990,7 @@ void Query::finish()
             for (i=0; i<_stats_columns.size(); i++) {
                 delete aggr[i];
             }
-            delete aggr;
+            delete[] aggr;
         }
     }
 
@@ -1005,7 +1005,7 @@ void Query::finish()
             delete _stats_aggregators[i];
         }
         outputDatasetEnd();
-        delete _stats_aggregators;
+        delete[] _stats_aggregators;
     }
    
     else if( _do_sorting ) {
