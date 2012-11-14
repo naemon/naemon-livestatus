@@ -1,0 +1,16 @@
+This is a fork of Mattias Kettner's mk_livestatus. It has been ported to
+Nagios 4 and contains some extra features such as sorting and page offsets.
+This branch is being maintained by op5 until such a time comes when everything
+we need has been merged back upstream.
+
+To find out more about mk_livestatus, see
+ http://mathias-kettner.de/checkmk_livestatus.html
+
+To find out more about op5, see
+ http://op5.org
+
+To install, run:
+ autoreconf -s
+ ./configure
+ make
+ sudo make install
