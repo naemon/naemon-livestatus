@@ -53,7 +53,7 @@ sed -i 's#2\.61#2\.59#' configure.ac
 aclocal && autoheader && automake -a
 # FIXME! We ignore autoconf errors for now since build seems ok.
 autoconf || :
-./configure CFLAGS=-I/opt/monitor/include CXXFLAGS=-I/opt/monitor/include
+./configure CPPFLAGS=-I/opt/monitor/include
 make
 
 

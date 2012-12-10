@@ -11,6 +11,6 @@ To find out more about op5, see
 
 To install, run:
  autoreconf -s
- ./configure
+ ./configure CPPFLAGS=$(path to nagios include files, usually /usr/local/nagios/include)
  make
  sudo make install
