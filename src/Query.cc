@@ -830,10 +830,14 @@ void Query::start()
         }
 
         outputDatasetEnd();
-        _need_ds_separator = true;
 
         if (_output_format == OUTPUT_FORMAT_WRAPPED_JSON)
+        {
             _output->addString("],\"data\":[");
+        }
+        else {
+            _need_ds_separator = true;
+        }
     } else {
         if (_output_format == OUTPUT_FORMAT_WRAPPED_JSON)
             _output->addString("{\"data\":");
