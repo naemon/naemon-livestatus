@@ -267,8 +267,8 @@ void Query::parseAndOrLine(char *line, int andor, bool filter)
 {
     char *value = next_field(&line);
     int number = atoi(value);
-    if (!isdigit(value[0]) || number <= 0) {
-        _output->setError(RESPONSE_CODE_INVALID_HEADER, "Invalid value for %s%s: need non-zero integer number",
+    if (!isdigit(value[0]) || number < 0) {
+        _output->setError(RESPONSE_CODE_INVALID_HEADER, "Invalid value for %s%s: need non-negative integer number",
                 filter ? "" : "WaitCondition",
                 andor == ANDOR_OR ? "Or" : "And");
         return;
@@ -315,8 +315,8 @@ void Query::parseStatsAndOrLine(char *line, int andor)
 {
     char *value = next_field(&line);
     int number = atoi(value);
-    if (!isdigit(value[0]) || number <= 0) {
-        _output->setError(RESPONSE_CODE_INVALID_HEADER, "Invalid value for Stats%s: need non-zero integer number",
+    if (!isdigit(value[0]) || number < 0) {
+        _output->setError(RESPONSE_CODE_INVALID_HEADER, "Invalid value for Stats%s: need non-negative integer number",
                 andor == ANDOR_OR ? "Or" : "And");
         return;
     }
