@@ -72,7 +72,8 @@ Query::Query(InputBuffer *input, OutputBuffer *output, Table *table) :
     _offset(0),
     _do_sorting(0),
     _current_line(0),
-    _timezone_offset(0)
+    _timezone_offset(0),
+    table_tmp_storage(0)
 {
     _sorter.setQuery( this );
 

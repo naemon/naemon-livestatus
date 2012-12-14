@@ -59,7 +59,6 @@ bool TableHosts::isAuthorized(contact *ctc, void *data)
 
 TableHosts::TableHosts(bool by_group)
     : _by_group(by_group)
-    , _hg_tmp_storage(0)
 {
     struct hostbygroup ref;
     if (by_group) {
@@ -323,6 +322,7 @@ void *TableHosts::findObject(char *objectspec)
 
 void TableHosts::answerQuery(Query *query)
 {
+    struct hostbygroup *_hg_tmp_storage = (struct hostbygroup *)(query->table_tmp_storage);
     // Table hostsbygroup iterates over host groups
     if (_by_group) {
         hostgroup *hgroup = hostgroup_list;
@@ -365,8 +365,10 @@ void TableHosts::answerQuery(Query *query)
     }
 }
 
-void TableHosts::cleanupQuery()
+void TableHosts::cleanupQuery(Query *query)
 {
+   struct hostbygroup *_hg_tmp_storage = (struct hostbygroup *)(query->table_tmp_storage);
+
    struct hostbygroup *cur;
    while( _hg_tmp_storage ) {
       cur = _hg_tmp_storage;

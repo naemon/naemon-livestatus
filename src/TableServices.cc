@@ -50,6 +50,9 @@
 
 void TableServices::answerQuery(Query *query)
 {
+    struct servicebygroup *_sg_tmp_storage = (struct servicebygroup *)(query->table_tmp_storage);
+    struct servicebyhostgroup *_shg_tmp_storage = (struct servicebyhostgroup *)(query->table_tmp_storage);
+
     // Table servicesbygroup iterate over service groups
     if (_by_group) {
         servicegroup *sgroup = servicegroup_list;
@@ -167,8 +170,6 @@ bool TableServices::isAuthorized(contact *ctc, void *data)
 TableServices::TableServices(bool by_group, bool by_hostgroup)
   : _by_group(by_group)
   , _by_hostgroup(by_hostgroup)
-  , _sg_tmp_storage(0)
-  , _shg_tmp_storage(0)
 {
     struct servicebygroup     sgref;
     struct servicebyhostgroup hgref;
@@ -402,19 +403,22 @@ void *TableServices::findObject(char *objectspec)
     return find_service(host_name, description);
 }
 
-void TableServices::cleanupQuery()
+void TableServices::cleanupQuery(Query *query)
 {
-   struct servicebygroup *sg_cur;
-   while( _sg_tmp_storage ) {
-      sg_cur = _sg_tmp_storage;
-      _sg_tmp_storage = sg_cur->_next;
-      delete sg_cur;
-   }
+    struct servicebygroup *_sg_tmp_storage = (struct servicebygroup *)(query->table_tmp_storage);
+    struct servicebyhostgroup *_shg_tmp_storage = (struct servicebyhostgroup *)(query->table_tmp_storage);
 
-   struct servicebyhostgroup *shg_cur;
-   while( _shg_tmp_storage ) {
-      shg_cur = _shg_tmp_storage;
-      _shg_tmp_storage = shg_cur->_next;
-      delete shg_cur;
-   }
+    struct servicebygroup *sg_cur;
+    while( _sg_tmp_storage ) {
+        sg_cur = _sg_tmp_storage;
+        _sg_tmp_storage = sg_cur->_next;
+        delete sg_cur;
+    }
+
+    struct servicebyhostgroup *shg_cur;
+    while( _shg_tmp_storage ) {
+        shg_cur = _shg_tmp_storage;
+        _shg_tmp_storage = shg_cur->_next;
+        delete shg_cur;
+    }
 }
