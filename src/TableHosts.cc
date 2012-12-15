@@ -322,7 +322,7 @@ void *TableHosts::findObject(char *objectspec)
 
 void TableHosts::answerQuery(Query *query)
 {
-    struct hostbygroup *_hg_tmp_storage = (struct hostbygroup *)(query->table_tmp_storage);
+    struct hostbygroup **_hg_tmp_storage = (struct hostbygroup **)&(query->table_tmp_storage);
     // Table hostsbygroup iterates over host groups
     if (_by_group) {
         hostgroup *hgroup = hostgroup_list;
@@ -333,8 +333,8 @@ void TableHosts::answerQuery(Query *query)
                 hg = new hostbygroup;
                 hg->_hostgroup = hgroup;
                 hg->_host = mem->host_ptr;
-                hg->_next = _hg_tmp_storage;
-                _hg_tmp_storage = hg;
+                hg->_next = *_hg_tmp_storage;
+                *_hg_tmp_storage = hg;
                 if (!query->processDataset(hg))
                     break;
                 mem = mem->next;
@@ -367,12 +367,12 @@ void TableHosts::answerQuery(Query *query)
 
 void TableHosts::cleanupQuery(Query *query)
 {
-   struct hostbygroup *_hg_tmp_storage = (struct hostbygroup *)(query->table_tmp_storage);
+   struct hostbygroup **_hg_tmp_storage = (struct hostbygroup **)&(query->table_tmp_storage);
 
    struct hostbygroup *cur;
-   while( _hg_tmp_storage ) {
-      cur = _hg_tmp_storage;
-      _hg_tmp_storage = cur->_next;
+   while( *_hg_tmp_storage ) {
+      cur = *_hg_tmp_storage;
+      *_hg_tmp_storage = cur->_next;
       delete cur;
    }
 }

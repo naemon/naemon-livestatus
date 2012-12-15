@@ -50,8 +50,8 @@
 
 void TableServices::answerQuery(Query *query)
 {
-    struct servicebygroup *_sg_tmp_storage = (struct servicebygroup *)(query->table_tmp_storage);
-    struct servicebyhostgroup *_shg_tmp_storage = (struct servicebyhostgroup *)(query->table_tmp_storage);
+    struct servicebygroup **_sg_tmp_storage = (struct servicebygroup **)&(query->table_tmp_storage);
+    struct servicebyhostgroup **_shg_tmp_storage = (struct servicebyhostgroup **)&(query->table_tmp_storage);
 
     // Table servicesbygroup iterate over service groups
     if (_by_group) {
@@ -64,8 +64,8 @@ void TableServices::answerQuery(Query *query)
                 sg->_service      = mem->service_ptr;
                 sg->_host         = mem->service_ptr->host_ptr;
                 sg->_servicegroup = sgroup;
-                sg->_next         = _sg_tmp_storage;
-                _sg_tmp_storage   = sg;
+                sg->_next         = *_sg_tmp_storage;
+                *_sg_tmp_storage   = sg;
 
                 if (!query->processDataset(sg))
                     break;
@@ -92,8 +92,8 @@ void TableServices::answerQuery(Query *query)
                     shg->_service      = svc;
                     shg->_host         = svc->host_ptr;
                     shg->_hostgroup    = hgroup;
-                    shg->_next         = _shg_tmp_storage;
-                    _shg_tmp_storage   = shg;
+                    shg->_next         = *_shg_tmp_storage;
+                    *_shg_tmp_storage   = shg;
 
                     if (!query->processDataset(shg))
                         break;
@@ -405,20 +405,24 @@ void *TableServices::findObject(char *objectspec)
 
 void TableServices::cleanupQuery(Query *query)
 {
-    struct servicebygroup *_sg_tmp_storage = (struct servicebygroup *)(query->table_tmp_storage);
-    struct servicebyhostgroup *_shg_tmp_storage = (struct servicebyhostgroup *)(query->table_tmp_storage);
+    struct servicebygroup **_sg_tmp_storage = (struct servicebygroup **)&(query->table_tmp_storage);
+    struct servicebyhostgroup **_shg_tmp_storage = (struct servicebyhostgroup **)&(query->table_tmp_storage);
 
-    struct servicebygroup *sg_cur;
-    while( _sg_tmp_storage ) {
-        sg_cur = _sg_tmp_storage;
-        _sg_tmp_storage = sg_cur->_next;
-        delete sg_cur;
+    if( _by_group ) {
+        struct servicebygroup *sg_cur;
+        while( *_sg_tmp_storage ) {
+            sg_cur = *_sg_tmp_storage;
+            *_sg_tmp_storage = sg_cur->_next;
+            delete sg_cur;
+        }
     }
 
-    struct servicebyhostgroup *shg_cur;
-    while( _shg_tmp_storage ) {
-        shg_cur = _shg_tmp_storage;
-        _shg_tmp_storage = shg_cur->_next;
-        delete shg_cur;
+    if( _by_hostgroup ) {
+        struct servicebyhostgroup *shg_cur;
+        while( *_shg_tmp_storage ) {
+            shg_cur = *_shg_tmp_storage;
+            *_shg_tmp_storage = shg_cur->_next;
+            delete shg_cur;
+        }
     }
 }
