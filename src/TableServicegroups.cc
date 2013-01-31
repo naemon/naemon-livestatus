@@ -26,6 +26,7 @@
 #include "TableServicegroups.h"
 #include "Query.h"
 #include "OffsetStringColumn.h"
+#include "OffsetIntColumn.h"
 #include "ServicelistColumn.h"
 #include "ServicelistStateColumn.h"
 #include "auth.h"
@@ -42,6 +43,8 @@ void TableServicegroups::addColumns(Table *table, string prefix, int indirect_of
 {
     servicegroup sgr;
     char *ref = (char *)&sgr;
+    table->addColumn(new OffsetStringColumn(prefix + "id",
+                "Servicegroup id", (char *)(&sgr.group_name) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "name",
                 "The name of the service group",       (char *)(&sgr.group_name) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "alias",

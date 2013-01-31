@@ -25,6 +25,7 @@
 #include "nagios.h"
 #include "Query.h"
 #include "OffsetStringColumn.h"
+#include "OffsetIntColumn.h"
 #include "TableContactgroups.h"
 #include "ContactgroupsMemberColumn.h"
 
@@ -38,6 +39,8 @@ void TableContactgroups::addColumns(Table *table, string prefix, int indirect_of
 {
     contactgroup cg;
     char *ref = (char *)&cg;
+    table->addColumn(new OffsetStringColumn(prefix + "id",
+                "Contactgroup id", (char *)(&cg.id) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "name",
                 "The name of the contactgroup", (char *)(&cg.group_name) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "alias",

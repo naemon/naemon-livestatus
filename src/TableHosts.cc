@@ -76,6 +76,8 @@ void TableHosts::addColumns(Table *table, string prefix, int indirect_offset)
 
     host hst;
     char *ref = (char *)&hst;
+    table->addColumn(new OffsetIntColumn(prefix + "id",
+                "Host id", (char *)(&hst.id) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "name",
                 "Host name", (char *)(&hst.name) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "display_name",

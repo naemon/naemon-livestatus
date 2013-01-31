@@ -196,6 +196,8 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
 
     service svc;
     const char *ref = (const char *)&svc;
+    table->addColumn(new OffsetIntColumn(prefix + "id",
+                "Service id", (char *)&svc.id - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "description",
                 "Description of the service (also used as key)", (char *)(&svc.description) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "display_name",

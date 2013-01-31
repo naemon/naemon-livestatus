@@ -40,6 +40,8 @@ void TableContacts::addColumns(Table *table, string prefix, int indirect_offset)
 {
     contact ctc;
     char *ref = (char *)&ctc;
+    table->addColumn(new OffsetStringColumn(prefix + "id",
+                "Contact id", (char *)(&ctc.id) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "name",
                 "The login name of the contact person", (char *)(&ctc.name) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "alias",
