@@ -39,7 +39,7 @@ void TableTimeperiods::addColumns(Table *table, string prefix, int indirect_offs
 {
     timeperiod tp;
     char *ref = (char *)&tp;
-    table->addColumn(new OffsetStringColumn(prefix + "id",
+    table->addColumn(new OffsetIntColumn(prefix + "id",
                 "Timeperiod id", (char *)(&tp.id) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "name",
                 "The name of the timeperiod", (char *)(&tp.name) - ref, indirect_offset));

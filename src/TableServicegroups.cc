@@ -43,7 +43,7 @@ void TableServicegroups::addColumns(Table *table, string prefix, int indirect_of
 {
     servicegroup sgr;
     char *ref = (char *)&sgr;
-    table->addColumn(new OffsetStringColumn(prefix + "id",
+    table->addColumn(new OffsetIntColumn(prefix + "id",
                 "Servicegroup id", (char *)(&sgr.group_name) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "name",
                 "The name of the service group",       (char *)(&sgr.group_name) - ref, indirect_offset));
