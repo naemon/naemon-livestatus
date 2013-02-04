@@ -1,4 +1,4 @@
-%define mod_path /opt/monitor/op5/livestatus
+%define mod_path /usr/libexec/livestatus
 %define nagios_cfg /opt/monitor/etc/nagios.cfg
 %define debug_package %{nil}
 
@@ -73,6 +73,9 @@ if ! grep -q 'broker_module.*livestatus\.o' %nagios_cfg; then
 		%nagios_cfg
 elif ! grep -q 'broker_module.*livestatus\.o.*pnp_path' %nagios_cfg; then
 	sed -i "s#broker_module=%mod_path/livestatus.o#broker_module=%mod_path/livestatus.o pnp_path=/opt/monitor/op5/pnp/perfdata#" \
+		%nagios_cfg
+elif grep -q 'broker_module.*op5/livestatus/livestatus\.o' %nagios_cfg; then
+	sed -i "s#broker_module.*op5/livestatus/livestatus\.o.*#broker_module=%mod_path/livestatus.o pnp_path=/opt/monitor/op5/pnp/perfdata#" \
 		%nagios_cfg
 fi
 /etc/init.d/monitor restart
