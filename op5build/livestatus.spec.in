@@ -63,7 +63,8 @@ mkdir -p %buildroot%_bindir
 cp -a src/livestatus.o %buildroot%mod_path
 cp -a src/unixcat %buildroot%_bindir
 
-ln -s ../../../../usr/libexec/livestatus/livestatus.o /opt/monitor/op5/livestatus/livestatus.o
+mkdir -p %buildroot/opt/monitor/op5/livestatus/
+ln -s ../../../../usr/libexec/livestatus/livestatus.o %buildroot/opt/monitor/op5/livestatus/livestatus.o
 
 install -d %buildroot%{python_sitelib}/livestatus
 install -pm 0644 api/python/livestatus.py %buildroot%{python_sitelib}/livestatus/
@@ -94,6 +95,7 @@ fi
 %files
 %defattr(-,root,root)
 %mod_path
+/opt/monitor/op5/livestatus/livestatus.o
 %{python_sitelib}/livestatus
 
 
