@@ -25,6 +25,7 @@ Requires: monitor
 BuildRequires: libstdc++-devel
 BuildRequires: gcc-c++
 BuildRequires: op5-nagios-devel
+BuildRequires: autoconf, automake
 BuildRoot: %{_tmppath}/%{name}-%{version}
 
 
