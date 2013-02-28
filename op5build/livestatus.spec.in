@@ -8,8 +8,8 @@
 %{?dgroup:%define daemon_group %{dgroup}}
 
 %if ! ( 0%{?rhel} > 5 )
-%{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
-%{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
+%{!?python_sitelib: %global python_sitelib %(/usr/bin/python26 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
+%{!?python_sitearch: %global python_sitearch %(/usr/bin/python26 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 %endif
 
 Summary: MK-Livestatus is a module for fetching status data from Nagios
@@ -21,7 +21,11 @@ Group: op5/Monitor
 URL: http://www.op5.se
 Source0: %name-%version.tar.gz
 Prefix: /opt/monitor
-Requires: monitor
+Requires: monitorB
+%if ! ( 0%{?rhel} > 5)
+Requires: python26
+BuildRequires: python26
+%endif
 BuildRequires: libstdc++-devel
 BuildRequires: gcc-c++
 BuildRequires: op5-nagios-devel
