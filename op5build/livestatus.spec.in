@@ -21,7 +21,7 @@ Group: op5/Monitor
 URL: http://www.op5.se
 Source0: %name-%version.tar.gz
 Prefix: /opt/monitor
-Requires: monitorB
+Requires: monitor
 %if ! ( 0%{?rhel} > 5)
 Requires: python26
 BuildRequires: python26
