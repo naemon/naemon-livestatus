@@ -163,6 +163,12 @@ void TableServices::answerQuery(Query *query)
 bool TableServices::isAuthorized(contact *ctc, void *data)
 {
     service *svc = (service *)data;
+    if(_by_group) {
+        svc = ((servicebygroup*)data)->_service;
+    }
+    if(_by_hostgroup) {
+        svc = ((servicebyhostgroup*)data)->_service;
+    }
     return is_authorized_for(ctc, svc->host_ptr, svc);
 }
 

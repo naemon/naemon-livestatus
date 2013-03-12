@@ -53,6 +53,9 @@
 bool TableHosts::isAuthorized(contact *ctc, void *data)
 {
     host *hst = (host *)data;
+    if (_by_group) {
+        hst = ((hostbygroup*)data)->_host;
+    }
     return is_authorized_for(ctc, hst, 0);
 }
 
