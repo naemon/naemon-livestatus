@@ -22,7 +22,7 @@ URL: http://www.op5.se
 Source0: %name-%version.tar.gz
 Prefix: /opt/monitor
 Requires: monitor
-%if ! %{?suse_version} && ! ( 0%{?rhel} > 5)
+%if ! 0%{?suse_version} && ! ( 0%{?rhel} > 5)
 Requires: python26
 BuildRequires: python26
 %endif
