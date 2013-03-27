@@ -52,9 +52,6 @@ Group: op5/system-addons
 
 %build
 rm -rf %buildroot
-# FIXME! Autoconf version 2.61 or higher is required but since 
-# we have 2.59 on our build system we ignore that...
-sed -i 's#2\.61#2\.59#' configure.ac
 aclocal && autoheader && automake -a
 # FIXME! We ignore autoconf errors for now since build seems ok.
 autoconf || :
