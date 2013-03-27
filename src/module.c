@@ -548,7 +548,9 @@ void livestatus_parse_arguments(const char *args_orig)
     if (!args_orig)
         return; // no arguments, use default options
 
-    char *args = strdup(args_orig);
+    char *args = strdup(args_orig), *tmp;
+    /*save pointer so that we can free it later*/
+    tmp = args;
     char *token;
     while (0 != (token = next_field(&args)))
     {
@@ -664,7 +666,7 @@ void livestatus_parse_arguments(const char *args_orig)
             }
         }
     }
-    // free(args); won't free, since we use pointers?
+    free(tmp);
 }
 
 void omd_advertize()
