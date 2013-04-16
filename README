@@ -11,7 +11,7 @@ To find out more about mk_livestatus, see
 Three additions to Livesetatus Query Language is added:
 
 -----
-Sort: <volumn name> <asc/desc>
+Sort: <column name> <asc/desc>
 
 Sorts the result set by the specified column in the given direction. Multiple
 Sort lines can be added. First sort line takes precedance.
