@@ -118,5 +118,7 @@ bool TableServicegroups::isAuthorized(contact *ctc, void *data)
             return false;
         mem = mem->next;
     }
+    if(g_group_authorization == AUTH_LOOSE)
+        return false;
     return true;
 }
