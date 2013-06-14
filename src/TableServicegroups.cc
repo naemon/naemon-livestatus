@@ -109,6 +109,9 @@ bool TableServicegroups::isAuthorized(contact *ctc, void *data)
 
     servicegroup *sg = (servicegroup *)data;
     servicesmember *mem = sg->members;
+    if (!mem)
+        return false;
+
     while (mem) {
         service *svc = mem->service_ptr;
         bool is = g_table_services->isAuthorized(ctc, svc);
