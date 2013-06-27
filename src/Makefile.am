@@ -45,7 +45,7 @@ livestatus_la_SOURCES = \
 	ServicelistColumnFilter.cc ServicelistStateColumn.cc store.cc Store.cc \
 	StringColumn.cc StringColumnFilter.cc strutil.cc Table.cc TableColumns.cc \
 	TableCommands.cc TableContacts.cc TableDownComm.cc TableHostgroups.cc \
-	TableHosts.cc TableServicegroups.cc TableServices.cc TableStatus.cc  \
+	ServiceSpecialDoubleColumn.cc TableHosts.cc TableServicegroups.cc TableServices.cc TableStatus.cc  \
 	LogEntry.cc Logfile.cc TableLog.cc TableTimeperiods.cc TableContactgroups.cc \
 	ContactgroupsMemberColumn.cc OffsetStringMacroColumn.cc OffsetStringServiceMacroColumn.cc \
 	OffsetStringHostMacroColumn.cc StatsColumn.cc IntAggregator.cc CountAggregator.cc \
