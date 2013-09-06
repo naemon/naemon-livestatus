@@ -26,6 +26,7 @@
 #include "TableHostgroups.h"
 #include "Query.h"
 #include "OffsetStringColumn.h"
+#include "OffsetIntColumn.h"
 #include "HostlistColumn.h"
 #include "HostlistStateColumn.h"
 #include "auth.h"
@@ -41,6 +42,8 @@ void TableHostgroups::addColumns(Table *table, string prefix, int indirect_offse
 {
     hostgroup hgr;
     char *ref = (char *)&hgr;
+    table->addColumn(new OffsetIntColumn(prefix + "id",
+                "Hostgroup id", (char *)(&hgr.id) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "name",
                 "Name of the hostgroup",       (char *)(&hgr.group_name) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "alias",

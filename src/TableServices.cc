@@ -50,6 +50,9 @@
 
 void TableServices::answerQuery(Query *query)
 {
+    struct servicebygroup **_sg_tmp_storage = (struct servicebygroup **)&(query->table_tmp_storage);
+    struct servicebyhostgroup **_shg_tmp_storage = (struct servicebyhostgroup **)&(query->table_tmp_storage);
+
     // Table servicesbygroup iterate over service groups
     if (_by_group) {
         servicegroup *sgroup = servicegroup_list;
@@ -61,8 +64,8 @@ void TableServices::answerQuery(Query *query)
                 sg->_service      = mem->service_ptr;
                 sg->_host         = mem->service_ptr->host_ptr;
                 sg->_servicegroup = sgroup;
-                sg->_next         = _sg_tmp_storage;
-                _sg_tmp_storage   = sg;
+                sg->_next         = *_sg_tmp_storage;
+                *_sg_tmp_storage   = sg;
 
                 if (!query->processDataset(sg))
                     break;
@@ -89,8 +92,8 @@ void TableServices::answerQuery(Query *query)
                     shg->_service      = svc;
                     shg->_host         = svc->host_ptr;
                     shg->_hostgroup    = hgroup;
-                    shg->_next         = _shg_tmp_storage;
-                    _shg_tmp_storage   = shg;
+                    shg->_next         = *_shg_tmp_storage;
+                    *_shg_tmp_storage   = shg;
 
                     if (!query->processDataset(shg))
                         break;
@@ -167,8 +170,6 @@ bool TableServices::isAuthorized(contact *ctc, void *data)
 TableServices::TableServices(bool by_group, bool by_hostgroup)
   : _by_group(by_group)
   , _by_hostgroup(by_hostgroup)
-  , _sg_tmp_storage(0)
-  , _shg_tmp_storage(0)
 {
     struct servicebygroup     sgref;
     struct servicebyhostgroup hgref;
@@ -195,6 +196,8 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
 
     service svc;
     const char *ref = (const char *)&svc;
+    table->addColumn(new OffsetIntColumn(prefix + "id",
+                "Service id", (char *)&svc.id - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "description",
                 "Description of the service (also used as key)", (char *)(&svc.description) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "display_name",
@@ -269,6 +272,9 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
     /* FIXME: hourly_value is an unsigned int... */
     table->addColumn(new OffsetIntColumn(prefix + "hourly_value",
                 "Hourly Value", (char *)(&svc.hourly_value) - ref, indirect_offset));
+    table->addColumn(new OffsetIntColumn(prefix + "should_be_scheduled",
+                "Whether nagios still tries to run checks on this service (0/1)", (char *)(&svc.should_be_scheduled) - ref, indirect_offset));
+
 
     table->addColumn(new OffsetTimeColumn(prefix + "last_check",
                 "The time of the last check (Unix timestamp)", (char *)&svc.last_check - ref, indirect_offset));
@@ -401,19 +407,26 @@ void *TableServices::findObject(char *objectspec)
     return find_service(host_name, description);
 }
 
-void TableServices::cleanupQuery()
+void TableServices::cleanupQuery(Query *query)
 {
-   struct servicebygroup *sg_cur;
-   while( _sg_tmp_storage ) {
-      sg_cur = _sg_tmp_storage;
-      _sg_tmp_storage = sg_cur->_next;
-      delete sg_cur;
-   }
+    struct servicebygroup **_sg_tmp_storage = (struct servicebygroup **)&(query->table_tmp_storage);
+    struct servicebyhostgroup **_shg_tmp_storage = (struct servicebyhostgroup **)&(query->table_tmp_storage);
 
-   struct servicebyhostgroup *shg_cur;
-   while( _shg_tmp_storage ) {
-      shg_cur = _shg_tmp_storage;
-      _shg_tmp_storage = shg_cur->_next;
-      delete shg_cur;
-   }
+    if( _by_group ) {
+        struct servicebygroup *sg_cur;
+        while( *_sg_tmp_storage ) {
+            sg_cur = *_sg_tmp_storage;
+            *_sg_tmp_storage = sg_cur->_next;
+            delete sg_cur;
+        }
+    }
+
+    if( _by_hostgroup ) {
+        struct servicebyhostgroup *shg_cur;
+        while( *_shg_tmp_storage ) {
+            shg_cur = *_shg_tmp_storage;
+            *_shg_tmp_storage = shg_cur->_next;
+            delete shg_cur;
+        }
+    }
 }

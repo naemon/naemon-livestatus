@@ -28,6 +28,7 @@
 #include "nagios.h"
 #include "Query.h"
 #include "OffsetStringColumn.h"
+#include "OffsetIntColumn.h"
 #include "TableCommands.h"
 
 
@@ -41,6 +42,8 @@ void TableCommands::addColumns(Table *table, string prefix, int indirect_offset)
 {
     command cmd;
     char *ref = (char *)&cmd;
+    table->addColumn(new OffsetIntColumn(prefix + "id",
+                "Command id", (char *)(&cmd.id) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "name",
                 "The name of the command", (char *)(&cmd.name) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "line",

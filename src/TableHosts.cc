@@ -59,7 +59,6 @@ bool TableHosts::isAuthorized(contact *ctc, void *data)
 
 TableHosts::TableHosts(bool by_group)
     : _by_group(by_group)
-    , _hg_tmp_storage(0)
 {
     struct hostbygroup ref;
     if (by_group) {
@@ -77,6 +76,8 @@ void TableHosts::addColumns(Table *table, string prefix, int indirect_offset)
 
     host hst;
     char *ref = (char *)&hst;
+    table->addColumn(new OffsetIntColumn(prefix + "id",
+                "Host id", (char *)(&hst.id) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "name",
                 "Host name", (char *)(&hst.name) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "display_name",
@@ -181,6 +182,8 @@ void TableHosts::addColumns(Table *table, string prefix, int indirect_offset)
                 "Time of the last check (Unix timestamp)", (char *)(&hst.last_check) - ref, indirect_offset));
     table->addColumn(new OffsetTimeColumn(prefix + "last_state_change",
                 "Time of the last state change - soft or hard (Unix timestamp)", (char *)(&hst.last_state_change) - ref, indirect_offset));
+    table->addColumn(new OffsetIntColumn(prefix + "should_be_scheduled",
+                "Whether nagios still tries to run checks on this host (0/1)", (char *)(&hst.should_be_scheduled) - ref, indirect_offset));
 
     table->addColumn(new OffsetTimeColumn(prefix + "last_time_up",
                 "The last time the host was UP (Unix timestamp)", (char *)&hst.last_time_up - ref, indirect_offset));
@@ -323,6 +326,7 @@ void *TableHosts::findObject(char *objectspec)
 
 void TableHosts::answerQuery(Query *query)
 {
+    struct hostbygroup **_hg_tmp_storage = (struct hostbygroup **)&(query->table_tmp_storage);
     // Table hostsbygroup iterates over host groups
     if (_by_group) {
         hostgroup *hgroup = hostgroup_list;
@@ -333,8 +337,8 @@ void TableHosts::answerQuery(Query *query)
                 hg = new hostbygroup;
                 hg->_hostgroup = hgroup;
                 hg->_host = mem->host_ptr;
-                hg->_next = _hg_tmp_storage;
-                _hg_tmp_storage = hg;
+                hg->_next = *_hg_tmp_storage;
+                *_hg_tmp_storage = hg;
                 if (!query->processDataset(hg))
                     break;
                 mem = mem->next;
@@ -365,12 +369,14 @@ void TableHosts::answerQuery(Query *query)
     }
 }
 
-void TableHosts::cleanupQuery()
+void TableHosts::cleanupQuery(Query *query)
 {
+   struct hostbygroup **_hg_tmp_storage = (struct hostbygroup **)&(query->table_tmp_storage);
+
    struct hostbygroup *cur;
-   while( _hg_tmp_storage ) {
-      cur = _hg_tmp_storage;
-      _hg_tmp_storage = cur->_next;
+   while( *_hg_tmp_storage ) {
+      cur = *_hg_tmp_storage;
+      *_hg_tmp_storage = cur->_next;
       delete cur;
    }
 }

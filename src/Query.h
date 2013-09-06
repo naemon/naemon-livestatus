@@ -98,6 +98,8 @@ class Query
     _stats_groups_t _stats_groups;
 
 public:
+    void *table_tmp_storage; // Used for tables to store per query temporary data
+
     Query(InputBuffer *, OutputBuffer *out, Table *);
     ~Query();
     bool processDataset(void *);

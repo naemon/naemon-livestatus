@@ -72,7 +72,8 @@ Query::Query(InputBuffer *input, OutputBuffer *output, Table *table) :
     _offset(0),
     _do_sorting(0),
     _current_line(0),
-    _timezone_offset(0)
+    _timezone_offset(0),
+    table_tmp_storage(0)
 {
     _sorter.setQuery( this );
 
@@ -267,8 +268,8 @@ void Query::parseAndOrLine(char *line, int andor, bool filter)
 {
     char *value = next_field(&line);
     int number = atoi(value);
-    if (!isdigit(value[0]) || number <= 0) {
-        _output->setError(RESPONSE_CODE_INVALID_HEADER, "Invalid value for %s%s: need non-zero integer number",
+    if (!isdigit(value[0]) || number < 0) {
+        _output->setError(RESPONSE_CODE_INVALID_HEADER, "Invalid value for %s%s: need non-negative integer number",
                 filter ? "" : "WaitCondition",
                 andor == ANDOR_OR ? "Or" : "And");
         return;
@@ -315,8 +316,8 @@ void Query::parseStatsAndOrLine(char *line, int andor)
 {
     char *value = next_field(&line);
     int number = atoi(value);
-    if (!isdigit(value[0]) || number <= 0) {
-        _output->setError(RESPONSE_CODE_INVALID_HEADER, "Invalid value for Stats%s: need non-zero integer number",
+    if (!isdigit(value[0]) || number < 0) {
+        _output->setError(RESPONSE_CODE_INVALID_HEADER, "Invalid value for Stats%s: need non-negative integer number",
                 andor == ANDOR_OR ? "Or" : "And");
         return;
     }
@@ -830,10 +831,14 @@ void Query::start()
         }
 
         outputDatasetEnd();
-        _need_ds_separator = true;
 
         if (_output_format == OUTPUT_FORMAT_WRAPPED_JSON)
+        {
             _output->addString("],\"data\":[");
+        }
+        else {
+            _need_ds_separator = true;
+        }
     } else {
         if (_output_format == OUTPUT_FORMAT_WRAPPED_JSON)
             _output->addString("{\"data\":");
@@ -990,7 +995,7 @@ void Query::finish()
             for (i=0; i<_stats_columns.size(); i++) {
                 delete aggr[i];
             }
-            delete aggr;
+            delete[] aggr;
         }
     }
 
@@ -1005,7 +1010,7 @@ void Query::finish()
             delete _stats_aggregators[i];
         }
         outputDatasetEnd();
-        delete _stats_aggregators;
+        delete[] _stats_aggregators;
     }
    
     else if( _do_sorting ) {
