@@ -83,6 +83,10 @@ elif grep -q 'broker_module.*op5/livestatus/livestatus\.o' %nagios_cfg; then
 	sed -i "s#/opt/monitor/op5/livestatus/livestatus\.o#/usr/libexec/livestatus/livestatus.o#" \
 		%nagios_cfg
 fi
+if ! grep -q 'broker_module.*livestatus\.o.*hidden_custom_var_prefix'; then
+	sed -i "s#broker_module=%mod_path/livestatus.o#broker_module=%mod_path/livestatus.o hidden_custom_var_prefix=OP5SECRET__#" \
+		%nagios_cfg
+fi
 # we must return/exit with true since yum complains otherwise:
 test -f /etc/init.d/monitor && /etc/init.d/monitor restart || :
 
