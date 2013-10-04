@@ -93,6 +93,7 @@ unsigned long g_max_cached_messages = 500000;
 unsigned long g_max_response_size = 100 * 1024 * 1024; // limit answer to 10 MB
 int g_thread_running = 0;
 int g_thread_pid = 0;
+char g_hidden_custom_var_prefix[256];
 int g_service_authorization = AUTH_LOOSE;
 int g_group_authorization = AUTH_STRICT;
 int g_data_encoding = ENCODING_UTF8;
@@ -545,6 +546,9 @@ void livestatus_parse_arguments(const char *args_orig)
     /* also livecheck is disabled per default */
     g_livecheck_path[0] = 0;
 
+    /* also no custom variables is hidden by default */
+    g_hidden_custom_var_prefix[0] = 0;
+
     if (!args_orig)
         return; // no arguments, use default options
 
@@ -657,6 +661,9 @@ void livestatus_parse_arguments(const char *args_orig)
                     g_livecheck_path[0] = 0;
                 }
                 g_livecheck_enabled = true;
+            }
+            else if (!strcmp(left, "hidden_custom_var_prefix")) {
+                strncpy(g_hidden_custom_var_prefix, right, sizeof(g_hidden_custom_var_prefix));
             }
             else if (!strcmp(left, "num_livecheck_helpers")) {
                 g_num_livehelpers = atoi(right);
