@@ -93,6 +93,7 @@ unsigned long g_max_cached_messages = 500000;
 unsigned long g_max_response_size = 100 * 1024 * 1024; // limit answer to 10 MB
 int g_thread_running = 0;
 int g_thread_pid = 0;
+char g_hidden_custom_var_prefix[256];
 int g_service_authorization = AUTH_LOOSE;
 int g_group_authorization = AUTH_STRICT;
 int g_data_encoding = ENCODING_UTF8;
@@ -545,10 +546,15 @@ void livestatus_parse_arguments(const char *args_orig)
     /* also livecheck is disabled per default */
     g_livecheck_path[0] = 0;
 
+    /* also no custom variables is hidden by default */
+    g_hidden_custom_var_prefix[0] = 0;
+
     if (!args_orig)
         return; // no arguments, use default options
 
-    char *args = strdup(args_orig);
+    char *args = strdup(args_orig), *tmp;
+    /*save pointer so that we can free it later*/
+    tmp = args;
     char *token;
     while (0 != (token = next_field(&args)))
     {
@@ -656,6 +662,9 @@ void livestatus_parse_arguments(const char *args_orig)
                 }
                 g_livecheck_enabled = true;
             }
+            else if (!strcmp(left, "hidden_custom_var_prefix")) {
+                strncpy(g_hidden_custom_var_prefix, right, sizeof(g_hidden_custom_var_prefix));
+            }
             else if (!strcmp(left, "num_livecheck_helpers")) {
                 g_num_livehelpers = atoi(right);
             }
@@ -664,7 +673,7 @@ void livestatus_parse_arguments(const char *args_orig)
             }
         }
     }
-    // free(args); won't free, since we use pointers?
+    free(tmp);
 }
 
 void omd_advertize()

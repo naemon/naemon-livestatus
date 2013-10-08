@@ -53,6 +53,9 @@
 bool TableHosts::isAuthorized(contact *ctc, void *data)
 {
     host *hst = (host *)data;
+    if (_by_group) {
+        hst = ((hostbygroup*)data)->_host;
+    }
     return is_authorized_for(ctc, hst, 0);
 }
 
@@ -166,6 +169,8 @@ void TableHosts::addColumns(Table *table, string prefix, int indirect_offset)
                 "The total number of services of the host", (char *)(&hst.total_services) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "checks_enabled",
                 "Whether checks of the host are enabled (0/1)", (char *)(&hst.checks_enabled) - ref, indirect_offset));
+    table->addColumn(new OffsetStringColumn(prefix + "check_source",
+                "The source of the check", (char *)(&hst.check_source) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "notifications_enabled",
                 "Whether notifications of the host are enabled (0/1)", (char *)(&hst.notifications_enabled) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "acknowledged",

@@ -163,6 +163,12 @@ void TableServices::answerQuery(Query *query)
 bool TableServices::isAuthorized(contact *ctc, void *data)
 {
     service *svc = (service *)data;
+    if(_by_group) {
+        svc = ((servicebygroup*)data)->_service;
+    }
+    if(_by_hostgroup) {
+        svc = ((servicebyhostgroup*)data)->_service;
+    }
     return is_authorized_for(ctc, svc->host_ptr, svc);
 }
 
@@ -296,6 +302,8 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
                 "Whether the service is flapping (0/1)", (char *)(&svc.is_flapping) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "checks_enabled",
                 "Whether active checks are enabled for the service (0/1)", (char *)(&svc.checks_enabled) - ref, indirect_offset));
+    table->addColumn(new OffsetStringColumn(prefix + "check_source",
+                "The source of the check", (char *)(&svc.check_source) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "accept_passive_checks",
                 "Whether the service accepts passive checks (0/1)", (char *)(&svc.accept_passive_checks) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "event_handler_enabled",

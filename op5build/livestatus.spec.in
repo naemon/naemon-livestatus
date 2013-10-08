@@ -22,7 +22,7 @@ URL: http://www.op5.se
 Source0: %name-%version.tar.gz
 Prefix: /opt/monitor
 Requires: monitor
-%if ! ( 0%{?rhel} > 5)
+%if ! 0%{?suse_version} && ! ( 0%{?rhel} > 5)
 Requires: python26
 BuildRequires: python26
 %endif
@@ -52,9 +52,6 @@ Group: op5/system-addons
 
 %build
 rm -rf %buildroot
-# FIXME! Autoconf version 2.61 or higher is required but since 
-# we have 2.59 on our build system we ignore that...
-sed -i 's#2\.61#2\.59#' configure.ac
 aclocal && autoheader && automake -a
 # FIXME! We ignore autoconf errors for now since build seems ok.
 autoconf || :
@@ -86,7 +83,12 @@ elif grep -q 'broker_module.*op5/livestatus/livestatus\.o' %nagios_cfg; then
 	sed -i "s#/opt/monitor/op5/livestatus/livestatus\.o#/usr/libexec/livestatus/livestatus.o#" \
 		%nagios_cfg
 fi
-/etc/init.d/monitor restart
+if ! grep -q 'broker_module.*livestatus\.o.*hidden_custom_var_prefix'; then
+	sed -i "s#broker_module=%mod_path/livestatus.o#broker_module=%mod_path/livestatus.o hidden_custom_var_prefix=OP5SECRET__#" \
+		%nagios_cfg
+fi
+# we must return/exit with true since yum complains otherwise:
+test -f /etc/init.d/monitor && /etc/init.d/monitor restart || :
 
 
 %postun
@@ -94,7 +96,8 @@ fi
 if test $1 -eq 0; then
 	sed -i '#^broker_module=%mod_path/livestatus.o#d' %nagios_cfg
 fi
-/etc/init.d/monitor restart
+# we must return/exit with true since yum complains otherwise:
+test -f /etc/init.d/monitor && /etc/init.d/monitor restart || :
 
 
 %files

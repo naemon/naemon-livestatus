@@ -34,6 +34,7 @@
 #define UNKNOWN_AUTH_USER ((contact *)0xdeadbeaf)
 
 
+extern char g_hidden_custom_var_prefix[256];
 extern int g_service_authorization;
 extern int g_group_authorization;
 

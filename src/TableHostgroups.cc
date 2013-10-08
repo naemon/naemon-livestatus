@@ -129,6 +129,9 @@ bool TableHostgroups::isAuthorized(contact *ctc, void *data)
 
     hostgroup *hg = (hostgroup *)data;
     hostsmember *mem = hg->members;
+    if (!mem)
+        return false;
+
     while (mem) {
         host *hst = mem->host_ptr;
         bool is = g_table_hosts->isAuthorized(ctc, hst);
@@ -138,5 +141,7 @@ bool TableHostgroups::isAuthorized(contact *ctc, void *data)
             return false;
         mem = mem->next;
     }
+    if(g_group_authorization == AUTH_LOOSE)
+        return false;
     return true;
 }
