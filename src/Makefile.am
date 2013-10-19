@@ -51,5 +51,5 @@ livestatus_la_SOURCES = \
 	OffsetStringHostMacroColumn.cc StatsColumn.cc IntAggregator.cc CountAggregator.cc \
 	DoubleAggregator.cc AttributelistColumn.cc AttributelistFilter.cc \
 	global_counters.c  module.c  logger.c waittriggers.c TimeperiodsCache.cc pnp4nagios.cc \
-	ContactgroupsColumn.cc RowSortedSet.cc opids.cc auth.cc livechecking.c
+	ContactgroupsColumn.cc RowSortedSet.cc opids.cc auth.cc
 

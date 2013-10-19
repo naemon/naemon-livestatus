@@ -53,9 +53,12 @@ extern int process_performance_data;
 extern int check_external_commands;
 extern int num_cached_log_messages;
 extern int interval_length;
-extern int livechecks_performed;
-extern int livecheck_overflows;
 int last_command_check = 0;
+
+// Livecheck has been removed, but we still need to provide the
+// columns - for compatibility
+int livechecks_performed = 0;
+int livecheck_overflows = 0;
 
 TableStatus::TableStatus()
 {
