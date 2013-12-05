@@ -28,13 +28,13 @@
 #include "config.h"
 
 #define NSCORE
-#include <nagios/objects.h>
-#include <nagios/nagios.h>
-#include <nagios/nebstructs.h>
-#include <nagios/neberrors.h>
-#include <nagios/broker.h>
-#include <nagios/nebmodules.h>
-#include <nagios/nebcallbacks.h>
+#include <naemon/objects.h>
+#include <naemon/naemon.h>
+#include <naemon/nebstructs.h>
+#include <naemon/neberrors.h>
+#include <naemon/broker.h>
+#include <naemon/nebmodules.h>
+#include <naemon/nebcallbacks.h>
 
 #endif // nagios_h
 

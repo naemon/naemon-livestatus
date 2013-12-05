@@ -25,7 +25,7 @@
 #ifndef store_h
 #define store_h
 
-#include <nagios/nebstructs.h>
+#include <naemon/nebstructs.h>
 
 #ifdef __cplusplus
 extern "C"

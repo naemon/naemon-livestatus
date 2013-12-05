@@ -29,7 +29,7 @@
 
 #include <set>
 #include "Table.h"
-#include "nagios/objects.h"
+#include "naemon/objects.h"
 
 using namespace std;
 class TableHosts;

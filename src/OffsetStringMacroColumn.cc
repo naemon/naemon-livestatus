@@ -29,7 +29,7 @@
 #include "Query.h"
 #include "logger.h"
 #include "nagios.h"
-#include "nagios/macros.h"
+#include "naemon/macros.h"
 extern char     *macro_user[MAX_USER_MACROS];
 
 string OffsetStringMacroColumn::valueAsString(void *data, Query *)
