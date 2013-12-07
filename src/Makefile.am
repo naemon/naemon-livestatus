@@ -68,9 +68,9 @@ livestatus.o: $(livestatus_so_OBJECTS) $(livestatus_so_DEPENDENCIES)
 all-local: livestatus.o
 
 install-data-local:
-	$(mkinstalldirs) $(DESTDIR)$(pkglibdir)
-	$(INSTALL_PROGRAM) livestatus.o $(DESTDIR)$(pkglibdir)
-	rm -f $(DESTDIR)$(pkglibdir)/livestatus.so
+	$(mkinstalldirs) $(DESTDIR)$(libdir)
+	$(INSTALL_PROGRAM) livestatus.o $(DESTDIR)$(libdir)
+	rm -rf $(DESTDIR)$(pkglibdir)
 
 clean-local:
 	rm -f *~
