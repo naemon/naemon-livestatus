@@ -67,6 +67,8 @@ Logfile::Logfile(const char *path, bool watch)
     close(fd);
 }
 
+extern unsigned long g_max_lines_per_logfile;
+
 
 Logfile::~Logfile()
 {
@@ -147,6 +149,10 @@ void Logfile::loadRange(FILE *file, unsigned missing_types,
 {
     while (fgets(_linebuffer, MAX_LOGLINE, file))
     {
+        if (_lineno >= g_max_lines_per_logfile) {
+            logger(LG_ERR, "More than %u lines in %s. Ignoring the rest!", g_max_lines_per_logfile, this->_path);
+            return;
+        }
         _lineno++;
         if (processLogLine(_lineno, missing_types)) {
             num_cached_log_messages ++;
