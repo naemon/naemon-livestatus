@@ -69,6 +69,8 @@ Query::Query(InputBuffer *input, OutputBuffer *output, Table *table) :
     _need_ds_separator(false),
     _output_format(OUTPUT_FORMAT_CSV),
     _limit(-1),
+    _time_limit(-1),
+    _time_limit_timeout(0),
     _offset(0),
     _do_sorting(0),
     _current_line(0),
@@ -125,6 +127,9 @@ Query::Query(InputBuffer *input, OutputBuffer *output, Table *table) :
 
         else if (!strncmp(buffer, "Offset:", 7))
             parseOffsetLine(lstrip(buffer + 7));
+
+        else if (!strncmp(buffer, "Timelimit:", 10))
+            parseTimelimitLine(lstrip(buffer + 10));
 
         else if (!strncmp(buffer, "AuthUser:", 9))
             parseAuthUserHeader(lstrip(buffer + 9));
@@ -713,6 +718,26 @@ void Query::parseOffsetLine(char *line)
     }
 }
 
+
+void Query::parseTimelimitLine(char *line)
+{
+    char *value = next_field(&line);
+    if (!value) {
+        _output->setError(RESPONSE_CODE_INVALID_HEADER, "Header Timelimit: missing value");
+    }
+    else {
+        int timelimit = atoi(value);
+        if (!isdigit(value[0]) || timelimit < 0)
+            _output->setError(RESPONSE_CODE_INVALID_HEADER,
+                    "Invalid value for Timelimit: must be non-negative integer (seconds)");
+        else {
+            _time_limit = timelimit;
+            _time_limit_timeout = time(0) + _time_limit;
+        }
+    }
+}
+
+
 void Query::parseWaitTimeoutLine(char *line)
 {
     char *value = next_field(&line);
@@ -897,6 +922,14 @@ bool Query::processDataset(void *data)
 
 
     if (_filter.accepts(data) && (!_auth_user || _table->isAuthorized(_auth_user, data))) {
+
+        // When we reach the time limit we let the query fail. Otherwise the user will
+        // not know that the answer is incomplete.
+        if (_time_limit >= 0 && time(0) >= _time_limit_timeout) {
+            logger(LG_INFO, "Maximum query time of %d seconds exceeded!", _time_limit);
+            _output->setError(RESPONSE_CODE_LIMIT_EXCEEDED, "Maximum query time of %d seconds exceeded!", _time_limit);
+            return false;
+        }
 
         if (doStats())
         {
