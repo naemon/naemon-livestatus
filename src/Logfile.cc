@@ -135,6 +135,7 @@ void Logfile::load(TableLog *tablelog, time_t since, time_t until, unsigned logc
             return;
         }
 
+        _lineno = 0;
         loadRange(file, missing_types, tablelog, since, until, logclasses);
         fclose(file);
         _logclasses_read |= missing_types;
