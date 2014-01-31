@@ -10,6 +10,7 @@ config.sub
 config.status
 src/Makefile
 src/unixcat
+src/naemon
 stamp-h1
 depcomp
 install-sh
