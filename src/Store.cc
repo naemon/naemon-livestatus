@@ -153,7 +153,7 @@ void Store::answerCommandRequest(const char *command)
         logger(LG_INFO, "Failed to connect to query socket '%s': %s: %s", qh_socket_path, nsock_strerror(sd), strerror(errno));
         return;
     }
-    ret = nsock_printf_nul(sd, "core command %s", command);
+    ret = nsock_printf_nul(sd, "command run %s", command);
     if (ret < 0) {
         logger(LG_INFO, "failed to submit command by query handler");
     }
