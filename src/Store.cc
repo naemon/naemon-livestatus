@@ -39,6 +39,7 @@
 
 extern int g_debug_level;
 extern unsigned long g_max_cached_messages;
+extern char* command_file;
 
 Store::Store()
   :_table_hosts(false)
@@ -117,7 +118,7 @@ bool Store::answerRequest(InputBuffer *input, OutputBuffer *output)
     int r = input->readRequest();
     if (r != IB_REQUEST_READ) {
         if (r != IB_END_OF_FILE)
-            output->setError(RESPONSE_CODE_INCOMPLETE_REQUEST, 
+            output->setError(RESPONSE_CODE_INCOMPLETE_REQUEST,
                 "Client connection terminated while request still incomplete");
         return false;
     }
@@ -146,7 +147,10 @@ bool Store::answerRequest(InputBuffer *input, OutputBuffer *output)
 
 void Store::answerCommandRequest(const char *command)
 {
-    process_external_command1((char *)command);
+    FILE *fd;
+    fd = fopen(command_file, "w");
+    fprintf(fd, "%s\n", command);
+    fclose(fd);
 }
 
 
@@ -180,5 +184,3 @@ void Store::answerGetRequest(InputBuffer *input, OutputBuffer *output, const cha
             logger(LG_INFO, "Time to process request: %lu us. Size of answer: %d bytes", ustime, output->size());
     }
 }
-
-
