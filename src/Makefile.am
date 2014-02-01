@@ -52,12 +52,6 @@ livestatus_so_SOURCES = \
 	global_counters.c  module.c  logger.c waittriggers.c TimeperiodsCache.cc pnp4nagios.cc \
 	ContactgroupsColumn.cc RowSortedSet.cc opids.cc auth.cc livechecking.c
 
-if HAVE_DIET
-	diet -v $(CC) -x c -Wno-deprecated-declarations $(CFLAGS) $(LDFLAGS) -I.. -s -o $@ $^
-else
-	$(CC) -x c -Wno-deprecated-declarations $(CFLAGS) $(LDFLAGS) -I.. -s -o $@ $^
-endif
-
 livestatus_so_CXXFLAGS = -fPIC
 livestatus_so_CFLAGS   = $(livestatus_so_CXXFLAGS)
 livestatus_so_CPPFLAGS = $(AM_CPPFLAGS)
