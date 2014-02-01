@@ -22,9 +22,9 @@
 # to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
 # Boston, MA 02110-1301 USA.
 
-bin_PROGRAMS = unixcat
-unixcat_SOURCES = unixcat.c
-unixcat_LDADD = -lpthread
+bin_PROGRAMS = naemon-unixcat
+naemon_unixcat_SOURCES = unixcat.c
+naemon_unixcat_LDADD = -lpthread
 
 EXTRA_DIST = *.h
 
