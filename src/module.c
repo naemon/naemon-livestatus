@@ -688,8 +688,7 @@ int nebmodule_init(int flags __attribute__ ((__unused__)), char *args, void *han
     livestatus_parse_arguments(args);
     open_logfile();
 
-    logger(LG_INFO, "Livestatus %s by Mathias Kettner. Socket: '%s'", VERSION, g_socket_path);
-    logger(LG_INFO, "Please visit us at http://mathias-kettner.de/");
+    logger(LG_INFO, "Naemon Livestatus %s Socket: '%s'", VERSION, g_socket_path);
 
     if (!open_ipc_pipe())
         return 1;
