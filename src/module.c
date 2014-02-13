@@ -140,6 +140,7 @@ void livestatus_cleanup_after_fork()
 void *main_thread(void *data __attribute__ ((__unused__)))
 {
     g_thread_pid = getpid();
+    g_should_terminate = false;
     while (!g_should_terminate)
     {
         do_statistics();
