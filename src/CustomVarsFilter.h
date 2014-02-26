@@ -29,7 +29,7 @@
 
 #include "CustomVarsColumn.h"
 #include "Filter.h"
-#include <regex.h>
+#include <unicode/regex.h>
 
 class CustomVarsFilter : public Filter
 {
@@ -37,7 +37,7 @@ class CustomVarsFilter : public Filter
     int _opid;
     bool _negate;
     string _ref_text;
-    regex_t *_regex;
+    RegexMatcher * _regex_matcher;
     // needed in case of COLTYPE_DICT
     string _ref_string;
     string _ref_varname;
