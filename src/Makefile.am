@@ -28,10 +28,10 @@ unixcat_LDADD = -lpthread
 
 EXTRA_DIST = *.h
 
-pkglib_LIBRARIES = livestatus.so
-
-livestatus_so_SOURCES = \
-	AndingFilter.cc ClientQueue.cc Column.cc ColumnsColumn.cc CustomVarsExplicitColumn.cc \
+pkglib_LTLIBRARIES = livestatus.la
+livestatus_la_LDFLAGS = -module -avoid-version -shared $(LIBICU_LIBS)
+livestatus_la_CXXFLAGS = $(CXXFLAGS) $(LIBICU_CFLAGS) -lpthread -lstdc++
+livestatus_la_SOURCES = AndingFilter.cc ClientQueue.cc Column.cc ColumnsColumn.cc CustomVarsExplicitColumn.cc \
 	ContactsColumn.cc CustomVarsColumn.cc CustomVarsFilter.cc DoubleColumn.cc \
 	DoubleColumnFilter.cc DowntimeOrComment.cc DownCommColumn.cc EmptyColumn.cc \
 	Filter.cc GlobalCountersColumn.cc HostContactsColumn.cc HostgroupsColumn.cc \
@@ -57,20 +57,3 @@ if HAVE_DIET
 else
 	$(CC) -x c -Wno-deprecated-declarations $(CFLAGS) $(LDFLAGS) -I.. -s -o $@ $^
 endif
-
-livestatus_so_CXXFLAGS = -fPIC
-livestatus_so_CFLAGS   = $(livestatus_so_CXXFLAGS)
-
-livestatus.o: $(livestatus_so_OBJECTS) $(livestatus_so_DEPENDENCIES)
-	-rm -f plugin.so
-	$(CXX) $(LDFLAGS) -fPIC -shared $(livestatus_so_OBJECTS) -o $@ -lpthread -lstdc++
-
-all-local: livestatus.o
-
-install-data-local:
-	$(mkinstalldirs) $(DESTDIR)$(pkglibdir)
-	$(INSTALL_PROGRAM) livestatus.o $(DESTDIR)$(pkglibdir)
-	rm -f $(DESTDIR)$(pkglibdir)/livestatus.so
-
-clean-local:
-	rm -f *~

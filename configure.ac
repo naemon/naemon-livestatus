@@ -30,20 +30,30 @@
 AC_PREREQ(2.59)
 AC_INIT([MK Livestatus], [1.2.0p3], [mk@mathias-kettner.de])
 AM_INIT_AUTOMAKE([-Wall foreign])
+LT_INIT
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADER([config.h])
-
+AM_PATH_CPPUNIT(1.12)
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC
-AC_PROG_RANLIB
+AC_PROG_LIBTOOL
 AM_CONDITIONAL([HAVE_DIET], [which diet >/dev/null 2>&1])
 
 # Checks for libraries.
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(socket, connect)
 AC_CHECK_LIB(socket, shutdown)
-
+PKG_CHECK_MODULES(LIBICU,
+				  [icu-uc, icu-i18n],
+				  [have_icu=yes],
+				  [have_icu=no]
+				  )
+AS_IF([test "$have_icu" = "no"],
+	  PKG_CHECK_MODULES(LIBICU,
+						[icu],
+						[have_icu=yes]
+						))
 # Checks for header files.
 AC_HEADER_DIRENT
 AC_HEADER_STDC
@@ -71,5 +81,6 @@ AC_FUNC_STAT
 AC_CHECK_FUNCS([bzero gettimeofday memmove regcomp select socket strcasecmp strdup strerror strtoul])
 
 AC_CONFIG_FILES([Makefile
-                 src/Makefile])
+                 src/Makefile
+				 tests/Makefile])
 AC_OUTPUT

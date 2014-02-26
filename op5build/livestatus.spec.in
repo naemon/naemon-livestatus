@@ -1,4 +1,5 @@
-%define mod_path /usr/libexec/livestatus
+%define mod_path %{_libdir}/naemon-livestatus
+%define old_mod_path /usr/libexec/livestatus
 %define nagios_cfg /opt/monitor/etc/nagios.cfg
 %define debug_package %{nil}
 
@@ -23,7 +24,7 @@ License: GPL
 Group: op5/Monitor
 URL: http://www.op5.se
 Source0: %name-%version.tar.gz
-Prefix: /opt/monitor
+Prefix: /usr
 Requires: monitor
 %if ! 0%{?suse_version} && ! ( 0%{?rhel} > 5)
 Requires: python26
@@ -35,6 +36,8 @@ BuildRequires: python
 %endif
 BuildRequires: libstdc++-devel
 BuildRequires: gcc-c++
+BuildRequires: pkgconfig
+BuildRequires: libtool
 BuildRequires: op5-nagios-devel
 BuildRequires: autoconf, automake
 BuildRequires: libicu-devel
@@ -60,21 +63,15 @@ Group: op5/system-addons
 
 %build
 rm -rf %buildroot
-aclocal && autoheader && automake -a
-# FIXME! We ignore autoconf errors for now since build seems ok.
-autoconf || :
-./configure CPPFLAGS=-I/opt/monitor/include
-make
+autoreconf -is
+./configure --prefix=%buildroot%prefix --libdir=%buildroot%{_libdir} CPPFLAGS=-I/opt/monitor/include
+%__make
 
 
 %install
 mkdir -p %buildroot%mod_path
 mkdir -p %buildroot%_bindir
-cp -a src/livestatus.o %buildroot%mod_path
-cp -a src/unixcat %buildroot%_bindir
-
-mkdir -p %buildroot/opt/monitor/op5/livestatus/
-ln -s ../../../../usr/libexec/livestatus/livestatus.o %buildroot/opt/monitor/op5/livestatus/livestatus.o
+%__make install
 
 install -d %buildroot%{python_sitelib}/livestatus
 install -pm 0644 api/python/livestatus.py %buildroot%{python_sitelib}/livestatus/
@@ -83,22 +80,22 @@ install -pm 0644 api/python/__init__.py %buildroot%{python_sitelib}/livestatus/
 %post
 # migrate old path to new path, so any %mod_path macro below works
 if grep -q 'broker_module.*op5/livestatus/livestatus\.o' %nagios_cfg; then
-	sed -i "s#/opt/monitor/op5/livestatus/livestatus\.o#%mod_path/livestatus.o#" \
+	sed -i "s#/opt/monitor/op5/livestatus/livestatus\.o#%mod_path/livestatus.so#" \
 		%nagios_cfg
 fi
 # new install, no livestatus line
 if ! grep -q 'broker_module.*livestatus\.o' %nagios_cfg; then
-	sed -i "s#^log_file.*#broker_module=%mod_path/livestatus.o /opt/monitor/var/rw/live\\n\\n&#" \
+	sed -i "s#^log_file.*#broker_module=%mod_path/livestatus.so /opt/monitor/var/rw/live\\n\\n&#" \
 		%nagios_cfg
 fi
 # add pnp path, wasn't in the initial version (or above)
 if ! grep -q 'broker_module.*livestatus\.o.*pnp_path' %nagios_cfg; then
-	sed -i "s#broker_module=%mod_path/livestatus.o#broker_module=%mod_path/livestatus.o pnp_path=/opt/monitor/op5/pnp/perfdata#" \
+	sed -i "s#broker_module=%old_mod_path/livestatus.o#broker_module=%mod_path/livestatus.so pnp_path=/opt/monitor/op5/pnp/perfdata#" \
 		%nagios_cfg
 fi
 # add hidden_custom_var_prefix too (newest)
 if ! grep -q 'broker_module.*livestatus\.o.*hidden_custom_var_prefix'; then
-	sed -i "s#broker_module=%mod_path/livestatus.o#broker_module=%mod_path/livestatus.o hidden_custom_var_prefix=OP5SECRET__#" \
+	sed -i "s#broker_module=%old_mod_path/livestatus.o#broker_module=%mod_path/livestatus.so hidden_custom_var_prefix=OP5SECRET__#" \
 		%nagios_cfg
 fi
 # we must return/exit with true since yum complains otherwise:
@@ -108,7 +105,8 @@ test -f /etc/init.d/monitor && /etc/init.d/monitor restart || :
 %postun
 # remove module from Nagios cfg if uninstalling
 if test $1 -eq 0; then
-	sed -i '#^broker_module=%mod_path/livestatus.o#d' %nagios_cfg
+	sed -i '#^broker_module=%old_mod_path/livestatus.o#d' %nagios_cfg
+	sed -i '#^broker_module=%mod_path/livestatus.so#d' %nagios_cfg
 fi
 # we must return/exit with true since yum complains otherwise:
 test -f /etc/init.d/monitor && /etc/init.d/monitor restart || :
@@ -117,7 +115,8 @@ test -f /etc/init.d/monitor && /etc/init.d/monitor restart || :
 %files
 %defattr(-,root,root)
 %mod_path
-/opt/monitor/op5/livestatus/livestatus.o
+%mod_path/livestatus.so
+%mod_path/livestatus.la
 %{python_sitelib}/livestatus
 
 
