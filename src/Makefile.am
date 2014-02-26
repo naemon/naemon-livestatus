@@ -52,20 +52,9 @@ livestatus_so_SOURCES = \
 	global_counters.c  module.c  logger.c waittriggers.c TimeperiodsCache.cc pnp4nagios.cc \
 	ContactgroupsColumn.cc RowSortedSet.cc opids.cc auth.cc livechecking.c
 
-livestatus_so_CXXFLAGS = -fPIC
-livestatus_so_CFLAGS   = $(livestatus_so_CXXFLAGS)
-livestatus_so_CPPFLAGS = $(AM_CPPFLAGS)
+if HAVE_DIET
+	diet -v $(CC) -x c -Wno-deprecated-declarations $(CFLAGS) $(LDFLAGS) -I.. -s -o $@ $^
+else
+	$(CC) -x c -Wno-deprecated-declarations $(CFLAGS) $(LDFLAGS) -I.. -s -o $@ $^
+endif
 
-livestatus.o: $(livestatus_so_OBJECTS) $(livestatus_so_DEPENDENCIES)
-	-rm -f plugin.so
-	$(CXX) $(LDFLAGS) -fPIC -shared $(livestatus_so_OBJECTS) -o $@ -lpthread -lstdc++
-
-all-local: livestatus.o
-
-install-data-local:
-	$(mkinstalldirs) $(DESTDIR)$(libdir)
-	$(INSTALL_PROGRAM) livestatus.o $(DESTDIR)$(libdir)
-	rm -rf $(DESTDIR)$(pkglibdir)
-
-clean-local:
-	rm -f *~
