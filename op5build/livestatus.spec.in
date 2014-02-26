@@ -27,6 +27,7 @@ Prefix: /opt/monitor
 Requires: monitor
 %if ! 0%{?suse_version} && ! ( 0%{?rhel} > 5)
 Requires: python26
+Requires: libicu
 BuildRequires: python26
 %else
 Requires: python
@@ -36,6 +37,7 @@ BuildRequires: libstdc++-devel
 BuildRequires: gcc-c++
 BuildRequires: op5-nagios-devel
 BuildRequires: autoconf, automake
+BuildRequires: libicu-devel
 BuildRoot: %{_tmppath}/%{name}-%{version}
 
 

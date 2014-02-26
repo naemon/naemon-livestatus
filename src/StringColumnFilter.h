@@ -28,7 +28,7 @@
 #include "config.h"
 
 #include <sys/types.h>
-#include <regex.h>
+#include <unicode/regex.h>
 #include <string>
 
 using namespace std;
@@ -42,7 +42,7 @@ class StringColumnFilter : public Filter
     string _ref_string;
     int _opid;
     bool _negate;
-    regex_t *_regex;
+    RegexMatcher *_regex_matcher;
 
 public:
     StringColumnFilter(StringColumn *_column, int opid, char *value);
