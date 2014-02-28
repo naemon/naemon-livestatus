@@ -30,9 +30,10 @@
 AC_PREREQ(2.59)
 AC_INIT([Naemon-Livestatus], [0.8.0-naemon], [naemon-dev@monitoring-lists.org])
 AM_INIT_AUTOMAKE([-Wall foreign])
+LT_INIT
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADER([config.h])
-
+AM_PATH_CPPUNIT(1.12)
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC
@@ -46,7 +47,6 @@ m4_ifdef([AM_PROG_AR], [AM_PROG_AR], [true])
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(socket, connect)
 AC_CHECK_LIB(socket, shutdown)
-
 PKG_CHECK_MODULES(LIBICU,
 				  [icu-uc, icu-i18n],
 				  [have_icu=yes],
