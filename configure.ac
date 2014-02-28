@@ -33,7 +33,7 @@ AM_INIT_AUTOMAKE([-Wall foreign])
 LT_INIT
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADER([config.h])
-AM_PATH_CPPUNIT(1.12)
+m4_ifdef([AM_PATH_CPPUNIT], [AM_PATH_CPPUNIT([1.12])], AC_MSG_ERROR([Install CPPUnit <http://cppunit.sourceforge.net/>]))
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC
