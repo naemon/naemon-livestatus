@@ -68,7 +68,7 @@ rm -rf %buildroot
 autoreconf -is
 ./configure --prefix=%buildroot%prefix --libdir=%buildroot%{_libdir} CPPFLAGS=-I/opt/monitor/include
 %__make
-%__make check
+LC_ALL=en_US.utf-8 %__make check
 
 
 %install
