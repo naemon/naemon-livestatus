@@ -2,11 +2,11 @@
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/ui/text/TextTestRunner.h>
 #include <string.h>
+#include <locale.h>
 #include "TestColumnFilters.h"
 #include "../src/OffsetStringColumn.h"
 #include "../src/StringColumnFilter.h"
 #include "../src/opids.h"
-
 
 /**
  * Supported operators:
@@ -54,6 +54,17 @@ StringColumnFilterTest::testRegexOp()
 }
 
 void
+StringColumnFilterTest::testRegexNonAscii()
+{
+	char * refstring = strdup("^.*Յ$");
+	string * value_match = new string("Capital yi: Յ");
+	string * value_nomatch = new string("Small yi: յ");
+	StringColumnFilter *scf = new StringColumnFilter(DUMMY_COLUMN, OP_REGEX, refstring);
+	CPPUNIT_ASSERT(scf->accepts(value_match));
+	CPPUNIT_ASSERT(!scf->accepts(value_nomatch));
+}
+
+void
 StringColumnFilterTest::testEqualIcaseOp()
 {
 	char * refstring = strdup("Tinky-Winky");
@@ -73,6 +84,20 @@ StringColumnFilterTest::testRegexIcaseOp()
 	StringColumnFilter *scf = new StringColumnFilter(DUMMY_COLUMN, OP_REGEX_ICASE, refstring);
 	CPPUNIT_ASSERT(scf->accepts(value_match));
 	CPPUNIT_ASSERT(!scf->accepts(value_nomatch));
+}
+
+/**
+ * Ensure that regex case insensitivity matching works for characters outside of ASCII
+ **/
+void
+StringColumnFilterTest::testRegexIcaseNonAscii()
+{
+	char * refstring = strdup("te tse incoming: Ҵ");
+	string * value_match = new string("Capital te tse incoming: Ҵ");
+	string * value_match2 = new string("Small te tse incoming: ҵ");
+	StringColumnFilter *scf = new StringColumnFilter(DUMMY_COLUMN, OP_REGEX_ICASE, refstring);
+	CPPUNIT_ASSERT(scf->accepts(value_match));
+	CPPUNIT_ASSERT(scf->accepts(value_match2));
 }
 
 void
@@ -101,6 +126,7 @@ int main(int argc, char * argv[])
 {
 	CppUnit::Test *suite = CppUnit::TestFactoryRegistry::getRegistry().makeTest();
 	CppUnit::TextTestRunner runner;
+	setlocale(LC_ALL, "");
 	runner.addTest(suite);
 
 	runner.setOutputter(new CppUnit::CompilerOutputter( &runner.result(), std::cerr));
