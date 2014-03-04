@@ -3,6 +3,7 @@
 #include <cppunit/ui/text/TextTestRunner.h>
 #include <string.h>
 #include <locale.h>
+#include <vector>
 #include "TestColumnFilters.h"
 #include "../src/OffsetStringColumn.h"
 #include "../src/StringColumnFilter.h"
@@ -45,11 +46,14 @@ StringColumnFilterTest::testEqualOp()
 void
 StringColumnFilterTest::testRegexOp()
 {
-	char * refstring = strdup("^Laa.*$");
-	string * value_match = new string("Laa-Laa");
+	char * refstring = strdup("Dell open");
+	const char *values[] = {"my Dell open manage service", "iDell open manage", "Dell open manage global", "Dell open manage storage"};
+	vector<string> value_match_v (values, values+(sizeof(values)/sizeof(values[0])));
 	string * value_nomatch = new string("Dipsy");
 	StringColumnFilter *scf = new StringColumnFilter(DUMMY_COLUMN, OP_REGEX, refstring);
-	CPPUNIT_ASSERT(scf->accepts(value_match));
+	for (vector<string>::iterator it = value_match_v.begin(); it != value_match_v.end(); ++it) {
+		CPPUNIT_ASSERT(scf->accepts(&*it));
+	}
 	CPPUNIT_ASSERT(!scf->accepts(value_nomatch));
 }
 
@@ -128,7 +132,6 @@ int main(int argc, char * argv[])
 	CppUnit::TextTestRunner runner;
 	setlocale(LC_ALL, "");
 	runner.addTest(suite);
-
 	runner.setOutputter(new CppUnit::CompilerOutputter( &runner.result(), std::cerr));
 
 	bool wasSuccessful = runner.run();
