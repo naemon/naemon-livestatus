@@ -55,8 +55,13 @@ PKG_CHECK_MODULES(LIBICU,
 AS_IF([test "$have_icu" = "no"],
 	  PKG_CHECK_MODULES(LIBICU,
 						[icu],
-						[have_icu=yes]
+						[have_icu=yes],
+						[LIBICU_LIBS="-licui18n -licuuc -licudata"]
 						))
+
+AS_IF([test "$have_icu" = "no"],
+	  AC_MSG_WARN([no pc file found for libicu, guessing libs]))
+
 # Checks for header files.
 AC_HEADER_DIRENT
 AC_HEADER_STDC
