@@ -28,7 +28,7 @@ Prefix: /usr
 Requires: monitor
 %if ! 0%{?suse_version} && ! ( 0%{?rhel} > 5)
 Requires: python26
-Requires: libicu
+Requires: libicu > 4.2
 BuildRequires: python26
 %else
 Requires: python
@@ -40,7 +40,7 @@ BuildRequires: pkgconfig
 BuildRequires: libtool
 BuildRequires: op5-nagios-devel
 BuildRequires: autoconf, automake
-BuildRequires: libicu-devel
+BuildRequires: libicu-devel > 4.2
 BuildRequires: cppunit-devel
 BuildRequires: cppunit
 BuildRoot: %{_tmppath}/%{name}-%{version}
