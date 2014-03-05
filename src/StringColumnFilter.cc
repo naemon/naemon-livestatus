@@ -25,13 +25,11 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <string.h>
-
 #include "StringColumnFilter.h"
 #include "StringColumn.h"
 #include "opids.h"
 #include "logger.h"
 #include "OutputBuffer.h"
-
     StringColumnFilter::StringColumnFilter(StringColumn *column, int opid, char *value)
     : _column(column)
     , _ref_string(value)
@@ -45,7 +43,8 @@
             setError(RESPONSE_CODE_INVALID_HEADER, "disallowed regular expression '%s': must not contain { or }", value);
         }
         else {
-            _regex_matcher = new RegexMatcher(value, (_opid == OP_REGEX_ICASE ? UREGEX_CASE_INSENSITIVE : 0), status);
+            UnicodeString s = UnicodeString::fromUTF8(value);
+            _regex_matcher = new RegexMatcher(s, (_opid == OP_REGEX_ICASE ? UREGEX_CASE_INSENSITIVE : 0), status);
             if (U_FAILURE(status)) {
                 setError(RESPONSE_CODE_INVALID_HEADER, "invalid regular expression '%s'", value);
                 delete _regex_matcher;
@@ -75,7 +74,8 @@ bool StringColumnFilter::accepts(void *data)
         case OP_REGEX:
         case OP_REGEX_ICASE:
             if ( _regex_matcher != 0 ) {
-                _regex_matcher->reset(act_string);
+                UnicodeString s = UnicodeString::fromUTF8(act_string);
+                _regex_matcher->reset(s);
                 pass = _regex_matcher->find();
             }
             else {
