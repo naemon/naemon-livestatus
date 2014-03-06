@@ -82,23 +82,23 @@ install -pm 0644 api/python/__init__.py %buildroot%{python_sitelib}/livestatus/
 
 %post
 # migrate old path to new path, so any %mod_path macro below works
-if grep -q 'broker_module.*op5/livestatus/livestatus\.o' %nagios_cfg; then
-	sed -i "s#/opt/monitor/op5/livestatus/livestatus\.o#%mod_path/livestatus.so#" \
+if grep -q 'broker_module.*/livestatus/livestatus\.o' %nagios_cfg; then
+	sed -i "s#^broker_module=.*/livestatus\.o#broker_module=%mod_path/livestatus.so#" \
 		%nagios_cfg
 fi
 # new install, no livestatus line
-if ! grep -q 'broker_module.*livestatus\.o' %nagios_cfg; then
+if ! grep -q 'broker_module.*livestatus\.so' %nagios_cfg; then
 	sed -i "s#^log_file.*#broker_module=%mod_path/livestatus.so /opt/monitor/var/rw/live\\n\\n&#" \
 		%nagios_cfg
 fi
 # add pnp path, wasn't in the initial version (or above)
-if ! grep -q 'broker_module.*livestatus\.o.*pnp_path' %nagios_cfg; then
+if ! grep -q 'broker_module.*livestatus\.so.*pnp_path' %nagios_cfg; then
 	sed -i "s#broker_module=%old_mod_path/livestatus.o#broker_module=%mod_path/livestatus.so pnp_path=/opt/monitor/op5/pnp/perfdata#" \
 		%nagios_cfg
 fi
 # add hidden_custom_var_prefix too (newest)
-if ! grep -q 'broker_module.*livestatus\.o.*hidden_custom_var_prefix'; then
-	sed -i "s#broker_module=%old_mod_path/livestatus.o#broker_module=%mod_path/livestatus.so hidden_custom_var_prefix=OP5SECRET__#" \
+if ! grep -q 'broker_module.*livestatus\.so.*hidden_custom_var_prefix'; then
+	sed -i "s#broker_module=%old_mod_path/livestatus.so#broker_module=%mod_path/livestatus.so hidden_custom_var_prefix=OP5SECRET__#" \
 		%nagios_cfg
 fi
 # we must return/exit with true since yum complains otherwise:
