@@ -55,6 +55,7 @@ extern int num_cached_log_messages;
 extern int interval_length;
 extern int livechecks_performed;
 extern int livecheck_overflows;
+int last_command_check = 0;
 
 TableStatus::TableStatus()
 {
@@ -136,7 +137,7 @@ TableStatus::TableStatus()
     addColumn(new TimePointerColumn("program_start",
                 "The time of the last program start as UNIX timestamp", (int*)&program_start));
     addColumn(new TimePointerColumn("last_command_check",
-                "The time of the last check for a command as UNIX timestamp", (int*)(&last_log_rotation)));
+                "The time of the last check for a command as UNIX timestamp (deprecated)", (int*)(&last_command_check)));
     addColumn(new TimePointerColumn("last_log_rotation",
                 "Time time of the last log file rotation", (int*)&last_log_rotation));
     addColumn(new IntPointerColumn("interval_length",
