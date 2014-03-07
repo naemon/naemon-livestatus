@@ -1,10 +1,6 @@
 %define mod_path %{_libdir}/naemon-livestatus
 %define old_mod_path /usr/libexec/livestatus
 %define nagios_cfg /opt/monitor/etc/nagios.cfg
-%define debug_package %{nil}
-
-# prevent stripping of binaries
-%define __spec_install_post /usr/lib/rpm/brp-compress
 
 %{?dgroup:%define daemon_group %{dgroup}}
 
