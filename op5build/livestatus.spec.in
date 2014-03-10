@@ -62,15 +62,13 @@ Group: op5/system-addons
 %build
 rm -rf %buildroot
 autoreconf -is
-./configure --prefix=%buildroot%prefix --libdir=%buildroot%{_libdir} CPPFLAGS=-I/opt/monitor/include
+./configure --prefix=%prefix --libdir=%{_libdir} CPPFLAGS=-I/opt/monitor/include
 %__make
 LC_ALL=en_US.utf-8 %__make check
 
 
 %install
-mkdir -p %buildroot%mod_path
-mkdir -p %buildroot%_bindir
-%__make install
+%__make install DESTDIR=%buildroot
 
 install -d %buildroot%{python_sitelib}/livestatus
 install -pm 0644 api/python/livestatus.py %buildroot%{python_sitelib}/livestatus/
