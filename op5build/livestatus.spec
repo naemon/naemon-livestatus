@@ -14,9 +14,9 @@
 
 Summary: MK-Livestatus is a module for fetching status data from Nagios
 Name: monitor-livestatus
-Version: @@VERSION@@
-Release: @@RELEASE@@
-License: GPL
+Version: %{op5version}
+Release: %{op5release}%{?dist}
+License: GPLv2
 Group: op5/Monitor
 URL: http://www.op5.se
 Source0: %name-%version.tar.gz
