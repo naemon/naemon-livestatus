@@ -87,12 +87,12 @@ if ! grep -q 'broker_module.*livestatus\.so' %nagios_cfg; then
 fi
 # add pnp path, wasn't in the initial version (or above)
 if ! grep -q 'broker_module.*livestatus\.so.*pnp_path' %nagios_cfg; then
-	sed -i "s#broker_module=%old_mod_path/livestatus.o#broker_module=%mod_path/livestatus.so pnp_path=/opt/monitor/op5/pnp/perfdata#" \
+	sed -i "s#broker_module=%mod_path/livestatus.so#broker_module=%mod_path/livestatus.so pnp_path=/opt/monitor/op5/pnp/perfdata#" \
 		%nagios_cfg
 fi
 # add hidden_custom_var_prefix too (newest)
 if ! grep -q 'broker_module.*livestatus\.so.*hidden_custom_var_prefix'; then
-	sed -i "s#broker_module=%old_mod_path/livestatus.so#broker_module=%mod_path/livestatus.so hidden_custom_var_prefix=OP5SECRET__#" \
+	sed -i "s#broker_module=%mod_path/livestatus.so#broker_module=%mod_path/livestatus.so hidden_custom_var_prefix=OP5SECRET__#" \
 		%nagios_cfg
 fi
 # we must return/exit with true since yum complains otherwise:
