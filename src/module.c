@@ -414,6 +414,19 @@ int broker_event(int event_type __attribute__ ((__unused__)), void *data)
     return 0;
 }
 
+int broker_process(int event_type __attribute__ ((__unused__)), void *data)
+{
+    struct nebstruct_process_struct *ps = (struct nebstruct_process_struct *)data;
+    if (ps->type == NEBTYPE_PROCESS_EVENTLOOPSTART) {
+        update_timeperiods_cache(time(0));
+        init_livecheck();
+        start_threads();
+    }
+    return 0;
+}
+
+
+
 
 int verify_event_broker_options()
 {
@@ -478,6 +491,7 @@ void register_callbacks()
     neb_register_callback(NEBCALLBACK_EXTERNAL_COMMAND_DATA, g_nagios_handle, 0, broker_command); // only for trigger 'command'
     neb_register_callback(NEBCALLBACK_STATE_CHANGE_DATA,     g_nagios_handle, 0, broker_state); // only for trigger 'state'
     neb_register_callback(NEBCALLBACK_ADAPTIVE_PROGRAM_DATA, g_nagios_handle, 0, broker_program); // only for trigger 'program'
+    neb_register_callback(NEBCALLBACK_PROCESS_DATA,          g_nagios_handle, 0, broker_process); // used for starting threads
     neb_register_callback(NEBCALLBACK_TIMED_EVENT_DATA,      g_nagios_handle, 0, broker_event); // used for timeperiods cache
 }
 
@@ -700,9 +714,12 @@ int nebmodule_init(int flags __attribute__ ((__unused__)), char *args, void *han
 
     store_init();
     register_callbacks();
-    update_timeperiods_cache(time(0));
-    init_livecheck();
-    start_threads();
+
+    /* Unfortunately, we cannot start our socket thread right now.
+       Nagios demonizes *after* having loaded the NEB modules. When
+       demonizing we are losing our thread. Therefore, we create the
+       thread the first time one of our callbacks is called. Before
+       that happens, we haven't got any data anyway... */
 
     logger(LG_INFO, "Finished initialization. Further log messages go to %s", g_logfile_path);
     return 0;
