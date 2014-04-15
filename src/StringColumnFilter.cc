@@ -25,31 +25,30 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <string.h>
-
 #include "StringColumnFilter.h"
 #include "StringColumn.h"
 #include "opids.h"
 #include "logger.h"
 #include "OutputBuffer.h"
-
     StringColumnFilter::StringColumnFilter(StringColumn *column, int opid, char *value)
     : _column(column)
     , _ref_string(value)
     , _opid(abs(opid))
     , _negate(opid < 0)
-      , _regex(0)
+    , _regex_matcher(0)
 {
+    UErrorCode status = U_ZERO_ERROR;
     if (_opid == OP_REGEX || _opid == OP_REGEX_ICASE) {
         if (strchr(value, '{') || strchr(value, '}')) {
             setError(RESPONSE_CODE_INVALID_HEADER, "disallowed regular expression '%s': must not contain { or }", value);
         }
         else {
-            _regex = new regex_t();
-            if (0 != regcomp(_regex, value, REG_EXTENDED | REG_NOSUB | (_opid == OP_REGEX_ICASE ? REG_ICASE : 0)))
-            {
+            UnicodeString s = UnicodeString::fromUTF8(value);
+            _regex_matcher = new RegexMatcher(s, (_opid == OP_REGEX_ICASE ? UREGEX_CASE_INSENSITIVE : 0), status);
+            if (U_FAILURE(status)) {
                 setError(RESPONSE_CODE_INVALID_HEADER, "invalid regular expression '%s'", value);
-                delete _regex;
-                _regex = 0;
+                delete _regex_matcher;
+                _regex_matcher = 0;
             }
         }
     }
@@ -57,9 +56,8 @@
 
 StringColumnFilter::~StringColumnFilter()
 {
-    if (_regex) {
-        regfree(_regex);
-        delete _regex;
+    if (_regex_matcher) {
+        delete _regex_matcher;
     }
 }
 
@@ -75,7 +73,14 @@ bool StringColumnFilter::accepts(void *data)
             pass = !strcasecmp(_ref_string.c_str(), act_string); break;
         case OP_REGEX:
         case OP_REGEX_ICASE:
-            pass = _regex != 0 && 0 == regexec(_regex, act_string, 0, 0, 0);
+            if ( _regex_matcher != 0 ) {
+                UnicodeString s = UnicodeString::fromUTF8(act_string);
+                _regex_matcher->reset(s);
+                pass = _regex_matcher->find();
+            }
+            else {
+                pass = false;
+            }
             break;
         case OP_GREATER:
             pass = 0 > strcmp(_ref_string.c_str(), act_string); break;

@@ -16,6 +16,7 @@ depcomp
 install-sh
 missing
 *.o
+*.lo
 ar-lib
 compile
 config.h.in~

@@ -30,12 +30,12 @@
 #include <strings.h>
 #include <string.h>
 
-    CustomVarsFilter::CustomVarsFilter(CustomVarsColumn *column, int opid, char *value)
+	CustomVarsFilter::CustomVarsFilter(CustomVarsColumn *column, int opid, char *value)
     : _column(column)
     , _opid(abs(opid))
     , _negate(opid < 0)
     , _ref_text(value)
-      , _regex(0)
+    , _regex_matcher(0)
 {
     // Prepare part in case of DICT filter
     if (_column->type() == COLTYPE_DICT) {
@@ -47,6 +47,7 @@ with spaces
          */
         const char *cstr = _ref_text.c_str();
         const char *search_space = cstr;
+        UErrorCode status = U_ZERO_ERROR;
         while (*search_space && !isspace(*search_space))
             search_space ++;
         _ref_varname = std::string(cstr, search_space - cstr);
@@ -60,12 +61,13 @@ with spaces
                 setError(RESPONSE_CODE_INVALID_HEADER, "disallowed regular expression '%s': must not contain { or }", value);
             }
             else {
-                _regex = new regex_t();
-                if (0 != regcomp(_regex, search_space, REG_EXTENDED | REG_NOSUB | (_opid == OP_REGEX_ICASE ? REG_ICASE : 0)))
+                UnicodeString s = UnicodeString::fromUTF8(search_space);
+                _regex_matcher = new RegexMatcher(s, (_opid == OP_REGEX_ICASE ? UREGEX_CASE_INSENSITIVE : 0), status);
+                if (U_FAILURE(status))
                 {
                     setError(RESPONSE_CODE_INVALID_HEADER, "invalid regular expression '%s'", value);
-                    delete _regex;
-                    _regex = 0;
+                    delete _regex_matcher;
+                    _regex_matcher = 0;
                 }
             }
         }
@@ -74,9 +76,8 @@ with spaces
 
 CustomVarsFilter::~CustomVarsFilter()
 {
-    if (_regex) {
-        regfree(_regex);
-        delete _regex;
+    if (_regex_matcher) {
+        delete _regex_matcher;
     }
 }
 
@@ -96,7 +97,14 @@ bool CustomVarsFilter::accepts(void *data)
                 pass = !strcasecmp(_ref_string.c_str(), act_string); break;
             case OP_REGEX:
             case OP_REGEX_ICASE:
-                pass = _regex != 0 && 0 == regexec(_regex, act_string, 0, 0, 0);
+                if ( _regex_matcher != 0) {
+                    UnicodeString s = UnicodeString::fromUTF8(act_string);
+                    _regex_matcher->reset(s);
+                    pass = _regex_matcher->find();
+                }
+                else {
+                    pass = false;
+                }
                 break;
             case OP_GREATER:
                 pass = 0 > strcmp(_ref_string.c_str(), act_string); break;
