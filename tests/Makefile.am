@@ -1,4 +1,6 @@
+if HAVE_CPPUNIT
 TESTS = TestColumnFilters
+
 check_PROGRAMS = $(TESTS)
 
 TEST_COLUMN_FILTERS_DEPS = StringColumnFilter.o CustomVarsFilter.o Column.o Filter.o
@@ -6,3 +8,4 @@ TestColumnFilters_SOURCES = $(top_builddir)/src/StringColumnFilter.h $(top_build
 TestColumnFilters_CXXFLAGS = $(CPPUNIT_FLAGS) -I$(top_builddir)
 TestColumnFilters_LDFLAGS = $(CPPUNIT_LIBS) -ldl -no-install
 TestColumnFilters_LDADD = $(top_builddir)/src/livestatus.la
+endif
