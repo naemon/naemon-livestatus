@@ -33,7 +33,13 @@ AM_INIT_AUTOMAKE([-Wall foreign])
 LT_INIT
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADER([config.h])
-m4_ifdef([AM_PATH_CPPUNIT], [AM_PATH_CPPUNIT([1.12])], AC_MSG_ERROR([Install CPPUnit <http://cppunit.sourceforge.net/>]))
+m4_ifdef([AM_PATH_CPPUNIT], [AM_PATH_CPPUNIT([1.12])], [AC_MSG_WARN([CPPUnit is not installed, it is needed to be able to run unit tests <http://cppunit.sourceforge.net/>])])
+AS_IF([test "x$CPPUNIT_LIBS" = "x"],
+	  [has_cppunit="no"],
+	  [has_cppunit="yes"])
+
+AM_CONDITIONAL([HAVE_CPPUNIT], [test "x$has_cppunit" = "xyes"])
+
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC
