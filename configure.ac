@@ -39,7 +39,6 @@ AC_PROG_CXX
 AC_PROG_CC
 AC_PROG_LIBTOOL
 AC_PROG_RANLIB
-AM_CONDITIONAL([HAVE_DIET], [which diet >/dev/null 2>&1])
 AM_PROG_CC_C_O
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR], [true])
 
