@@ -64,7 +64,10 @@ AS_IF([test "$have_icu" = "no"],
 						))
 
 AS_IF([test "$have_icu" = "no"],
-	  AC_MSG_WARN([no pc file found for libicu, guessing libs]))
+	  AC_MSG_WARN([no pc file found for libicu, guessing libs]),
+	  [test "$have_icu" = "yes"],
+	  AC_DEFINE([HAVE_ICU], [1], [libicu available.])
+)
 
 # Checks for header files.
 AC_HEADER_DIRENT

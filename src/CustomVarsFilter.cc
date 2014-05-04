@@ -61,8 +61,12 @@ with spaces
                 setError(RESPONSE_CODE_INVALID_HEADER, "disallowed regular expression '%s': must not contain { or }", value);
             }
             else {
+#ifdef HAVE_ICU
                 UnicodeString s = UnicodeString::fromUTF8(search_space);
                 _regex_matcher = new RegexMatcher(s, (_opid == OP_REGEX_ICASE ? UREGEX_CASE_INSENSITIVE : 0), status);
+#else
+                _regex_matcher = new RegexMatcher(search_space, (_opid == OP_REGEX_ICASE ? UREGEX_CASE_INSENSITIVE : 0), status);
+#endif
                 if (U_FAILURE(status))
                 {
                     setError(RESPONSE_CODE_INVALID_HEADER, "invalid regular expression '%s'", value);
@@ -98,8 +102,12 @@ bool CustomVarsFilter::accepts(void *data)
             case OP_REGEX:
             case OP_REGEX_ICASE:
                 if ( _regex_matcher != 0) {
+#ifdef HAVE_ICU
                     UnicodeString s = UnicodeString::fromUTF8(act_string);
                     _regex_matcher->reset(s);
+#else
+                    _regex_matcher->reset(act_string);
+#endif
                     pass = _regex_matcher->find();
                 }
                 else {
