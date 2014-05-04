@@ -140,7 +140,6 @@ void livestatus_cleanup_after_fork()
 void *main_thread(void *data __attribute__ ((__unused__)))
 {
     g_thread_pid = getpid();
-    g_should_terminate = false;
     while (!g_should_terminate)
     {
         do_statistics();
@@ -205,6 +204,7 @@ void start_threads()
     if (!g_thread_running) {
         /* start thread that listens on socket */
         pthread_atfork(livestatus_count_fork, NULL, livestatus_cleanup_after_fork);
+        g_should_terminate = false;
         pthread_create(&g_mainthread_id, 0, main_thread, (void *)0);
         if (g_debug_level > 0)
             logger(LG_INFO, "Starting %d client threads", g_num_clientthreads);
