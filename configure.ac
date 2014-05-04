@@ -52,13 +52,13 @@ AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(socket, connect)
 AC_CHECK_LIB(socket, shutdown)
 PKG_CHECK_MODULES(LIBICU,
-				  [icu-uc, icu-i18n],
+				  [icu-uc >= 4.2, icu-i18n],
 				  [have_icu=yes],
 				  [have_icu=no]
 				  )
 AS_IF([test "$have_icu" = "no"],
 	  PKG_CHECK_MODULES(LIBICU,
-						[icu],
+						[icu >= 4.2],
 						[have_icu=yes],
 						[LIBICU_LIBS="-licui18n -licuuc -licudata"]
 						))
