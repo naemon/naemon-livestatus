@@ -31,6 +31,8 @@
 #include "Filter.h"
 #ifdef HAVE_ICU
 #include <unicode/regex.h>
+#else
+#include <regex.h>
 #endif
 
 class CustomVarsFilter : public Filter
@@ -39,7 +41,11 @@ class CustomVarsFilter : public Filter
     int _opid;
     bool _negate;
     string _ref_text;
+#ifdef HAVE_ICU
     RegexMatcher * _regex_matcher;
+#else
+    regex_t *_regex;
+#endif
     // needed in case of COLTYPE_DICT
     string _ref_string;
     string _ref_varname;

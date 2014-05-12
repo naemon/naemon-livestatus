@@ -30,6 +30,8 @@
 #include <sys/types.h>
 #ifdef HAVE_ICU
 #include <unicode/regex.h>
+#else
+#include <regex.h>
 #endif
 #include <string>
 
@@ -44,7 +46,11 @@ class StringColumnFilter : public Filter
     string _ref_string;
     int _opid;
     bool _negate;
+#ifdef HAVE_ICU
     RegexMatcher *_regex_matcher;
+#else
+    regex_t *_regex;
+#endif
 
 public:
     StringColumnFilter(StringColumn *_column, int opid, char *value);

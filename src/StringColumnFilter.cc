@@ -35,9 +35,15 @@
     , _ref_string(value)
     , _opid(abs(opid))
     , _negate(opid < 0)
+#ifdef HAVE_ICU
     , _regex_matcher(0)
+#else
+    , _regex(0)
+#endif
 {
+#ifdef HAVE_ICU
     UErrorCode status = U_ZERO_ERROR;
+#endif
     if (_opid == OP_REGEX || _opid == OP_REGEX_ICASE) {
         if (strchr(value, '{') || strchr(value, '}')) {
             setError(RESPONSE_CODE_INVALID_HEADER, "disallowed regular expression '%s': must not contain { or }", value);
@@ -46,23 +52,36 @@
 #ifdef HAVE_ICU
             UnicodeString s = UnicodeString::fromUTF8(value);
             _regex_matcher = new RegexMatcher(s, (_opid == OP_REGEX_ICASE ? UREGEX_CASE_INSENSITIVE : 0), status);
-#else
-            _regex_matcher = new RegexMatcher(value, (_opid == OP_REGEX_ICASE ? UREGEX_CASE_INSENSITIVE : 0), status);
-#endif
             if (U_FAILURE(status)) {
                 setError(RESPONSE_CODE_INVALID_HEADER, "invalid regular expression '%s'", value);
                 delete _regex_matcher;
                 _regex_matcher = 0;
             }
+#else
+            _regex = new regex_t();
+            if (0 != regcomp(_regex, value, REG_EXTENDED | REG_NOSUB | (_opid == OP_REGEX_ICASE ? REG_ICASE : 0)))
+            {
+                setError(RESPONSE_CODE_INVALID_HEADER, "invalid regular expression '%s'", value);
+                delete _regex;
+                _regex = 0;
+            }
+#endif
         }
     }
 }
 
 StringColumnFilter::~StringColumnFilter()
 {
+#ifdef HAVE_ICU
     if (_regex_matcher) {
         delete _regex_matcher;
     }
+#else
+    if (_regex) {
+        regfree(_regex);
+        delete _regex;
+    }
+#endif
 }
 
 
@@ -77,18 +96,18 @@ bool StringColumnFilter::accepts(void *data)
             pass = !strcasecmp(_ref_string.c_str(), act_string); break;
         case OP_REGEX:
         case OP_REGEX_ICASE:
-            if ( _regex_matcher != 0 ) {
 #ifdef HAVE_ICU
+            if ( _regex_matcher != 0 ) {
                 UnicodeString s = UnicodeString::fromUTF8(act_string);
                 _regex_matcher->reset(s);
-#else
-                _regex_matcher->reset(act_string);
-#endif
                 pass = _regex_matcher->find();
             }
             else {
                 pass = false;
             }
+#else
+            pass = _regex != 0 && 0 == regexec(_regex, act_string, 0, 0, 0);
+#endif
             break;
         case OP_GREATER:
             pass = 0 > strcmp(_ref_string.c_str(), act_string); break;
