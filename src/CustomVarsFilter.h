@@ -29,7 +29,9 @@
 
 #include "CustomVarsColumn.h"
 #include "Filter.h"
+#ifdef HAVE_ICU
 #include <unicode/regex.h>
+#endif
 
 class CustomVarsFilter : public Filter
 {

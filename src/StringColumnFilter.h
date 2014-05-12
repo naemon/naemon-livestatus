@@ -28,7 +28,9 @@
 #include "config.h"
 
 #include <sys/types.h>
+#ifdef HAVE_ICU
 #include <unicode/regex.h>
+#endif
 #include <string>
 
 using namespace std;
