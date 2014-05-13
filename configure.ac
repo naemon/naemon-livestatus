@@ -60,13 +60,17 @@ AS_IF([test "$have_icu" = "no"],
 	  PKG_CHECK_MODULES(LIBICU,
 						[icu >= 4.2],
 						[have_icu=yes],
-						[LIBICU_LIBS="-licui18n -licuuc -licudata"]
+						[have_icu=no]
 						))
 
 AS_IF([test "$have_icu" = "no"],
 	  AC_MSG_WARN([no pc file found for libicu, guessing libs]),
 	  [test "$have_icu" = "yes"],
 	  AC_DEFINE([HAVE_ICU], [1], [libicu available.])
+)
+
+AS_IF([test "$have_icu" = "yes"],
+	  [LIBICU_LIBS="-licui18n -licuuc -licudata"]
 )
 
 # Checks for header files.
