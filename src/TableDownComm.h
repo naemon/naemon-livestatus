@@ -28,6 +28,7 @@
 #include "config.h"
 
 #include <map>
+#include <pthread.h>
 #include "Table.h"
 #include "nagios.h"
 
@@ -43,6 +44,7 @@ class TableDownComm : public Table
     const char *_name;
     typedef map<unsigned long, DowntimeOrComment *> _entries_t;
     _entries_t _entries;
+    pthread_mutex_t _entries_mutex;
 
 public:
     TableDownComm(bool is_downtime);
