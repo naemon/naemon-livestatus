@@ -33,12 +33,22 @@
 #include "OffsetTimeColumn.h"
 #include "auth.h"
 #include "tables.h"
+#include <pthread.h>
+#include <string.h>
 
 // Todo: the dynamic data in this table must be
 // locked with a mutex
 
 TableDownComm::TableDownComm(bool is_downtime)
 {
+    int err;
+    char errmsg[256] = "unknown error";
+    err = pthread_mutex_init(&_entries_mutex, NULL);
+    if(err) {
+        strerror_r(err, errmsg, 256);
+        logger(LG_INFO, "Error creating mutex: %s (%d)", errmsg, err);
+    }
+
     if (is_downtime)
         _name = "downtimes";
     else
@@ -95,11 +105,19 @@ TableDownComm::TableDownComm(bool is_downtime)
 
 TableDownComm::~TableDownComm()
 {
+    char errmsg[256] = "unknown error";
     for (_entries_t::iterator it = _entries.begin();
             it != _entries.end();
             ++it)
     {
         delete it->second;
+    }
+
+    int err;
+    err = pthread_mutex_destroy(&_entries_mutex);
+    if(err) {
+        strerror_r(err, errmsg, 256);
+        logger(LG_INFO, "Error destroying mutex: %s (%d)", errmsg, err);
     }
 }
 
@@ -128,34 +146,80 @@ void TableDownComm::addDowntime(nebstruct_downtime_data *data)
 
 void TableDownComm::add(DowntimeOrComment *data)
 {
-    _entries_t::iterator it = _entries.find(data->_id);
+    _entries_t::iterator it;
+
+    int err;
+    char errmsg[256] = "unknown error";
+    err = pthread_mutex_lock(&_entries_mutex);
+    if(err) {
+        strerror_r(err, errmsg, 256);
+        logger(LG_INFO, "Error locking mutex: %s (%d)", errmsg, err);
+    }
+
+    it = _entries.find(data->_id);
     // might be update -> delete previous data set
     if (it != _entries.end()) {
         delete it->second;
         _entries.erase(it);
     }
     _entries.insert(make_pair(data->_id, data));
+
+    err = pthread_mutex_unlock(&_entries_mutex);
+    if(err) {
+        strerror_r(err, errmsg, 256);
+        logger(LG_INFO, "Error unlocking mutex: %s (%d)", errmsg, err);
+    }
 }
 
 void TableDownComm::remove(unsigned id)
 {
-    _entries_t::iterator it = _entries.find(id);
+    _entries_t::iterator it;
+
+    int err;
+    char errmsg[256] = "unknown error";
+    err = pthread_mutex_lock(&_entries_mutex);
+    if(err) {
+        strerror_r(err, errmsg, 256);
+        logger(LG_INFO, "Error locking mutex: %s (%d)", errmsg, err);
+    }
+
+    it = _entries.find(id);
     if (it == _entries.end())
         logger(LG_INFO, "Cannot delete non-existing downtime/comment %u", id);
     else {
         delete it->second;
         _entries.erase(it);
     }
+
+    err = pthread_mutex_unlock(&_entries_mutex);
+    if(err) {
+        strerror_r(err, errmsg, 256);
+        logger(LG_INFO, "Error unlocking mutex: %s (%d)", errmsg, err);
+    }
 }
 
 void TableDownComm::answerQuery(Query *query)
 {
+    int err;
+    char errmsg[256] = "unknown error";
+    err = pthread_mutex_lock(&_entries_mutex);
+    if(err) {
+        strerror_r(err, errmsg, 256);
+        logger(LG_INFO, "Error locking mutex: %s (%d)", errmsg, err);
+    }
+
     for (_entries_t::const_iterator it = _entries.begin();
             it != _entries.end();
             ++it)
     {
         if (!query->processDataset(it->second))
             break;
+    }
+
+    err = pthread_mutex_unlock(&_entries_mutex);
+    if(err) {
+        strerror_r(err, errmsg, 256);
+        logger(LG_INFO, "Error unlocking mutex: %s (%d)", errmsg, err);
     }
 }
 
@@ -167,11 +231,31 @@ bool TableDownComm::isAuthorized(contact *ctc, void *data)
 
 DowntimeOrComment *TableDownComm::findEntry(unsigned long id)
 {
+    /* This method is only used from the DownCommColumn, and therefore shouldn't
+     * be possible to have any deadlocks or recursive mutexes-problems with.
+     */
+    DowntimeOrComment *res = NULL;
+
+    int err;
+    char errmsg[256] = "unknown error";
+    err = pthread_mutex_lock(&_entries_mutex);
+    if(err) {
+        strerror_r(err, errmsg, 256);
+        logger(LG_INFO, "Error locking mutex: %s (%d)", errmsg, err);
+    }
+
     _entries_t::iterator it = _entries.find(id);
-    if (it != _entries.end())
-        return it->second;
-    else
-        return 0;
+    if (it != _entries.end()) {
+        res = it->second;
+    }
+
+    err = pthread_mutex_unlock(&_entries_mutex);
+    if(err) {
+        strerror_r(err, errmsg, 256);
+        logger(LG_INFO, "Error unlocking mutex: %s (%d)", errmsg, err);
+    }
+
+    return res;
 }
 
 
