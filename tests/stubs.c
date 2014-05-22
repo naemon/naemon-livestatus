@@ -69,3 +69,7 @@ int servicegroup_list = 0;
 int neb_deregister_callback = 0;
 int clear_volatile_macros = 0;
 int host_list = 0;
+char *qh_socket_path = 0;
+int nsock_printf_nul(int sd, const char *fmt, ...) {};
+int nsock_unix(const char *path, unsigned int flags) {};
+const char *nsock_strerror(int code) {};

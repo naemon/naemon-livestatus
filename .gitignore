@@ -26,3 +26,4 @@ libtool
 ltmain.sh
 src/.libs/
 tests/.deps/
+tests/TestColumnFilters
