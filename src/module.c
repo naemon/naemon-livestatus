@@ -78,6 +78,7 @@ size_t g_thread_stack_size = 65536; /* stack size of threads */
 
 void *g_nagios_handle;
 int g_unix_socket = -1;
+int g_pipes[2];
 int g_max_fd_ever = 0;
 char g_socket_path[4096];
 char g_pnp_path[4096];
@@ -148,6 +149,7 @@ void *main_thread(void *data __attribute__ ((__unused__)))
         fd_set fds;
         FD_ZERO(&fds);
         FD_SET(g_unix_socket, &fds);
+        FD_SET(g_pipes[0], &fds);
         int retval = select(g_unix_socket + 1, &fds, NULL, NULL, &tv);
         if (retval > 0 && FD_ISSET(g_unix_socket, &fds)) {
             int cc = accept(g_unix_socket, NULL, NULL);
@@ -226,7 +228,6 @@ void start_threads()
 void terminate_threads()
 {
     if (g_thread_running) {
-        g_should_terminate = true;
         logger(LG_INFO, "Waiting for main to terminate...");
         pthread_join(g_mainthread_id, NULL);
         logger(LG_INFO, "Waiting for client threads to terminate...");
@@ -241,6 +242,15 @@ void terminate_threads()
         g_thread_running = 0;
     }
     free(g_clientthread_id);
+}
+
+int open_ipc_pipe()
+{
+    if (pipe(g_pipes) == -1) {
+        logger(LG_ALERT, "Cannot open IPC pipe: %s", strerror(errno));
+        return false;
+    }
+    return true;
 }
 
 int open_unix_socket()
@@ -676,6 +686,9 @@ int nebmodule_init(int flags __attribute__ ((__unused__)), char *args, void *han
     logger(LG_INFO, "Livestatus %s by Mathias Kettner. Socket: '%s'", VERSION, g_socket_path);
     logger(LG_INFO, "Please visit us at http://mathias-kettner.de/");
 
+    if (!open_ipc_pipe())
+        return 1;
+
     if (!open_unix_socket())
         return 1;
 
@@ -705,8 +718,12 @@ int nebmodule_init(int flags __attribute__ ((__unused__)), char *args, void *han
 int nebmodule_deinit(int flags __attribute__ ((__unused__)), int reason __attribute__ ((__unused__)))
 {
     logger(LG_INFO, "deinitializing");
-    terminate_threads();
+    g_should_terminate = true;
+    if (write(g_pipes[1], "deinit", 7) == -1)
+        logger(LG_INFO, "Failed to send termination message to main thread: %s", strerror(errno));
+
     close_unix_socket();
+    terminate_threads();
     store_deinit();
     deregister_callbacks();
     close_logfile();
