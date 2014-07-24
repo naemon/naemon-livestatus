@@ -97,8 +97,6 @@ int g_group_authorization = AUTH_STRICT;
 int g_data_encoding = ENCODING_UTF8;
 int g_num_livehelpers = 20;
 
-void* voidp;
-
 void livestatus_count_fork()
 {
     g_counters[COUNTER_FORKS]++;
@@ -163,7 +161,7 @@ void *main_thread(void *data __attribute__ ((__unused__)))
         }
     }
     logger(LG_INFO, "Socket thread has terminated");
-    return voidp;
+    return NULL;
 }
 
 
@@ -193,7 +191,7 @@ void *client_thread(void *data __attribute__ ((__unused__)))
     }
     delete_outputbuffer(output_buffer);
     delete_inputbuffer(input_buffer);
-    return voidp;
+    return NULL;
 }
 
 void start_threads()
