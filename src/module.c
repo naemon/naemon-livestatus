@@ -284,7 +284,7 @@ int open_unix_socket()
         return false;
     }
 
-    // Make writable group members (fchmod didn't do nothing for me. Don't know why!)
+    // Make writable group members
     if (0 != chmod(g_socket_path, 0660)) {
         logger(LG_ERR , "Cannot chown unix socket at %s to 0660: %s", g_socket_path, strerror(errno));
         close(g_unix_socket);
