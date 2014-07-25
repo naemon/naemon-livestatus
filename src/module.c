@@ -22,7 +22,6 @@
 // to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
 // Boston, MA 02110-1301 USA.
 
-#include <sys/select.h>
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -98,8 +97,6 @@ int g_group_authorization = AUTH_STRICT;
 int g_data_encoding = ENCODING_UTF8;
 int g_num_livehelpers = 20;
 
-void* voidp;
-
 void livestatus_count_fork()
 {
     g_counters[COUNTER_FORKS]++;
@@ -164,7 +161,7 @@ void *main_thread(void *data __attribute__ ((__unused__)))
         }
     }
     logger(LG_INFO, "Socket thread has terminated");
-    return voidp;
+    return NULL;
 }
 
 
@@ -194,7 +191,7 @@ void *client_thread(void *data __attribute__ ((__unused__)))
     }
     delete_outputbuffer(output_buffer);
     delete_inputbuffer(input_buffer);
-    return voidp;
+    return NULL;
 }
 
 void start_threads()
@@ -286,7 +283,7 @@ int open_unix_socket()
         return false;
     }
 
-    // Make writable group members (fchmod didn't do nothing for me. Don't know why!)
+    // Make writable group members
     if (0 != chmod(g_socket_path, 0660)) {
         logger(LG_ERR , "Cannot chown unix socket at %s to 0660: %s", g_socket_path, strerror(errno));
         close(g_unix_socket);
