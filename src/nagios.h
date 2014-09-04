@@ -27,14 +27,7 @@
 
 #include "config.h"
 
-#define NSCORE
-#include <naemon/objects.h>
 #include <naemon/naemon.h>
-#include <naemon/nebstructs.h>
-#include <naemon/neberrors.h>
-#include <naemon/broker.h>
-#include <naemon/nebmodules.h>
-#include <naemon/nebcallbacks.h>
 
 #endif // nagios_h
 
