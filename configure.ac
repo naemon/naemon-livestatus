@@ -73,6 +73,8 @@ AS_IF([test "$have_icu" = "yes"],
 	  [LIBICU_LIBS="-licui18n -licuuc -licudata"]
 )
 
+PKG_CHECK_MODULES(NAEMON, [naemon >= 0.8])
+
 # Checks for header files.
 AC_HEADER_DIRENT
 AC_HEADER_STDC
