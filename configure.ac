@@ -30,7 +30,6 @@
 AC_PREREQ(2.59)
 AC_INIT([Naemon-Livestatus], [0.8.0-naemon], [naemon-dev@monitoring-lists.org])
 AM_INIT_AUTOMAKE([-Wall foreign])
-LT_INIT
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADER([config.h])
 m4_ifdef([AM_PATH_CPPUNIT], [AM_PATH_CPPUNIT([1.12])], [AC_MSG_WARN([CPPUnit is not installed, it is needed to be able to run unit tests <http://cppunit.sourceforge.net/>])])
@@ -42,10 +41,9 @@ AM_CONDITIONAL([HAVE_CPPUNIT], [test "x$has_cppunit" = "xyes"])
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC
-AC_PROG_LIBTOOL
-AC_PROG_RANLIB
 AM_PROG_CC_C_O
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR], [true])
+AC_PROG_LIBTOOL
 
 # Checks for libraries.
 AC_CHECK_LIB(socket, socket)
