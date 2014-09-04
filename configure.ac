@@ -65,6 +65,8 @@ AS_IF([test "$have_icu" = "no"],
 AS_IF([test "$have_icu" = "no"],
 	  AC_MSG_WARN([no pc file found for libicu, guessing libs]))
 
+PKG_CHECK_MODULES(NAEMON, [naemon >= 0.8])
+
 # Checks for header files.
 AC_HEADER_DIRENT
 AC_HEADER_STDC
