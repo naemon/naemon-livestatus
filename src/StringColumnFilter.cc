@@ -65,7 +65,7 @@ StringColumnFilter::~StringColumnFilter()
 bool StringColumnFilter::accepts(void *data)
 {
     bool pass = true;
-    char *act_string = _column->getValue(data);
+    const char *act_string = _column->getValue(data);
     switch (_opid) {
         case OP_EQUAL:
             pass = _ref_string == act_string; break;
