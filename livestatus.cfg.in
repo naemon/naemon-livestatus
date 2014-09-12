@@ -1,0 +1,3 @@
+# Naemon config
+broker_module=@pkglibdir@/livestatus.so hidden_custom_var_prefix=OP5SECRET_ pnp_path=/opt/monitor/op5/pnp/perfdata /opt/monitor/var/rw/live
+event_broker_options=-1

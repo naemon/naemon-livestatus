@@ -23,3 +23,9 @@
 # Boston, MA 02110-1301 USA.
 
 SUBDIRS = src tests
+
+naemonconf_DATA = livestatus.cfg
+livestatus.cfg : % : %.in
+	$(AM_V_GEN) sed \
+		-e 's,@pkglibdir[@],$(pkglibdir),g' \
+		$< > $@

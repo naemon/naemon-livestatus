@@ -1,5 +1,4 @@
 %define mod_path %{_libdir}/naemon-livestatus
-%define old_mod_path /usr/libexec/livestatus
 %define nagios_cfg /opt/monitor/etc/nagios.cfg
 
 %{?dgroup:%define daemon_group %{dgroup}}
@@ -34,7 +33,7 @@ BuildRequires: libstdc++-devel
 BuildRequires: gcc-c++
 BuildRequires: pkgconfig
 BuildRequires: libtool
-BuildRequires: op5-nagios-devel
+BuildRequires: op5-naemon-devel
 BuildRequires: autoconf, automake
 BuildRequires: libicu-devel > 4.2
 BuildRequires: cppunit-devel
@@ -62,7 +61,7 @@ Group: op5/system-addons
 %build
 rm -rf %buildroot
 autoreconf -is
-./configure --prefix=%prefix --libdir=%{_libdir} CPPFLAGS=-I/opt/monitor/include
+%configure --with-naemon-config-dir=/opt/monitor/etc/mconf
 %__make
 LC_ALL=en_US.utf-8 %__make check
 
@@ -75,24 +74,9 @@ install -pm 0644 api/python/livestatus.py %buildroot%{python_sitelib}/livestatus
 install -pm 0644 api/python/__init__.py %buildroot%{python_sitelib}/livestatus/
 
 %post
-# migrate old path to new path, so any %mod_path macro below works
-if grep -q 'broker_module.*/livestatus/livestatus\.o' %nagios_cfg; then
-	sed -i "s#^broker_module=.*/livestatus\.o#broker_module=%mod_path/livestatus.so#" \
-		%nagios_cfg
-fi
-# new install, no livestatus line
+# delete livestatus from main config, it's in a mconf dir
 if ! grep -q 'broker_module.*livestatus\.so' %nagios_cfg; then
-	sed -i "s#^log_file.*#broker_module=%mod_path/livestatus.so /opt/monitor/var/rw/live\\n\\n&#" \
-		%nagios_cfg
-fi
-# add pnp path, wasn't in the initial version (or above)
-if ! grep -q 'broker_module.*livestatus\.so.*pnp_path' %nagios_cfg; then
-	sed -i "s#broker_module=%mod_path/livestatus.so#broker_module=%mod_path/livestatus.so pnp_path=/opt/monitor/op5/pnp/perfdata#" \
-		%nagios_cfg
-fi
-# add hidden_custom_var_prefix too (newest)
-if ! grep -q 'broker_module.*livestatus\.so.*hidden_custom_var_prefix'; then
-	sed -i "s#broker_module=%mod_path/livestatus.so#broker_module=%mod_path/livestatus.so hidden_custom_var_prefix=OP5SECRET__#" \
+	sed --follow-symlinks -i "/broker_module=.*livestatus.so/d#" \
 		%nagios_cfg
 fi
 # we must return/exit with true since yum complains otherwise:
@@ -100,11 +84,6 @@ test -f /etc/init.d/monitor && /etc/init.d/monitor restart || :
 
 
 %postun
-# remove module from Nagios cfg if uninstalling
-if test $1 -eq 0; then
-	sed -i '#^broker_module=%old_mod_path/livestatus.o#d' %nagios_cfg
-	sed -i '#^broker_module=%mod_path/livestatus.so#d' %nagios_cfg
-fi
 # we must return/exit with true since yum complains otherwise:
 test -f /etc/init.d/monitor && /etc/init.d/monitor restart || :
 
@@ -115,6 +94,7 @@ test -f /etc/init.d/monitor && /etc/init.d/monitor restart || :
 %mod_path/livestatus.so
 %mod_path/livestatus.la
 %{python_sitelib}/livestatus
+/opt/monitor/etc/mconf/livestatus.cfg
 
 
 %files -n unixcat
