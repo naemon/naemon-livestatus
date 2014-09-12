@@ -25,7 +25,7 @@
 #include "OffsetStringColumn.h"
 #include "logger.h"
 
-char *OffsetStringColumn::getValue(void *data)
+const char *OffsetStringColumn::getValue(void *data)
 {
     if (!data)
         return (char *)"";

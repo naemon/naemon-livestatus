@@ -29,11 +29,11 @@
 
 class StringPointerColumn : public StringColumn
 {
-    char *_string;
+    const char *_string;
 public:
-    StringPointerColumn(string name, string description, char *string)
+    StringPointerColumn(string name, string description, const char *string)
         : StringColumn(name, description, -1), _string(string) {}
-    char* getValue(void* ) { return _string; }
+    const char* getValue(void* ) { return _string; }
 };
 
 
