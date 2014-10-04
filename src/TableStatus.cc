@@ -152,13 +152,13 @@ TableStatus::TableStatus()
                 "The total number of services", (int*)&num_objects.services));
 
     addColumn(new StringPointerColumn("program_version",
-                "The version of the monitoring daemon", get_program_version()));
+                "The version of the monitoring daemon", (char *)get_program_version()));
 
     // Livestatus' own status
     addColumn(new IntPointerColumn("cached_log_messages",
-                "The current number of log messages MK Livestatus keeps in memory", &num_cached_log_messages ));
+                "The current number of log messages Naemon Livestatus keeps in memory", &num_cached_log_messages ));
     addColumn(new StringPointerColumn("livestatus_version",
-                "The version of the MK Livestatus module", (char *)VERSION));
+                "The version of the Naemon Livestatus module", (char *)VERSION));
 
     // Livecheck
 }
