@@ -61,7 +61,7 @@ void logger(int priority, const char *loginfo, ...)
         vsnprintf(buffer + strlen(buffer),
         sizeof(buffer) - strlen(buffer), loginfo, ap);
         va_end(ap);
-        write_to_all_logs(buffer, priority);
+        nm_log(priority, buffer);
     } else {
         if (g_logfile) {
             /* write date/time */
