@@ -75,9 +75,8 @@ install -pm 0644 api/python/__init__.py %buildroot%{python_sitelib}/livestatus/
 
 %post
 # delete livestatus from main config, it's in a mconf dir
-if grep -q 'broker_module.*livestatus\.so' %nagios_cfg; then
-	sed --follow-symlinks -i "/broker_module=.*livestatus.so/d" \
-		%nagios_cfg
+if grep -q 'broker_module.*livestatus\.' %nagios_cfg; then
+	sed --follow-symlinks -i "/broker_module=.*livestatus\./d" %nagios_cfg
 fi
 # we must return/exit with true since yum complains otherwise:
 test -f /etc/init.d/monitor && /etc/init.d/monitor restart || :
