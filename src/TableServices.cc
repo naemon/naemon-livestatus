@@ -35,6 +35,7 @@
 #include "OffsetTimeperiodColumn.h"
 #include "OffsetStringServiceMacroColumn.h"
 #include "ServiceSpecialIntColumn.h"
+#include "ServiceSpecialDoubleColumn.h"
 #include "AttributelistColumn.h"
 #include "TableHosts.h"
 #include "TableServicegroups.h"
@@ -322,6 +323,8 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
                 "Whether flap detection is enabled for the service (0/1)", (char *)(&svc.flap_detection_enabled) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "check_freshness",
                 "Whether freshness checks are activated (0/1)", (char *)(&svc.check_freshness) - ref, indirect_offset));
+    table->addColumn(new OffsetIntColumn(prefix + "obsess_over_service",
+                "Whether 'obsess' is enabled for the service (0/1)", (char *)(&svc.obsess) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "obsess",
                 "Whether 'obsess' is enabled for the service (0/1)", (char *)(&svc.obsess) - ref, indirect_offset));
     table->addColumn(new AttributelistColumn(prefix + "modified_attributes",
@@ -330,6 +333,8 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
                 "A list of all modified attributes", (char *)(&svc.modified_attributes) - ref, indirect_offset, true));
     table->addColumn(new ServiceSpecialIntColumn(prefix + "pnpgraph_present",
                 "Whether there is a PNP4Nagios graph present for this service (0/1)", SSIC_PNP_GRAPH_PRESENT, indirect_offset));
+    table->addColumn(new ServiceSpecialDoubleColumn(prefix + "staleness",
+                    "The staleness indicator for this service", SSDC_STALENESS, indirect_offset));
 
     // columns of type double
     table->addColumn(new OffsetDoubleColumn(prefix + "check_interval",

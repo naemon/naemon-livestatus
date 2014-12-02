@@ -1,14 +1,14 @@
 This is a fork of Mattias Kettner's mk_livestatus. It has been ported to
-Nagios 4 and contains some extra features such as sorting and page offsets.
-This branch is being maintained by op5 until such a time comes when everything
-we need has been merged back upstream.
+Naemon by OP5 and contains some extra features such as sorting and page offsets.
+This branch is being maintained by the Naemon team until such a time
+comes when everything we need has been merged back upstream.
 
 To find out more about mk_livestatus, see
  http://mathias-kettner.de/checkmk_livestatus.html
 
-=== Differences between mk_livestatus and op5 fork of livestatus ===
+=== Differences between mk_livestatus and naemons fork of livestatus ===
 
-Three additions to Livesetatus Query Language is added:
+Three additions to Livestatus Query Language is added:
 
 -----
 Sort: <column name> <asc/desc>
@@ -46,16 +46,15 @@ The result set is packed in a json object, with a couple of possible fields:
 - total_count: The number of lines in the resultsed, except the limitation of
   Limit and Offset headers.
 
-=== About op5 ===
+=== About Naemon ===
 
-To find out more about op5, see
- http://op5.org
+To find out more about Naemon, see http://naemon.org
 
 === INSTALL ===
 
 To install, run:
  autoreconf -s
  automake --add-missing
- ./configure CPPFLAGS=-I$(path to nagios include files, usually /usr/local/nagios/include)
+ ./configure CPPFLAGS=-I$(path to naemon include files, usually /usr/local/naemon/include)
  make
  sudo make install
