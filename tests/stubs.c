@@ -70,3 +70,7 @@ int clear_volatile_macros = 0;
 int host_list = 0;
 
 void nm_log(int prio, const char *fmt, ...) {}
+char *qh_socket_path = 0;
+int nsock_printf_nul(int sd, const char *fmt, ...) {};
+int nsock_unix(const char *path, unsigned int flags) {};
+const char *nsock_strerror(int code) {};

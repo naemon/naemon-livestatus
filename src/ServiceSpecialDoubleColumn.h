@@ -5,7 +5,7 @@
 // |           | |___| | | |  __/ (__|   <    | |  | | . \            |
 // |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
 // |                                                                  |
-// | Copyright Mathias Kettner 2012             mk@mathias-kettner.de |
+// | Copyright Mathias Kettner 2013             mk@mathias-kettner.de |
 // +------------------------------------------------------------------+
 //
 // This file is part of Check_MK.
@@ -22,43 +22,23 @@
 // to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
 // Boston, MA 02110-1301 USA.
 
-#ifndef StringColumnFilter_h
-#define StringColumnFilter_h
+#ifndef ServiceSpecialDoubleColumn_h
+#define ServiceSpecialDoubleColumn_h
 
 #include "config.h"
+#include "DoubleColumn.h"
 
-#include <sys/types.h>
-#ifdef HAVE_ICU
-#include <unicode/regex.h>
-#else
-#include <regex.h>
-#endif
-#include <string>
+#define SSDC_STALENESS 1
 
-using namespace std;
-
-#include "Filter.h"
-class StringColumn;
-
-class StringColumnFilter : public Filter
+class ServiceSpecialDoubleColumn : public DoubleColumn
 {
-    StringColumn *_column;
-    string _ref_string;
-    int _opid;
-    bool _negate;
-#ifdef HAVE_ICU
-    RegexMatcher *_regex_matcher;
-#else
-    regex_t *_regex;
-#endif
+    int _type;
 
 public:
-    StringColumnFilter(StringColumn *_column, int opid, char *value);
-    ~StringColumnFilter();
-    bool accepts(void *data);
-    void *indexFilter(const char *column);
+    ServiceSpecialDoubleColumn(string name, string description, int ssdc_type, int indirect)
+        : DoubleColumn(name, description, indirect) , _type(ssdc_type) {}
+    double getValue(void *data);
 };
 
-
-#endif // StringColumnFilter_h
+#endif // ServiceSpecialDoubleColumn_h
 

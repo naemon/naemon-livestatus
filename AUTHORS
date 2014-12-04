@@ -1,8 +1,8 @@
 This is a fork of MK Livestatus, part of Check_MK, that is being maintained
-by op5. See http://op5.org to learn more about us.
+by naemon. See http://naemon.org to learn more about us.
 
 Check_MK was invented and implemented by Mathias Kettner
-<mk@mathias-kettner.de>.  
+<mk@mathias-kettner.de>.
 
 Currently Check_MK is being developed by the Mathias Kettner GmbH
 with some contributions by the community (mainly checks).

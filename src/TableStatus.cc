@@ -53,6 +53,7 @@ extern int process_performance_data;
 extern int check_external_commands;
 extern int num_cached_log_messages;
 extern int interval_length;
+int last_command_check = 0;
 
 // Livecheck has been removed, but we still need to provide the
 // columns - for compatibility
@@ -138,6 +139,8 @@ TableStatus::TableStatus()
                 "Whether Nagios checks for external commands at its command pipe (0/1)", &check_external_commands));
     addColumn(new TimePointerColumn("program_start",
                 "The time of the last program start as UNIX timestamp", (int*)&program_start));
+    addColumn(new TimePointerColumn("last_command_check",
+                "The time of the last check for a command as UNIX timestamp (deprecated)", (int*)(&last_command_check)));
     addColumn(new TimePointerColumn("last_log_rotation",
                 "Time time of the last log file rotation", (int*)&last_log_rotation));
     addColumn(new IntPointerColumn("interval_length",
@@ -149,13 +152,13 @@ TableStatus::TableStatus()
                 "The total number of services", (int*)&num_objects.services));
 
     addColumn(new StringPointerColumn("program_version",
-                "The version of the monitoring daemon", get_program_version()));
+                "The version of the monitoring daemon", (char *)get_program_version()));
 
     // Livestatus' own status
     addColumn(new IntPointerColumn("cached_log_messages",
-                "The current number of log messages MK Livestatus keeps in memory", &num_cached_log_messages ));
+                "The current number of log messages Naemon Livestatus keeps in memory", &num_cached_log_messages ));
     addColumn(new StringPointerColumn("livestatus_version",
-                "The version of the MK Livestatus module", (char *)VERSION));
+                "The version of the Naemon Livestatus module", (char *)VERSION));
 
     // Livecheck
 }

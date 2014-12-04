@@ -39,6 +39,7 @@
 
 extern int g_debug_level;
 extern unsigned long g_max_cached_messages;
+extern char *qh_socket_path;
 
 Store::Store()
   :_table_hosts(false)
@@ -117,7 +118,7 @@ bool Store::answerRequest(InputBuffer *input, OutputBuffer *output)
     int r = input->readRequest();
     if (r != IB_REQUEST_READ) {
         if (r != IB_END_OF_FILE)
-            output->setError(RESPONSE_CODE_INCOMPLETE_REQUEST, 
+            output->setError(RESPONSE_CODE_INCOMPLETE_REQUEST,
                 "Client connection terminated while request still incomplete");
         return false;
     }
@@ -146,7 +147,22 @@ bool Store::answerRequest(InputBuffer *input, OutputBuffer *output)
 
 void Store::answerCommandRequest(const char *command)
 {
-    process_external_command1((char *)command);
+    int ret, sd;
+    char *buf;
+    sd = nsock_unix(qh_socket_path, NSOCK_TCP | NSOCK_CONNECT);
+    if (sd < 0) {
+        logger(LG_INFO, "Failed to connect to query socket '%s': %s: %s", qh_socket_path, nsock_strerror(sd), strerror(errno));
+        return;
+    }
+    ret = nsock_printf_nul(sd, "#command run %s", command);
+    if (ret < 0) {
+        logger(LG_INFO, "failed to submit command by query handler");
+    }
+    while(read(sd, buf, 1024) > 0) {
+        logger(LG_INFO, "query handler: %s\n", buf);
+    }
+    close(sd);
+    return;
 }
 
 
@@ -180,5 +196,3 @@ void Store::answerGetRequest(InputBuffer *input, OutputBuffer *output, const cha
             logger(LG_INFO, "Time to process request: %lu us. Size of answer: %d bytes", ustime, output->size());
     }
 }
-
-
