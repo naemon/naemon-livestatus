@@ -29,9 +29,9 @@ unixcat_LDADD = -lpthread
 EXTRA_DIST = *.h
 
 pkglib_LTLIBRARIES = livestatus.la
-livestatus_la_LDFLAGS = -module -avoid-version -shared $(LIBICU_LIBS) $(NAEMON_LIBS)
-livestatus_la_CXXFLAGS = $(CXXFLAGS) $(LIBICU_CFLAGS) -lpthread -lstdc++
-livestatus_la_CPPFLAGS = $(CPPFLAGS)  $(NAEMON_CFLAGS)
+livestatus_la_LDFLAGS = -module -avoid-version -shared $(ICU_LIBS) $(NAEMON_LIBS)
+livestatus_la_CXXFLAGS = $(CXXFLAGS) -lpthread -lstdc++
+livestatus_la_CFLAGS = $(CFLAGS) $(ICU_CFLAGS) $(NAEMON_CFLAGS)
 livestatus_la_SOURCES = \
 	AndingFilter.cc ClientQueue.cc Column.cc ColumnsColumn.cc CustomVarsExplicitColumn.cc \
 	ContactsColumn.cc CustomVarsColumn.cc CustomVarsFilter.cc DoubleColumn.cc \

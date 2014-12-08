@@ -32,6 +32,7 @@ AC_INIT([Naemon Livestatus], [1.2.0p3], [op5-users@lists.op5.com])
 AM_INIT_AUTOMAKE([-Wall foreign])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADER([config.h])
+AC_CONFIG_MACRO_DIR([m4])
 m4_ifdef([AM_PATH_CPPUNIT], [AM_PATH_CPPUNIT([1.12])], [AC_MSG_WARN([CPPUnit is not installed, it is needed to be able to run unit tests <http://cppunit.sourceforge.net/>])])
 AS_IF([test "x$CPPUNIT_LIBS" = "x"],
 	  [has_cppunit="no"],
@@ -51,20 +52,16 @@ AM_CONDITIONAL([HAVE_DIET], [which diet >/dev/null 2>&1])
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(socket, connect)
 AC_CHECK_LIB(socket, shutdown)
-PKG_CHECK_MODULES(LIBICU,
-				  [icu-uc, icu-i18n],
-				  [have_icu=yes],
-				  [have_icu=no]
-				  )
-AS_IF([test "$have_icu" = "no"],
-	  PKG_CHECK_MODULES(LIBICU,
-						[icu],
-						[have_icu=yes],
-						[LIBICU_LIBS="-licui18n -licuuc -licudata"]
-						))
-
-AS_IF([test "$have_icu" = "no"],
-	  AC_MSG_WARN([no pc file found for libicu, guessing libs]))
+PKG_CHECK_MODULES(ICU,
+                  [icu-uc, icu-i18n],
+                  [have_icu=yes],
+                  [PKG_CHECK_MODULES(ICU,
+                   [icu],
+                   [have_icu=yes],
+                   [AX_CHECK_ICU([4], [have_icu=yes], [have_icu=no])])])
+AS_IF([test "x$have_icu" = "xyes"],
+      AC_DEFINE([HAVE_ICU], [], [Have International Components for Unicode (ICU)])
+      )
 
 PKG_CHECK_MODULES(NAEMON, [naemon >= 0.8])
 
