@@ -23,6 +23,7 @@
 // Boston, MA 02110-1301 USA.
 
 #include <string.h>
+#include <sys/time.h>
 
 #include "Store.h"
 #include "Query.h"
