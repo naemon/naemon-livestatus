@@ -38,26 +38,30 @@ bool HostlistColumnFilter::accepts(void *data)
     if (abs(_opid) == OP_EQUAL && _ref_value == "")
         return (mem == 0) == (_opid == OP_EQUAL);
 
-    bool is_member = false;
+    bool is_member;
+
+    switch (_opid) {
+        case -OP_LESS: /* !< means >= means 'contains' */
+            is_member = true;
+            break;
+        case OP_LESS:
+            is_member = false;
+            break;
+        default:
+            logger(LG_INFO, "Sorry, Operator %s for host lists lists not implemented.", op_names_plus_8[_opid]);
+            return true;
+    }
     while (mem) {
         char *host_name = mem->host_name;
         if (!host_name)
             host_name = mem->host_ptr->name;
 
         if (host_name == _ref_value) {
-            return true;
+            return is_member;
             break;
         }
         mem = mem->next;
     }
-    switch (_opid) {
-        case -OP_LESS: /* !< means >= means 'contains' */
-            return is_member;
-        case OP_LESS:
-            return !is_member;
-        default:
-            logger(LG_INFO, "Sorry, Operator %s for host lists lists not implemented.", op_names_plus_8[_opid]);
-            return true;
-    }
+    return !is_member;
 }
 
