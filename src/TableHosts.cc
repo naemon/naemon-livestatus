@@ -332,27 +332,48 @@ void *TableHosts::findObject(char *objectspec)
     return find_host(objectspec);
 }
 
+struct by_group_parameters {
+    struct hostbygroup **hg_tmp_storage;
+    hostgroup *hgroup;
+    Query *query;
+};
+
+static int by_hostbygroup(void *_hst, void *user_data)
+{
+    hostbygroup *hg;
+    host *hst = (host *)_hst;
+    struct by_group_parameters *params = (struct by_group_parameters *)user_data;
+    hg = new hostbygroup;
+    hg->_hostgroup = params->hgroup;
+    hg->_host = hst;
+    hg->_next = *params->hg_tmp_storage;
+    *params->hg_tmp_storage = hg;
+    if (!params->query->processDataset(hg))
+        return 1;
+    return 0;
+}
+
+static int by_one_group(void *_hst, void *user_data)
+{
+    Query *query = (Query *)user_data;
+    host *hst = (host *)_hst;
+    if (!query->processDataset(hst))
+        return 1;
+    return 0;
+}
 
 void TableHosts::answerQuery(Query *query)
 {
     struct hostbygroup **_hg_tmp_storage = (struct hostbygroup **)&(query->table_tmp_storage);
     // Table hostsbygroup iterates over host groups
     if (_by_group) {
-        hostgroup *hgroup = hostgroup_list;
-        hostbygroup *hg;
-        while (hgroup) {
-            hostsmember *mem = hgroup->members;
-            while (mem) {
-                hg = new hostbygroup;
-                hg->_hostgroup = hgroup;
-                hg->_host = mem->host_ptr;
-                hg->_next = *_hg_tmp_storage;
-                *_hg_tmp_storage = hg;
-                if (!query->processDataset(hg))
-                    break;
-                mem = mem->next;
-            }
-            hgroup = hgroup->next;
+        struct by_group_parameters params;
+        params.hg_tmp_storage = (struct hostbygroup **)&(query->table_tmp_storage);
+        params.hgroup = hostgroup_list;
+        params.query = query;
+        while (params.hgroup) {
+            rbtree_traverse(params.hgroup->members, by_hostbygroup, &params, rbinorder);
+            params.hgroup = params.hgroup->next;
         }
         return;
     }
@@ -360,12 +381,7 @@ void TableHosts::answerQuery(Query *query)
     // do we know the host group?
     hostgroup *hgroup = (hostgroup *)query->findIndexFilter("groups");
     if (hgroup) {
-        hostsmember *mem = hgroup->members;
-        while (mem) {
-            if (!query->processDataset(mem->host_ptr))
-                break;
-            mem = mem->next;
-        }
+        rbtree_traverse(hgroup->members, by_one_group, query, rbinorder);
         return;
     }
 

@@ -49,10 +49,49 @@
 #include "auth.h"
 #include "strutil.h"
 
+struct by_group_parameters {
+    struct servicebyhostgroup **shg_tmp_storage;
+    hostgroup *hgroup;
+    Query *query;
+};
+
+static int by_servicebyhostgroup(void *_hst, void *user_data)
+{
+    host *hst = (host *)_hst;
+    struct by_group_parameters *params = (struct by_group_parameters *)user_data;
+    servicesmember *smem = hst->services;
+    while (smem) {
+        service *svc = smem->service_ptr;
+        servicebyhostgroup *shg = new servicebyhostgroup;
+        shg->_service      = svc;
+        shg->_host         = svc->host_ptr;
+        shg->_hostgroup    = params->hgroup;
+        shg->_next         = *params->shg_tmp_storage;
+        *params->shg_tmp_storage   = shg;
+
+        if (!params->query->processDataset(shg))
+            break;
+        smem = smem->next;
+    }
+    return 0;
+}
+
+static int by_one_hostgroup(void *_hst, void *user_data)
+{
+    Query *query = (Query *)user_data;
+    host *hst = (host *)_hst;
+    servicesmember *smem = hst->services;
+    while (smem) {
+        if (!query->processDataset(smem->service_ptr))
+            break;
+        smem = smem->next;
+    }
+    return 0;
+}
+
 void TableServices::answerQuery(Query *query)
 {
     struct servicebygroup **_sg_tmp_storage = (struct servicebygroup **)&(query->table_tmp_storage);
-    struct servicebyhostgroup **_shg_tmp_storage = (struct servicebyhostgroup **)&(query->table_tmp_storage);
 
     // Table servicesbygroup iterate over service groups
     if (_by_group) {
@@ -81,28 +120,13 @@ void TableServices::answerQuery(Query *query)
     else if (_by_hostgroup)
     {
         hostgroup *hgroup = hostgroup_list;
-        servicebyhostgroup *shg;
-        while (hgroup) {
-            hostsmember *mem = hgroup->members;
-            while (mem) {
-                host *hst = mem->host_ptr;
-                servicesmember *smem = hst->services;
-                while (smem) {
-                    service *svc = smem->service_ptr;
-                    shg = new servicebyhostgroup;
-                    shg->_service      = svc;
-                    shg->_host         = svc->host_ptr;
-                    shg->_hostgroup    = hgroup;
-                    shg->_next         = *_shg_tmp_storage;
-                    *_shg_tmp_storage   = shg;
-
-                    if (!query->processDataset(shg))
-                        break;
-                    smem = smem->next;
-                }
-                mem = mem->next;
-            }
-            hgroup = hgroup->next;
+        struct by_group_parameters params;
+        params.shg_tmp_storage = (struct servicebyhostgroup **)&(query->table_tmp_storage);
+        params.hgroup = hostgroup_list;
+        params.query = query;
+        while (params.hgroup) {
+            rbtree_traverse(hgroup->members, by_servicebyhostgroup, &params, rbinorder);
+            params.hgroup = params.hgroup->next;
         }
         return;
     }
@@ -138,17 +162,7 @@ void TableServices::answerQuery(Query *query)
     // do we know the host group?
     hostgroup *hgroup = (hostgroup *)query->findIndexFilter("host_groups");
     if (hgroup) {
-        hostsmember *mem = hgroup->members;
-        while (mem) {
-            host *host = mem->host_ptr;
-            servicesmember *smem = host->services;
-            while (smem) {
-                if (!query->processDataset(smem->service_ptr))
-                    break;
-                smem = smem->next;
-            }
-            mem = mem->next;
-        }
+        rbtree_traverse(hgroup->members, by_one_hostgroup, query, rbinorder);
         return;
     }
 

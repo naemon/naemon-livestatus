@@ -31,42 +31,54 @@
 
 extern TableHosts *g_table_hosts;
 
-hostsmember *HostlistColumn::getMembers(void *data)
+rbtree *HostlistColumn::getMembers(void *data)
 {
     data = shiftPointer(data);
     if (!data) return 0;
 
-    return *(hostsmember **)((char *)data + _offset);
+    return *(rbtree **)((char *)data + _offset);
+}
+
+struct output_parameters {
+    Query *query;
+    bool first;
+    bool show_state;
+};
+
+static int output_host(void *_hst, void *user_data)
+{
+    host *hst = (host *)_hst;
+    output_parameters *params = (output_parameters *)user_data;
+    contact *auth_user = params->query->authUser();
+    if (!auth_user || g_table_hosts->isAuthorized(auth_user, hst)) {
+        if (!params->first)
+            params->query->outputListSeparator();
+        else
+            params->first = false;
+        if (!params->show_state)
+            params->query->outputString(hst->name);
+        else {
+            params->query->outputBeginSublist();
+            params->query->outputString(hst->name);
+            params->query->outputSublistSeparator();
+            params->query->outputInteger(hst->current_state);
+            params->query->outputSublistSeparator();
+            params->query->outputInteger(hst->has_been_checked);
+            params->query->outputEndSublist();
+        }
+    }
+    return 0;
 }
 
 void HostlistColumn::output(void *data, Query *query)
 {
     query->outputBeginList();
-    contact *auth_user = query->authUser();
-    hostsmember *mem = getMembers(data);
-
-    bool first = true;
-    while (mem) {
-        host *hst = mem->host_ptr;
-        if (!auth_user || g_table_hosts->isAuthorized(auth_user, hst)) {
-            if (!first)
-                query->outputListSeparator();
-            else
-                first = false;
-            if (!_show_state)
-                query->outputString(hst->name);
-            else {
-                query->outputBeginSublist();
-                query->outputString(hst->name);
-                query->outputSublistSeparator();
-                query->outputInteger(hst->current_state);
-                query->outputSublistSeparator();
-                query->outputInteger(hst->has_been_checked);
-                query->outputEndSublist();
-            }
-        }
-        mem = mem->next;
-    }
+    rbtree *mem = getMembers(data);
+    output_parameters params;
+    params.query = query;
+    params.first = true;
+    params.show_state = _show_state;
+    rbtree_traverse(mem, output_host, &params, rbinorder);
     query->outputEndList();
 }
 

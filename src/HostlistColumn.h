@@ -40,7 +40,7 @@ public:
     int type() { return COLTYPE_LIST; }
     void output(void *, Query *);
     Filter *createFilter(int opid, char *value);
-    hostsmember *getMembers(void *data);
+    rbtree *getMembers(void *data);
 };
 
 

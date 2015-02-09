@@ -32,7 +32,7 @@ bool HostlistColumnFilter::accepts(void *data)
 {
     // data points to a primary data object. We need to extract
     // a pointer to a host list
-    hostsmember *mem = _hostlist_column->getMembers(data);
+    rbtree *mem = _hostlist_column->getMembers(data);
 
     // test for empty list
     if (abs(_opid) == OP_EQUAL && _ref_value == "")
@@ -51,17 +51,10 @@ bool HostlistColumnFilter::accepts(void *data)
             logger(LG_INFO, "Sorry, Operator %s for host lists lists not implemented.", op_names_plus_8[_opid]);
             return true;
     }
-    while (mem) {
-        char *host_name = mem->host_name;
-        if (!host_name)
-            host_name = mem->host_ptr->name;
-
-        if (host_name == _ref_value) {
-            return is_member;
-            break;
-        }
-        mem = mem->next;
-    }
+    host hst;
+    hst.name = (char *)_ref_value.c_str();
+    if (rbtree_find(mem, &hst))
+        return is_member;
     return !is_member;
 }
 

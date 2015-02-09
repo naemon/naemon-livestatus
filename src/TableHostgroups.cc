@@ -122,25 +122,31 @@ void *TableHostgroups::findObject(char *objectspec)
     return find_hostgroup(objectspec);
 }
 
+static int is_authorized_for(void *_hst, void *user_data)
+{
+    host *hst = (host *)_hst;
+    contact *ctc = (contact *)user_data;
+    bool is = g_table_hosts->isAuthorized(ctc, hst);
+    if (is && g_group_authorization == AUTH_LOOSE)
+        return 1;
+    else if (!is && g_group_authorization == AUTH_STRICT)
+        return 1;
+    return 0;
+}
+
 bool TableHostgroups::isAuthorized(contact *ctc, void *data)
 {
     if (ctc == UNKNOWN_AUTH_USER)
         return false;
 
     hostgroup *hg = (hostgroup *)data;
-    hostsmember *mem = hg->members;
-    if (!mem)
+    rbtree *mem = hg->members;
+    if (!rbtree_num_nodes(mem))
         return false;
 
-    while (mem) {
-        host *hst = mem->host_ptr;
-        bool is = g_table_hosts->isAuthorized(ctc, hst);
-        if (is && g_group_authorization == AUTH_LOOSE)
-            return true;
-        else if (!is && g_group_authorization == AUTH_STRICT)
-            return false;
-        mem = mem->next;
-    }
+    if (rbtree_traverse(mem, is_authorized_for, ctc, rbinorder))
+        return g_group_authorization == AUTH_LOOSE;
+
     if(g_group_authorization == AUTH_LOOSE)
         return false;
     return true;
