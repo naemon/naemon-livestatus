@@ -93,7 +93,7 @@ test -f /etc/init.d/monitor && /etc/init.d/monitor restart || :
 %mod_path/livestatus.so
 %mod_path/livestatus.la
 %{python_sitelib}/livestatus
-/opt/monitor/etc/mconf/livestatus.cfg
+%config(noreplace) /opt/monitor/etc/mconf/livestatus.cfg
 
 
 %files -n unixcat
