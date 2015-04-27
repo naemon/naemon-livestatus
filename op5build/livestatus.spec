@@ -93,7 +93,7 @@ test -f /etc/init.d/monitor && /etc/init.d/monitor restart || :
 %mod_path/livestatus.so
 %mod_path/livestatus.la
 %{python_sitelib}/livestatus
-%config(noreplace) /opt/monitor/etc/mconf/livestatus.cfg
+%attr(755,monitor,%daemon_group) %config(noreplace) /opt/monitor/etc/mconf/livestatus.cfg
 
 
 %files -n unixcat
