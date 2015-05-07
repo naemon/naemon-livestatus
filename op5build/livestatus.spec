@@ -1,7 +1,11 @@
 %define mod_path %{_libdir}/naemon-livestatus
 %define nagios_cfg /opt/monitor/etc/nagios.cfg
 
-%{?dgroup:%define daemon_group %{dgroup}}
+%if 0%{?suse_version}
+%define daemon_group www
+%else
+%define daemon_group apache
+%endif
 
 %if ! ( 0%{?rhel} > 5 )
 %{!?python_sitelib: %global python_sitelib %(/usr/bin/python26 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
