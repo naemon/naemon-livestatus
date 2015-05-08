@@ -35,8 +35,15 @@ bool HostlistColumnFilter::accepts(void *data)
     rbtree *mem = _hostlist_column->getMembers(data);
 
     // test for empty list
-    if (abs(_opid) == OP_EQUAL && _ref_value == "")
-        return (mem == 0) == (_opid == OP_EQUAL);
+    if (abs(_opid) == OP_EQUAL && _ref_value == "") {
+        bool is_empty = false;
+        if( mem == 0 ) {
+            is_empty = true;
+        } else if( rbtree_isempty(mem) ) {
+            is_empty = true;
+        }
+        return is_empty == (_opid == OP_EQUAL);
+    }
 
     bool is_member;
 

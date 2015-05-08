@@ -5,7 +5,7 @@
 #include <locale.h>
 #include <stdlib.h>
 #include <vector>
-#include "TestColumnFilters.h"
+#include "StringColumnFilterTest.h"
 #include "../src/OffsetStringServiceMacroColumn.h"
 #include "../src/OffsetStringColumn.h"
 #include "../src/StringColumnFilter.h"
