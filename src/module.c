@@ -78,14 +78,11 @@ size_t g_thread_stack_size = 65536; /* stack size of threads */
 
 void *g_nagios_handle;
 int g_unix_socket = -1;
-int g_pipes[2];
-int g_max_fd_ever = 0;
 char g_socket_path[4096];
 char g_pnp_path[4096];
 char g_logfile_path[4096];
 int g_debug_level = 0;
 int g_should_terminate = false;
-pthread_t g_mainthread_id;
 pthread_t *g_clientthread_id;
 unsigned long g_max_cached_messages = 500000;
 unsigned long g_max_lines_per_logfile = 1000000; // do never read more than that number of lines from a logfile
@@ -98,74 +95,13 @@ int g_group_authorization = AUTH_STRICT;
 int g_data_encoding = ENCODING_UTF8;
 int g_num_livehelpers = 20;
 
-void livestatus_count_fork()
+static int accept_connection(int sd, int events, void *discard)
 {
-    g_counters[COUNTER_FORKS]++;
+    int cc = accept(sd, NULL, NULL);
+    do_statistics();
+    queue_add_connection(cc); /* closes fd */
+    g_counters[COUNTER_CONNECTIONS]++;
 }
-
-
-void livestatus_cleanup_after_fork()
-{
-    // 4.2.2010: Deactivate the cleanup function. It might cause
-    // more trouble than it tries to avoid. It might lead to a deadlock
-    // with Nagios' fork()-mechanism...
-    // store_deinit();
-    struct stat st;
-
-    int i;
-    // We need to close our server and client sockets. Otherwise
-    // our connections are inherited to host and service checks.
-    // If we close our client connection in such a situation,
-    // the connection will still be open since and the client will
-    // hang while trying to read further data. And the CLOEXEC is
-    // not atomic :-(
-
-    // Eventuell sollte man hier anstelle von store_deinit() nicht
-    // darauf verlassen, dass die ClientQueue alle Verbindungen zumacht.
-    // Es sind ja auch Dateideskriptoren offen, die von Threads gehalten
-    // werden und nicht mehr in der Queue sind. Und in store_deinit()
-    // wird mit mutexes rumgemacht....
-    for (i=3; i < g_max_fd_ever; i++) {
-        if (0 == fstat(i, &st) && S_ISSOCK(st.st_mode))
-        {
-            close(i);
-        }
-    }
-}
-
-void *main_thread(void *data __attribute__ ((__unused__)))
-{
-    g_thread_pid = getpid();
-    while (!g_should_terminate)
-    {
-        do_statistics();
-        if (g_thread_pid != getpid()) {
-            logger(LG_INFO, "I'm not the main process but %d!", getpid());
-            // return;
-        }
-        struct timeval tv;
-        tv.tv_sec  = 2;
-        tv.tv_usec = 500 * 1000;
-
-        fd_set fds;
-        FD_ZERO(&fds);
-        FD_SET(g_unix_socket, &fds);
-        FD_SET(g_pipes[0], &fds);
-        int retval = select(g_unix_socket + 1, &fds, NULL, NULL, &tv);
-        if (retval > 0 && FD_ISSET(g_unix_socket, &fds)) {
-            int cc = accept(g_unix_socket, NULL, NULL);
-            if (cc > g_max_fd_ever)
-                g_max_fd_ever = cc;
-            if (0 < fcntl(cc, F_SETFD, FD_CLOEXEC))
-                logger(LG_INFO, "Cannot set FD_CLOEXEC on client socket: %s", strerror(errno));
-            queue_add_connection(cc); // closes fd
-            g_counters[COUNTER_CONNECTIONS]++;
-        }
-    }
-    logger(LG_INFO, "Socket thread has terminated");
-    return NULL;
-}
-
 
 void *client_thread(void *data __attribute__ ((__unused__)))
 {
@@ -200,9 +136,7 @@ void start_threads()
 {
     if (!g_thread_running) {
         /* start thread that listens on socket */
-        pthread_atfork(livestatus_count_fork, NULL, livestatus_cleanup_after_fork);
         g_should_terminate = false;
-        pthread_create(&g_mainthread_id, 0, main_thread, (void *)0);
         if (g_debug_level > 0)
             logger(LG_INFO, "Starting %d client threads", g_num_clientthreads);
 
@@ -230,8 +164,6 @@ void start_threads()
 void terminate_threads()
 {
     if (g_thread_running) {
-        logger(LG_INFO, "Waiting for main to terminate...");
-        pthread_join(g_mainthread_id, NULL);
         logger(LG_INFO, "Waiting for client threads to terminate...");
         queue_wakeup_all();
         unsigned t;
@@ -240,19 +172,10 @@ void terminate_threads()
                 logger(LG_INFO, "Warning: could not join thread %p", g_clientthread_id[t]);
         }
         if (g_debug_level > 0)
-            logger(LG_INFO, "Main thread + %u client threads have finished", g_num_clientthreads);
+            logger(LG_INFO, "%u client threads have finished", g_num_clientthreads);
         g_thread_running = 0;
     }
     free(g_clientthread_id);
-}
-
-int open_ipc_pipe()
-{
-    if (pipe(g_pipes) == -1) {
-        logger(LG_ALERT, "Cannot open IPC pipe: %s", strerror(errno));
-        return false;
-    }
-    return true;
 }
 
 int open_unix_socket()
@@ -270,7 +193,6 @@ int open_unix_socket()
     }
 
     g_unix_socket = socket(PF_LOCAL, SOCK_STREAM, 0);
-    g_max_fd_ever = g_unix_socket;
     if (g_unix_socket < 0)
     {
         logger(LG_CRIT , "Unable to create UNIX socket: %s", strerror(errno));
@@ -315,10 +237,8 @@ int open_unix_socket()
 void close_unix_socket()
 {
     unlink(g_socket_path);
-    if (g_unix_socket >= 0) {
-        close(g_unix_socket);
-        g_unix_socket = -1;
-    }
+    iobroker_close(nagios_iobs, g_unix_socket);
+    g_unix_socket = -1;
 }
 
 int broker_host(int event_type __attribute__ ((__unused__)), void *data __attribute__ ((__unused__)))
@@ -416,12 +336,20 @@ int broker_event(int event_type __attribute__ ((__unused__)), void *data)
 
 int broker_process(int event_type __attribute__ ((__unused__)), void *data)
 {
+    int ret;
     struct nebstruct_process_struct *ps = (struct nebstruct_process_struct *)data;
     if (ps->type == NEBTYPE_PROCESS_EVENTLOOPSTART) {
         update_timeperiods_cache(time(0));
+        do_statistics();
+        if (0 != (ret = iobroker_register(nagios_iobs, g_unix_socket, NULL, accept_connection))) {
+            logger(LG_ERR, "Cannot register unix socket with Naemon listener: %s", iobroker_strerror(ret));
+            close(g_unix_socket);
+            g_unix_socket = -1;
+            return ERROR;
+        }
         start_threads();
     }
-    return 0;
+    return OK;
 }
 
 
@@ -691,9 +619,6 @@ int nebmodule_init(int flags __attribute__ ((__unused__)), char *args, void *han
 
     logger(LG_INFO, "Naemon Livestatus %s Socket: '%s'", VERSION, g_socket_path);
 
-    if (!open_ipc_pipe())
-        return 1;
-
     if (!open_unix_socket())
         return 1;
 
@@ -709,24 +634,14 @@ int nebmodule_init(int flags __attribute__ ((__unused__)), char *args, void *han
     store_init();
     register_callbacks();
 
-    /* Unfortunately, we cannot start our socket thread right now.
-       Nagios demonizes *after* having loaded the NEB modules. When
-       demonizing we are losing our thread. Therefore, we create the
-       thread the first time one of our callbacks is called. Before
-       that happens, we haven't got any data anyway... */
-
     logger(LG_INFO, "Finished initialization. Further log messages go to %s", g_logfile_path);
-    return 0;
+    return OK;
 }
-
 
 int nebmodule_deinit(int flags __attribute__ ((__unused__)), int reason __attribute__ ((__unused__)))
 {
     logger(LG_INFO, "deinitializing");
     g_should_terminate = true;
-    if (write(g_pipes[1], "deinit", 7) == -1)
-        logger(LG_INFO, "Failed to send termination message to main thread: %s", strerror(errno));
-
     close_unix_socket();
     terminate_threads();
     store_deinit();
@@ -734,4 +649,3 @@ int nebmodule_deinit(int flags __attribute__ ((__unused__)), int reason __attrib
     close_logfile();
     return 0;
 }
-
