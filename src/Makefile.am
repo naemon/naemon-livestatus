@@ -51,7 +51,8 @@ livestatus_la_SOURCES = \
 	ContactgroupsMemberColumn.cc OffsetStringMacroColumn.cc OffsetStringServiceMacroColumn.cc \
 	OffsetStringHostMacroColumn.cc StatsColumn.cc IntAggregator.cc CountAggregator.cc \
 	DoubleAggregator.cc AttributelistColumn.cc AttributelistFilter.cc \
-	global_counters.c  module.c  logger.c waittriggers.c TimeperiodsCache.cc pnp4nagios.cc \
+	global_counters.c  module.c  logger.c waittriggers.c TimeperiodsCache.cc \
+	TimeperiodExclusionColumn.cc TimeperiodDaysColumn.cc TimeperiodExceptionsColumn.cc pnp4nagios.cc \
 	ContactgroupsColumn.cc RowSortedSet.cc opids.cc auth.cc
 
 if HAVE_DIET
