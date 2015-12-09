@@ -6,11 +6,13 @@ class Naemon
     @pid = nil
     @configuration =  {
       :command_file => "naemon.cmd",
-      :lock_file => "naemon.pid"
+      :lock_file => "naemon.pid",
+      :log_file => "naemon.log",
+      :query_socket => "naemon.qh"
+
     }
     @oconf = nil
     @brokers = {}
-    
   end
 
   def set_object_config(objectconfig)
@@ -42,7 +44,7 @@ class Naemon
         f.write("#{k.to_s}=#{v}\n")
       end
 
-      @brokers.each do |_, broker| 
+      @brokers.each do |_, broker|
         f.write("broker_module=#{broker.broker_config}")
       end
     }
@@ -62,7 +64,7 @@ class Naemon
 
   def stop()
     `kill #{self.pid}`
-    `rm -rf #{@config_dir}`
+    #`rm -rf #{@config_dir}`
   end
 end
 
@@ -84,11 +86,21 @@ class Livestatus < NaemonModule
   end
 
   def broker_config
-    "/usr/lib64/naemon-livestatus/livestatus.so #{@sockpath} debug=1"
+    if ENV['CUKE_LIVESTATUS_PATH']
+      so_path = ENV['CUKE_LIVESTATUS_PATH']
+    else
+      so_path = "/usr/lib64/naemon-livestatus/livestatus.so"
+    end
+    "#{so_path} #{@sockpath} debug=1"
   end
 
   def query(q)
-    cmd = "echo -e \"#{q}\"| unixcat #{@sockpath}"
+    if ENV['CUKE_UNIXCAT_PATH']
+      unixcat = ENV['CUKE_UNIXCAT_PATH']
+    else
+      unixcat = "unixcat"
+    end
+    cmd = "echo -e \"#{q}\"| #{unixcat} #{@sockpath}"
     @last_response = `#{cmd}`.split("\n")
   end
   

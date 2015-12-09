@@ -29,3 +29,20 @@ Feature: Queries work as expected
 			|service2;hg2|
 			|service3;hg2|
 
+	Scenario: Livestatus lists services in services table
+		Given I submit the following livestatus query
+			|GET services|
+			|Columns: description|
+		Then I should see the following livestatus response
+			|service1|
+			|service2|
+			|service3|
+
+	Scenario: Livestatus lists hosts in hosts table
+		Given I submit the following livestatus query
+			|GET hosts|
+			|Columns: host_name|
+		Then I should see the following livestatus response
+			|host1|
+			|host2|
+			|host3|

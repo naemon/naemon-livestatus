@@ -16,3 +16,8 @@ HostlistColumnFilterTest_LDFLAGS = $(CPPUNIT_LIBS) -ldl -no-install $(NAEMON_LIB
 HostlistColumnFilterTest_LDADD = $(top_builddir)/src/livestatus.la
 
 endif
+
+check-cucumber:
+	CUKE_UNIXCAT_PATH=$(abs_builddir)/../src/unixcat CUKE_LIVESTATUS_PATH=$(abs_builddir)/../src/.libs/livestatus.so cucumber
+check-local: check-cucumber
+

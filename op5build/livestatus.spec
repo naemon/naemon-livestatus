@@ -42,6 +42,8 @@ BuildRequires: autoconf, automake
 BuildRequires: libicu-devel > 4.2
 BuildRequires: cppunit-devel
 BuildRequires: cppunit
+BuildRequires: op5-naemon
+BuildRequires: rubygem20-op5cucumber
 BuildRoot: %{_tmppath}/%{name}-%{version}
 
 
@@ -68,7 +70,6 @@ autoreconf -is
 %configure --with-naemon-config-dir=/opt/monitor/etc/mconf
 %__make
 LC_ALL=en_US.utf-8 %__make check
-
 
 %install
 %__make install DESTDIR=%buildroot
@@ -103,7 +104,6 @@ test -f /etc/init.d/monitor && /etc/init.d/monitor restart || :
 %files -n unixcat
 %defattr(755,root,root)
 %_bindir/unixcat
-
 
 %clean
 rm -rf %buildroot
