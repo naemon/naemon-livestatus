@@ -119,13 +119,12 @@ void TableServices::answerQuery(Query *query)
     // Table servicesbyhostgroup iterates of hostgroups and hosts
     else if (_by_hostgroup)
     {
-        hostgroup *hgroup = hostgroup_list;
         struct by_group_parameters params;
         params.shg_tmp_storage = (struct servicebyhostgroup **)&(query->table_tmp_storage);
         params.hgroup = hostgroup_list;
         params.query = query;
         while (params.hgroup) {
-            rbtree_traverse(hgroup->members, by_servicebyhostgroup, &params, rbinorder);
+            rbtree_traverse(params.hgroup->members, by_servicebyhostgroup, &params, rbinorder);
             params.hgroup = params.hgroup->next;
         }
         return;
