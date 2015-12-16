@@ -69,12 +69,10 @@ extern char *log_file;
 int g_idle_timeout_msec = 300 * 1000; /* maximum idle time for connection in keep alive state */
 int g_query_timeout_msec = 10 * 1000;      /* maximum time for reading a query */
 
-unsigned g_num_clientthreads = 10;     /* allow 10 concurrent connections per default */
 size_t g_thread_stack_size = 65536; /* stack size of threads */
 
 #define false 0
 #define true 1
-
 
 void *g_nagios_handle;
 int g_unix_socket = -1;
@@ -83,99 +81,77 @@ char g_pnp_path[4096];
 char g_logfile_path[4096];
 int g_debug_level = 0;
 int g_should_terminate = false;
-pthread_t *g_clientthread_id;
 unsigned long g_max_cached_messages = 500000;
 unsigned long g_max_lines_per_logfile = 1000000; // do never read more than that number of lines from a logfile
 unsigned long g_max_response_size = 100 * 1024 * 1024; // limit answer to 10 MB
-int g_thread_running = 0;
-int g_thread_pid = 0;
 char g_hidden_custom_var_prefix[256];
 int g_service_authorization = AUTH_LOOSE;
 int g_group_authorization = AUTH_STRICT;
 int g_data_encoding = ENCODING_UTF8;
 int g_num_livehelpers = 20;
 
+void *client_thread(void *data __attribute__ ((__unused__)));
+
 static int accept_connection(int sd, int events, void *discard)
 {
     int cc = accept(sd, NULL, NULL);
+    int ret = 0;
+    pthread_t thr;
+    pthread_attr_t attr;
     do_statistics();
-    queue_add_connection(cc); /* closes fd */
+    pthread_attr_init(&attr);
+
+    size_t defsize;
+    if (g_debug_level >= 2 && 0 == pthread_attr_getstacksize(&attr, &defsize))
+      logger(LG_INFO, "Default stack size is %lu", defsize);
+    if (0 != pthread_attr_setstacksize(&attr, g_thread_stack_size))
+      logger(LG_INFO, "Error: Cannot set thread stack size to %lu", g_thread_stack_size);
+    else {
+      if (g_debug_level >= 2)
+        logger(LG_INFO, "Setting thread stack size to %lu", g_thread_stack_size);
+    }
+
+     /* We don't want to bother with joining of client threads, so we
+     * create them detached */
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+    int *arg = malloc(sizeof(int));
+    *arg = cc;
+    if ((ret = pthread_create(&thr, &attr, client_thread, arg)) != 0) {
+		logger(LG_ERR, "Failed to create client thread: %s", strerror(ret));
+		free(arg);
+		close(cc);
+    }
+    pthread_attr_destroy(&attr);
     g_counters[COUNTER_CONNECTIONS]++;
+    return 0;
 }
 
-void *client_thread(void *data __attribute__ ((__unused__)))
+void *client_thread(void *data)
 {
     void *input_buffer = create_inputbuffer(&g_should_terminate);
     void *output_buffer = create_outputbuffer();
 
-    while (!g_should_terminate) {
-        int cc = queue_pop_connection();
-        if (cc >= 0) {
-            if (g_debug_level >= 2)
-                logger(LG_INFO, "Accepted client connection on fd %d", cc);
-            set_inputbuffer_fd(input_buffer, cc);
-            int keepalive = 1;
-            unsigned requestnr = 1;
-            while (keepalive) {
-                if (g_debug_level >= 2 && requestnr > 1)
-                    logger(LG_INFO, "Handling request %d on same connection", requestnr);
-                keepalive = store_answer_request(input_buffer, output_buffer);
-                flush_output_buffer(output_buffer, cc, &g_should_terminate);
-                g_counters[COUNTER_REQUESTS]++;
-                requestnr ++;
-            }
-            close(cc);
+    int cc = *((int *)data);
+    free(data);
+    if (cc >= 0) {
+        if (g_debug_level >= 2)
+            logger(LG_INFO, "Accepted client connection on fd %d", cc);
+        set_inputbuffer_fd(input_buffer, cc);
+        int keepalive = 1;
+        unsigned requestnr = 1;
+        while (keepalive && !g_should_terminate) {
+            if (g_debug_level >= 2 && requestnr > 1)
+                logger(LG_INFO, "Handling request %d on same connection", requestnr);
+            keepalive = store_answer_request(input_buffer, output_buffer);
+            flush_output_buffer(output_buffer, cc, &g_should_terminate);
+            g_counters[COUNTER_REQUESTS]++;
+            requestnr ++;
         }
+        close(cc);
     }
     delete_outputbuffer(output_buffer);
     delete_inputbuffer(input_buffer);
     return NULL;
-}
-
-void start_threads()
-{
-    if (!g_thread_running) {
-        /* start thread that listens on socket */
-        g_should_terminate = false;
-        if (g_debug_level > 0)
-            logger(LG_INFO, "Starting %d client threads", g_num_clientthreads);
-
-        unsigned t;
-        g_clientthread_id = (pthread_t *)malloc(sizeof(pthread_t) * g_num_clientthreads);
-        pthread_attr_t attr;
-        pthread_attr_init(&attr);
-        size_t defsize;
-        if (g_debug_level >= 2 && 0 == pthread_attr_getstacksize(&attr, &defsize))
-            logger(LG_INFO, "Default stack size is %lu", defsize);
-        if (0 != pthread_attr_setstacksize(&attr, g_thread_stack_size))
-            logger(LG_INFO, "Error: Cannot set thread stack size to %lu", g_thread_stack_size);
-        else {
-            if (g_debug_level >= 2)
-                logger(LG_INFO, "Setting thread stack size to %lu", g_thread_stack_size);
-        }
-        for (t=0; t < g_num_clientthreads; t++)
-            pthread_create(&g_clientthread_id[t], &attr, client_thread, (void *)0);
-
-        g_thread_running = 1;
-        pthread_attr_destroy(&attr);
-    }
-}
-
-void terminate_threads()
-{
-    if (g_thread_running) {
-        logger(LG_INFO, "Waiting for client threads to terminate...");
-        queue_wakeup_all();
-        unsigned t;
-        for (t=0; t < g_num_clientthreads; t++) {
-            if (0 != pthread_join(g_clientthread_id[t], NULL))
-                logger(LG_INFO, "Warning: could not join thread %p", g_clientthread_id[t]);
-        }
-        if (g_debug_level > 0)
-            logger(LG_INFO, "%u client threads have finished", g_num_clientthreads);
-        g_thread_running = 0;
-    }
-    free(g_clientthread_id);
 }
 
 int open_unix_socket()
@@ -347,7 +323,6 @@ int broker_process(int event_type __attribute__ ((__unused__)), void *data)
             g_unix_socket = -1;
             return ERROR;
         }
-        start_threads();
     }
     return OK;
 }
@@ -515,13 +490,7 @@ void livestatus_parse_arguments(const char *args_orig)
                         g_max_response_size, g_max_response_size / (1024.0*1024.0));
             }
             else if (!strcmp(left, "num_client_threads")) {
-                int c = atoi(right);
-                if (c <= 0 || c > 1000)
-                    logger(LG_INFO, "Error: Cannot set num_client_threads to %d. Must be > 0 and <= 1000", c);
-                else {
-                    logger(LG_INFO, "Setting number of client threads to %d", c);
-                    g_num_clientthreads = c;
-                }
+                logger(LG_INFO, "Ignoring deprecated option %s, there is no longer a limit to the number of concurrent threads", left);
             }
             else if (!strcmp(left, "query_timeout")) {
                 int c = atoi(right);
@@ -643,7 +612,6 @@ int nebmodule_deinit(int flags __attribute__ ((__unused__)), int reason __attrib
     logger(LG_INFO, "deinitializing");
     g_should_terminate = true;
     close_unix_socket();
-    terminate_threads();
     store_deinit();
     deregister_callbacks();
     close_logfile();
