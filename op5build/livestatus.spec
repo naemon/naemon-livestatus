@@ -33,6 +33,7 @@ BuildRequires: python26
 Requires: python
 BuildRequires: python
 %endif
+BuildRequires: python-argparse
 BuildRequires: libstdc++-devel
 BuildRequires: gcc-c++
 BuildRequires: pkgconfig
@@ -69,7 +70,7 @@ rm -rf %buildroot
 autoreconf -is
 %configure --with-naemon-config-dir=/opt/monitor/etc/mconf
 %__make
-LC_ALL=en_US.utf-8 %__make check
+LS_CLOBBER_SOCKET_PATH=/opt/monitor/var/rw/live LC_ALL=en_US.utf-8 %__make check
 
 %install
 %__make install DESTDIR=%buildroot

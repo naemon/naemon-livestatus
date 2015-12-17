@@ -79,7 +79,7 @@ class NaemonModule
 end
 
 class Livestatus < NaemonModule
-  attr_accessor :last_response
+  attr_accessor :last_response, :clobber_data
 
   def initialize(sockpath)
     @sockpath = sockpath
@@ -106,5 +106,15 @@ class Livestatus < NaemonModule
   
   def is_initialized?()
     File.exists? @sockpath
+  end
+
+  def clobber(n_queries, idle_time)
+    if ENV['CUKE_CLOBBER_PATH']
+      clobber = ENV['CUKE_CLOBBER_PATH']
+    else
+      clobber = 'ls-clobber'
+    end
+    clobber_output = `#{clobber} #{@sockpath} #{n_queries} #{idle_time}`
+    @clobber_data = JSON.load(clobber_output)
   end
 end
