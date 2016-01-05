@@ -125,6 +125,8 @@ void TableHosts::addColumns(Table *table, string prefix, int indirect_offset)
     table->addColumn(new OffsetStringColumn(prefix + "long_plugin_output",
                 "Complete output from check plugin", (char *)(&hst.long_plugin_output) - ref, indirect_offset));
 
+    table->addColumn(new OffsetIntColumn(prefix + "notified_on",
+                "Flags determining which states have been notified on", (char *)(&hst.notified_on) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "initial_state",
                 "Initial host state", (char *)(&hst.initial_state) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "max_check_attempts",

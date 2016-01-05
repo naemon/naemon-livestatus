@@ -256,6 +256,8 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
     table->addColumn(new OffsetStringColumn(prefix + "icon_image_alt",
                 "An alternative text for the icon_image for browsers not displaying icons", (char *)(&svc.icon_image_alt) - ref, indirect_offset));
 
+    table->addColumn(new OffsetIntColumn(prefix + "notified_on",
+                "Flags determining which states have been notified on", (char *)&svc.notified_on - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "initial_state",
                 "The initial state of the service", (char *)&svc.initial_state - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "max_check_attempts",
