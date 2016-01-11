@@ -43,7 +43,10 @@ using namespace std;
 
 class OutputBuffer
 {
-    string _buffer;
+    char *_buffer;
+    char *_writepos;
+    char *_end;
+    unsigned _max_size;
     int _response_header;
     unsigned _response_code;
     string _error_message;
@@ -52,7 +55,8 @@ class OutputBuffer
 public:
     OutputBuffer();
     ~OutputBuffer();
-    unsigned size() { return _buffer.size(); }
+    const char *buffer() { return _buffer; }
+    unsigned size() { return _writepos - _buffer; }
     void addChar(char c);
     void addString(const char *);
     void addBuffer(const char *, unsigned);
@@ -66,6 +70,7 @@ public:
     bool hasError() { return _error_message != ""; }
 
 private:
+    void needSpace(unsigned);
     void writeData(int fd, int *, const char *, int);
 };
 

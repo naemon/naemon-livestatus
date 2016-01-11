@@ -36,18 +36,21 @@
 
 
 OutputBuffer::OutputBuffer()
+  : _max_size(INITIAL_OUTPUT_BUFFER_SIZE)
 {
-    _buffer.reserve(INITIAL_OUTPUT_BUFFER_SIZE);
+    _buffer = (char *)malloc(_max_size);
+    _end = _buffer + _max_size;
     reset();
 }
 
 OutputBuffer::~OutputBuffer()
 {
+    free(_buffer);
 }
 
 void OutputBuffer::reset()
 {
-    _buffer.clear();
+    _writepos = _buffer;
     _response_header = RESPONSE_HEADER_OFF;
     _response_code = RESPONSE_CODE_OK;
     _do_keepalive = false;
@@ -56,34 +59,51 @@ void OutputBuffer::reset()
 
 void OutputBuffer::addChar(char c)
 {
-    _buffer.push_back(c);
+    needSpace(1);
+    *_writepos++ = c;
 }
 
 void OutputBuffer::addString(const char *s)
 {
-    _buffer.append(s);
+    int l = strlen(s);
+    addBuffer(s, l);
 }
 
 void OutputBuffer::addBuffer(const char *buf, unsigned len)
 {
-    _buffer.append(buf, len);
+    needSpace(len);
+    memcpy(_writepos, buf, len);
+    _writepos += len;
+}
+
+void OutputBuffer::needSpace(unsigned len)
+{
+    if (_writepos + len > _end)
+    {
+        unsigned s = size();
+        unsigned needed = s + len;
+        while (_max_size < needed) // double, until enough space
+            _max_size *= 2;
+
+        _buffer = (char *)realloc(_buffer, _max_size);
+        _writepos = _buffer + s;
+        _end = _buffer + _max_size;
+    }
 }
 
 void OutputBuffer::flush(int fd, int *termination_flag)
 {
     if (_response_header == RESPONSE_HEADER_FIXED16)
     {
+        const char *buffer = _buffer;
         int s = size();
-        const char *buffer = NULL;
+
         // if response code is not OK, output error
         // message instead of data
         if (_response_code != RESPONSE_CODE_OK)
         {
             buffer = _error_message.c_str();
             s = _error_message.size();
-        }
-        else {
-            buffer = _buffer.c_str();
         }
 
         char header[17];
@@ -92,7 +112,7 @@ void OutputBuffer::flush(int fd, int *termination_flag)
         writeData(fd, termination_flag, buffer, s);
     }
     else
-        writeData(fd, termination_flag, _buffer.c_str(), size());
+        writeData(fd, termination_flag, _buffer, size());
     reset();
 }
 
