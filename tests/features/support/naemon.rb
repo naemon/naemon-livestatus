@@ -24,6 +24,21 @@ class Naemon
     @brokers[broker.class.name.downcase.to_sym] = broker
   end
 
+  def wait_for_stop()
+    sleep_time = 0.1
+    slept = 0
+    while slept < 5
+
+      if @pid == nil and @brokers.all? {|_, broker| not broker.is_initialized?}
+        return
+      end
+
+      sleep(sleep_time)
+      slept+=sleep_time
+    end
+    raise "Error: Naemon, or one of its modules, failed to stop!"
+  end
+
   def wait_for_start()
     sleep_time = 0.1
     slept = 0
@@ -59,12 +74,16 @@ class Naemon
   end
 
   def pid()
-    File.read(File.join(@config_dir, "naemon.pid")).to_i
+    begin
+      File.read(File.join(@config_dir, "naemon.pid")).to_i
+    rescue Errno::ENOENT
+      nil
+    end
   end
 
   def stop()
     `kill #{self.pid}`
-    #`rm -rf #{@config_dir}`
+    wait_for_stop
   end
 end
 
