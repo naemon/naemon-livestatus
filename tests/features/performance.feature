@@ -31,7 +31,7 @@ Feature: Queries have a consistent time-to-response
     Scenario Outline: Livestatus average response time is decent
 
         Given I clobber livestatus with <n_queries> queries
-        Then the average query response time should be no more than 0.01 seconds
+        Then the average query response time should be no more than 0.1 seconds
 
         Examples:
             |n_queries|
