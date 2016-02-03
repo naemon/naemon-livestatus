@@ -22,6 +22,7 @@
 // to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
 // Boston, MA 02110-1301 USA.
 
+#include <glib.h>
 #include "HostlistColumnFilter.h"
 #include "HostlistColumn.h"
 #include "nagios.h"
@@ -32,14 +33,14 @@ bool HostlistColumnFilter::accepts(void *data)
 {
     // data points to a primary data object. We need to extract
     // a pointer to a host list
-    rbtree *mem = _hostlist_column->getMembers(data);
+    GTree *mem = _hostlist_column->getMembers(data);
 
     // test for empty list
     if (abs(_opid) == OP_EQUAL && _ref_value == "") {
         bool is_empty = false;
-        if( mem == 0 ) {
+        if(mem == 0) {
             is_empty = true;
-        } else if( rbtree_isempty(mem) ) {
+        } else if(g_tree_nnodes(mem) == 0) {
             is_empty = true;
         }
         return is_empty == (_opid == OP_EQUAL);
@@ -58,9 +59,7 @@ bool HostlistColumnFilter::accepts(void *data)
             logger(LG_INFO, "Sorry, Operator %s for host lists lists not implemented.", op_names_plus_8[_opid]);
             return true;
     }
-    host hst;
-    hst.name = (char *)_ref_value.c_str();
-    if (rbtree_find(mem, &hst))
+    if (g_tree_lookup(mem, _ref_value.c_str()))
         return is_member;
     return !is_member;
 }

@@ -22,6 +22,7 @@
 // to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
 // Boston, MA 02110-1301 USA.
 
+#include <glib.h>
 #include "HostlistStateColumn.h"
 #include "ServicelistStateColumn.h"
 #include "nagios.h"
@@ -40,12 +41,12 @@ inline bool hst_state_is_worse(int32_t state1, int32_t state2)
     else return false;                    // both are UNREACHABLE
 }
 
-rbtree *HostlistStateColumn::getMembers(void *data)
+GTree *HostlistStateColumn::getMembers(gpointer data)
 {
     data = shiftPointer(data);
     if (!data) return 0;
 
-    return *(rbtree **)((char *)data + _offset);
+    return *(GTree **)((char *)data + _offset);
 }
 
 struct output_parameters {
@@ -54,7 +55,7 @@ struct output_parameters {
     int32_t result;
 };
 
-static int get_subvalue(void *_hst, void *user_data)
+static gboolean get_subvalue(gpointer _name, gpointer _hst, gpointer user_data)
 {
     int state;
     host *hst = (host *)_hst;
@@ -100,17 +101,17 @@ static int get_subvalue(void *_hst, void *user_data)
                 break;
         }
     }
-    return 0;
+    return FALSE;
 }
 
 int32_t HostlistStateColumn::getValue(void *data, Query *query)
 {
-    rbtree *mem = getMembers(data);
+    GTree *mem = getMembers(data);
     output_parameters params;
     params.query = query;
     params.logictype = _logictype;
     params.result = 0;
-    rbtree_traverse(mem, get_subvalue, &params, rbinorder);
+    g_tree_foreach(mem, get_subvalue, &params);
     return params.result;
 }
 

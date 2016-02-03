@@ -338,7 +338,7 @@ struct by_group_parameters {
     Query *query;
 };
 
-static int by_hostbygroup(void *_hst, void *user_data)
+static gboolean by_hostbygroup(gpointer _name, gpointer _hst, gpointer user_data)
 {
     hostbygroup *hg;
     host *hst = (host *)_hst;
@@ -349,17 +349,17 @@ static int by_hostbygroup(void *_hst, void *user_data)
     hg->_next = *params->hg_tmp_storage;
     *params->hg_tmp_storage = hg;
     if (!params->query->processDataset(hg))
-        return 1;
-    return 0;
+        return TRUE;
+    return FALSE;
 }
 
-static int by_one_group(void *_hst, void *user_data)
+static gboolean by_one_group(gpointer _name, gpointer _hst, gpointer user_data)
 {
     Query *query = (Query *)user_data;
     host *hst = (host *)_hst;
     if (!query->processDataset(hst))
-        return 1;
-    return 0;
+        return TRUE;
+    return FALSE;
 }
 
 void TableHosts::answerQuery(Query *query)
@@ -372,7 +372,7 @@ void TableHosts::answerQuery(Query *query)
         params.hgroup = hostgroup_list;
         params.query = query;
         while (params.hgroup) {
-            rbtree_traverse(params.hgroup->members, by_hostbygroup, &params, rbinorder);
+            g_tree_foreach(params.hgroup->members, by_hostbygroup, &params);
             params.hgroup = params.hgroup->next;
         }
         return;
@@ -381,7 +381,7 @@ void TableHosts::answerQuery(Query *query)
     // do we know the host group?
     hostgroup *hgroup = (hostgroup *)query->findIndexFilter("groups");
     if (hgroup) {
-        rbtree_traverse(hgroup->members, by_one_group, query, rbinorder);
+        g_tree_foreach(hgroup->members, by_one_group, query);
         return;
     }
 

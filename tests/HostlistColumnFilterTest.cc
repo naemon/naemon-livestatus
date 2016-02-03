@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <vector>
 #include <naemon/naemon.h>
+#include <glib.h>
 #include "HostlistColumnFilterTest.h"
 #include "../src/HostlistColumn.h"
 #include "../src/HostlistColumnFilter.h"
@@ -37,21 +38,21 @@ void
 HostlistColumnFilterTest::testHostlistEmpty()
 {
     char *refstring = strdup("");
-    rbtree *tree = rbtree_create(compare_host);
+	GTree *tree = g_tree_new_full((GCompareDataFunc) g_strcmp0, NULL, g_free, NULL);
 	HostlistColumn * column = new HostlistColumn("hsts", "this is a hostlist", 0, -1, false);
 	Filter * filter = column->createFilter(OP_EQUAL, refstring);
 
     /* It's hard to mock up a host... but what we want is for the test to
      * accept a non-empty pointer as empty list (after conversion from linked
-     * list to rbtree)
+     * list to GTree)
      */
 	CPPUNIT_ASSERT(filter->accepts(&tree));
 
     /* Adding a single host won't read the host content through compare. It's when comparing two */
-    rbtree_insert(tree, (void*)1);
+    g_tree_insert(tree, g_strdup("kaka"), (void*)1);
 	CPPUNIT_ASSERT(!filter->accepts(&tree));
 
-    rbtree_destroy(tree, NULL);
+    g_tree_unref(tree);
 	delete filter;
 	delete column;
 	free(refstring);
@@ -61,21 +62,21 @@ void
 HostlistColumnFilterTest::testHostlistNotEmpty()
 {
     char *refstring = strdup("");
-    rbtree *tree = rbtree_create(compare_host);
+	GTree *tree = g_tree_new_full((GCompareDataFunc) g_strcmp0, NULL, g_free, NULL);
 	HostlistColumn * column = new HostlistColumn("hsts", "this is a hostlist", 0, -1, false);
 	Filter * filter = column->createFilter(-OP_EQUAL, refstring);
 
     /* It's hard to mock up a host... but what we want is for the test to
      * accept a non-empty pointer as empty list (after conversion from linked
-     * list to rbtree)
+     * list to GTree)
      */
 	CPPUNIT_ASSERT(!filter->accepts(&tree));
 
     /* Adding a single host won't read the host content through compare. It's when comparing two */
-    rbtree_insert(tree, (void*)1);
+    g_tree_insert(tree, g_strdup("kaka"), (void*)1);
 	CPPUNIT_ASSERT(filter->accepts(&tree));
 
-    rbtree_destroy(tree, NULL);
+    g_tree_unref(tree);
 	delete filter;
 	delete column;
 	free(refstring);

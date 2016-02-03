@@ -22,6 +22,7 @@
 // to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
 // Boston, MA 02110-1301 USA.
 
+#include <glib.h>
 #include "HostlistColumn.h"
 #include "HostlistColumnFilter.h"
 #include "nagios.h"
@@ -31,12 +32,12 @@
 
 extern TableHosts *g_table_hosts;
 
-rbtree *HostlistColumn::getMembers(void *data)
+GTree *HostlistColumn::getMembers(gpointer data)
 {
     data = shiftPointer(data);
     if (!data) return 0;
 
-    return *(rbtree **)((char *)data + _offset);
+    return *(GTree **)((char *)data + _offset);
 }
 
 struct output_parameters {
@@ -45,7 +46,7 @@ struct output_parameters {
     bool show_state;
 };
 
-static int output_host(void *_hst, void *user_data)
+static gboolean output_host(gpointer _name, gpointer _hst, gpointer user_data)
 {
     host *hst = (host *)_hst;
     output_parameters *params = (output_parameters *)user_data;
@@ -67,18 +68,18 @@ static int output_host(void *_hst, void *user_data)
             params->query->outputEndSublist();
         }
     }
-    return 0;
+    return FALSE;
 }
 
 void HostlistColumn::output(void *data, Query *query)
 {
     query->outputBeginList();
-    rbtree *mem = getMembers(data);
+    GTree *mem = getMembers(data);
     output_parameters params;
     params.query = query;
     params.first = true;
     params.show_state = _show_state;
-    rbtree_traverse(mem, output_host, &params, rbinorder);
+    g_tree_foreach(mem, output_host, &params);
     query->outputEndList();
 }
 

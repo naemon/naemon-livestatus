@@ -22,6 +22,7 @@
 // to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
 // Boston, MA 02110-1301 USA.
 
+#include <glib.h>
 #include "nagios.h"
 #include "TableHostgroups.h"
 #include "Query.h"
@@ -32,6 +33,11 @@
 #include "auth.h"
 #include "tables.h"
 #include "TableHosts.h"
+
+struct ctc_with_result {
+	contact *ctc;
+	gboolean result;
+};
 
 TableHostgroups::TableHostgroups()
 {
@@ -122,29 +128,38 @@ void *TableHostgroups::findObject(char *objectspec)
     return find_hostgroup(objectspec);
 }
 
-static int is_authorized_for(void *_hst, void *user_data)
+static gboolean is_authorized_for(gpointer _name, gpointer _hst, gpointer user_data)
 {
+    struct ctc_with_result *ctcr = (struct ctc_with_result *)user_data;
     host *hst = (host *)_hst;
-    contact *ctc = (contact *)user_data;
-    bool is = g_table_hosts->isAuthorized(ctc, hst);
-    if (is && g_group_authorization == AUTH_LOOSE)
-        return 1;
-    else if (!is && g_group_authorization == AUTH_STRICT)
-        return 1;
-    return 0;
+    bool is = g_table_hosts->isAuthorized(ctcr->ctc, hst);
+    if (is && g_group_authorization == AUTH_LOOSE) {
+        ctcr->result = TRUE;
+        return TRUE;
+    }
+    else if (!is && g_group_authorization == AUTH_STRICT) {
+        ctcr->result = TRUE;
+        return TRUE;
+    }
+    ctcr->result = FALSE;
+    return FALSE;
 }
 
 bool TableHostgroups::isAuthorized(contact *ctc, void *data)
 {
+    struct ctc_with_result ctcr;
     if (ctc == UNKNOWN_AUTH_USER)
         return false;
 
     hostgroup *hg = (hostgroup *)data;
-    rbtree *mem = hg->members;
-    if (!rbtree_num_nodes(mem))
+    GTree *mem = hg->members;
+    if (!g_tree_nnodes(mem))
         return false;
 
-    if (rbtree_traverse(mem, is_authorized_for, ctc, rbinorder))
+    ctcr.ctc = ctc;
+    ctcr.result = FALSE;
+    g_tree_foreach(mem, is_authorized_for, &ctcr);
+    if(ctcr.result)
         return g_group_authorization == AUTH_LOOSE;
 
     if(g_group_authorization == AUTH_LOOSE)

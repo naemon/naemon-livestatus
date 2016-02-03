@@ -25,6 +25,7 @@
 #ifndef HostlistStateColumn_h
 #define HostlistStateColumn_h
 
+#include <glib.h>
 #include "config.h"
 
 #include "IntColumn.h"
@@ -61,7 +62,7 @@ public:
     HostlistStateColumn(string name, string description, int logictype, int offset, int indirect_offset)
         : IntColumn(name, description, indirect_offset), _offset(offset), _logictype(logictype) {}
     int32_t getValue(void *data, Query *);
-    rbtree *getMembers(void *data);
+    GTree *getMembers(gpointer data);
 };
 
 

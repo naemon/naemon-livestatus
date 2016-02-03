@@ -23,6 +23,7 @@
 // Boston, MA 02110-1301 USA.
 
 #include <string.h>
+#include <glib.h>
 
 #include "nagios.h"
 #include "TableServices.h"
@@ -55,7 +56,7 @@ struct by_group_parameters {
     Query *query;
 };
 
-static int by_servicebyhostgroup(void *_hst, void *user_data)
+static gboolean by_servicebyhostgroup(gpointer _name, gpointer _hst, gpointer user_data)
 {
     host *hst = (host *)_hst;
     struct by_group_parameters *params = (struct by_group_parameters *)user_data;
@@ -73,10 +74,10 @@ static int by_servicebyhostgroup(void *_hst, void *user_data)
             break;
         smem = smem->next;
     }
-    return 0;
+    return FALSE;
 }
 
-static int by_one_hostgroup(void *_hst, void *user_data)
+static gboolean by_one_hostgroup(gpointer _name, gpointer _hst, gpointer user_data)
 {
     Query *query = (Query *)user_data;
     host *hst = (host *)_hst;
@@ -86,7 +87,7 @@ static int by_one_hostgroup(void *_hst, void *user_data)
             break;
         smem = smem->next;
     }
-    return 0;
+    return FALSE;
 }
 
 void TableServices::answerQuery(Query *query)
@@ -124,7 +125,7 @@ void TableServices::answerQuery(Query *query)
         params.hgroup = hostgroup_list;
         params.query = query;
         while (params.hgroup) {
-            rbtree_traverse(params.hgroup->members, by_servicebyhostgroup, &params, rbinorder);
+            g_tree_foreach(params.hgroup->members, by_servicebyhostgroup, &params);
             params.hgroup = params.hgroup->next;
         }
         return;
@@ -161,7 +162,7 @@ void TableServices::answerQuery(Query *query)
     // do we know the host group?
     hostgroup *hgroup = (hostgroup *)query->findIndexFilter("host_groups");
     if (hgroup) {
-        rbtree_traverse(hgroup->members, by_one_hostgroup, query, rbinorder);
+        g_tree_foreach(hgroup->members, by_one_hostgroup, query);
         return;
     }
 

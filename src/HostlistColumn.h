@@ -25,6 +25,7 @@
 #ifndef HostlistColumn_h
 #define HostlistColumn_h
 
+#include <glib.h>
 #include "config.h"
 
 #include "Column.h"
@@ -40,7 +41,7 @@ public:
     int type() { return COLTYPE_LIST; }
     void output(void *, Query *);
     Filter *createFilter(int opid, char *value);
-    rbtree *getMembers(void *data);
+    GTree *getMembers(gpointer data);
 };
 
 
