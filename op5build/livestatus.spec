@@ -25,14 +25,8 @@ URL: http://www.op5.se
 Source0: %name-%version.tar.gz
 Prefix: /usr
 Requires: monitor
-%if ! 0%{?suse_version} && ! ( 0%{?rhel} > 5)
-Requires: python26
-Requires: libicu > 4.2
-BuildRequires: python26
-%else
 Requires: python
 BuildRequires: python
-%endif
 BuildRequires: python-argparse
 BuildRequires: libstdc++-devel
 BuildRequires: gcc-c++
