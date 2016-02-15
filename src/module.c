@@ -70,6 +70,8 @@ int g_idle_timeout_msec = 300 * 1000; /* maximum idle time for connection in kee
 int g_query_timeout_msec = 10 * 1000;      /* maximum time for reading a query */
 
 size_t g_thread_stack_size = 65536; /* stack size of threads */
+pthread_t **g_client_threads;
+size_t g_num_client_threads;
 
 #define false 0
 #define true 1
@@ -91,16 +93,43 @@ int g_data_encoding = ENCODING_UTF8;
 
 void *client_thread(void *data __attribute__ ((__unused__)));
 
+static void reap_client_threads()
+{
+    size_t i = 0;
+    while (i < g_num_client_threads) {
+        if (0 != pthread_tryjoin_np(*(g_client_threads[i]), NULL)) {
+            ++i;
+            continue;
+        }
+
+        free(g_client_threads[i]);
+        /* fill the gap with last element (the order of the threads doesn't
+         * matter) */
+        g_client_threads[i] = g_client_threads[--g_num_client_threads];
+
+        if ((g_client_threads = realloc(g_client_threads, g_num_client_threads * sizeof(pthread_t))) == NULL) {
+            if (g_num_client_threads > 0) {
+                logger(LG_ERR, "Failed to shrink client thread array (Number of threads: %d)", g_num_client_threads);
+            }
+            else {
+                logger(LG_DEBUG, "All client threads reaped.");
+            }
+        }
+    }
+}
+
 static int accept_connection(int sd, int events, void *discard)
 {
     int cc = accept(sd, NULL, NULL);
     int ret = 0;
-    pthread_t thr;
+    pthread_t *thr;
     pthread_attr_t attr;
     do_statistics();
     pthread_attr_init(&attr);
-
     size_t defsize;
+
+    reap_client_threads(); /* try to join any finished client threads */
+
     if (g_debug_level >= 2 && 0 == pthread_attr_getstacksize(&attr, &defsize))
       logger(LG_INFO, "Default stack size is %lu", defsize);
     if (0 != pthread_attr_setstacksize(&attr, g_thread_stack_size))
@@ -110,17 +139,38 @@ static int accept_connection(int sd, int events, void *discard)
         logger(LG_INFO, "Setting thread stack size to %lu", g_thread_stack_size);
     }
 
-     /* We don't want to bother with joining of client threads, so we
-     * create them detached */
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
     int *arg = malloc(sizeof(int));
     *arg = cc;
-    if ((ret = pthread_create(&thr, &attr, client_thread, arg)) != 0) {
-		logger(LG_ERR, "Failed to create client thread: %s", strerror(ret));
-		free(arg);
-		close(cc);
+
+    thr = malloc(sizeof(pthread_t));
+    if (thr == NULL) {
+        /* Just log, and do nothing else, since the pthread_create will abort
+         * anyways */
+        logger(LG_ERR, "Failed to allocate memory for client thread ID: %s",
+                strerror(errno));
+    }
+
+    if ((ret = pthread_create(thr, &attr, client_thread, arg)) != 0) {
+        logger(LG_ERR, "Failed to create client thread: %s", strerror(ret));
+        free(arg);
+        close(cc);
     }
     pthread_attr_destroy(&attr);
+
+    if ((g_client_threads = realloc(g_client_threads, (g_num_client_threads + 1) * sizeof(pthread_t))) == NULL) {
+        logger(LG_ERR, "Failed to allocate space for client thread: %s (Number of threads: %d)", strerror(errno), g_num_client_threads + 1);
+        close(cc);
+        logger(LG_ERR, "Joining with client thread right away to avoid losing it.");
+        if (0 != pthread_join(*thr, NULL)) {
+            logger(LG_CRIT, "Failed to join with client thread: %s", strerror(errno));
+        }
+        free(thr);
+    }
+    else {
+        ++g_num_client_threads;
+        g_client_threads[g_num_client_threads-1] = thr;
+    }
+
     g_counters[COUNTER_CONNECTIONS]++;
     return 0;
 }
@@ -582,6 +632,7 @@ void omd_advertize()
 int nebmodule_init(int flags __attribute__ ((__unused__)), char *args, void *handle)
 {
     g_nagios_handle = handle;
+    g_num_client_threads = 0;
     livestatus_parse_arguments(args);
     open_logfile();
 
@@ -608,9 +659,24 @@ int nebmodule_init(int flags __attribute__ ((__unused__)), char *args, void *han
 
 int nebmodule_deinit(int flags __attribute__ ((__unused__)), int reason __attribute__ ((__unused__)))
 {
+    size_t i;
     logger(LG_INFO, "deinitializing");
     g_should_terminate = true;
     close_unix_socket();
+
+    /*
+     * Make sure all client connections are terminated before
+     * returning control. Since we touch global naemon state everywhere,
+     * this is strictly mandatory.
+     */
+    for (i = 0; i < g_num_client_threads; ++i) {
+        if (pthread_join(*(g_client_threads[i]), NULL) != 0) {
+            logger(LG_ERR, "Failed to join with client thread");
+        }
+        free(g_client_threads[i]);
+    }
+    free(g_client_threads);
+
     store_deinit();
     deregister_callbacks();
     close_logfile();
