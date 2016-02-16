@@ -88,7 +88,6 @@ char g_hidden_custom_var_prefix[256];
 int g_service_authorization = AUTH_LOOSE;
 int g_group_authorization = AUTH_STRICT;
 int g_data_encoding = ENCODING_UTF8;
-int g_num_livehelpers = 20;
 
 void *client_thread(void *data __attribute__ ((__unused__)));
 
