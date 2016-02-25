@@ -11,6 +11,7 @@ class StringColumnFilterTest : public CppUnit::TestFixture
 	CPPUNIT_TEST( testRegexIcaseNonAscii );
 	CPPUNIT_TEST( testGreaterOp );
 	CPPUNIT_TEST( testLessOp );
+	CPPUNIT_TEST( testOffsetStringMacroColumnFiltering );
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -24,4 +25,5 @@ class StringColumnFilterTest : public CppUnit::TestFixture
 	void testRegexIcaseNonAscii();
 	void testGreaterOp();
 	void testLessOp();
+	void testOffsetStringMacroColumnFiltering();
 };

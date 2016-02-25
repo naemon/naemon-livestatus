@@ -38,7 +38,6 @@ public:
 
     string valueAsString(void *data, Query *);
     void output(void *data, Query *);
-    Filter *createFilter(int opid, char *value);
 
     // overriden by host and service macro columns
     virtual host *getHost(void *) = 0;

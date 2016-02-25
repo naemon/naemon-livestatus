@@ -69,180 +69,138 @@ extern char *log_file;
 int g_idle_timeout_msec = 300 * 1000; /* maximum idle time for connection in keep alive state */
 int g_query_timeout_msec = 10 * 1000;      /* maximum time for reading a query */
 
-unsigned g_num_clientthreads = 10;     /* allow 10 concurrent connections per default */
 size_t g_thread_stack_size = 65536; /* stack size of threads */
+pthread_t **g_client_threads;
+size_t g_num_client_threads;
 
 #define false 0
 #define true 1
 
-
 void *g_nagios_handle;
 int g_unix_socket = -1;
-int g_max_fd_ever = 0;
 char g_socket_path[4096];
 char g_pnp_path[4096];
 char g_logfile_path[4096];
 int g_debug_level = 0;
 int g_should_terminate = false;
-pthread_t g_mainthread_id;
-pthread_t *g_clientthread_id;
 unsigned long g_max_cached_messages = 500000;
 unsigned long g_max_lines_per_logfile = 1000000; // do never read more than that number of lines from a logfile
 unsigned long g_max_response_size = 100 * 1024 * 1024; // limit answer to 10 MB
-int g_thread_running = 0;
-int g_thread_pid = 0;
 char g_hidden_custom_var_prefix[256];
 int g_service_authorization = AUTH_LOOSE;
 int g_group_authorization = AUTH_STRICT;
 int g_data_encoding = ENCODING_UTF8;
-int g_num_livehelpers = 20;
 
-void livestatus_count_fork()
+void *client_thread(void *data __attribute__ ((__unused__)));
+
+static void reap_client_threads()
 {
-    g_counters[COUNTER_FORKS]++;
-}
+    size_t i = 0;
+    while (i < g_num_client_threads) {
+        if (0 != pthread_tryjoin_np(*(g_client_threads[i]), NULL)) {
+            ++i;
+            continue;
+        }
 
+        free(g_client_threads[i]);
+        /* fill the gap with last element (the order of the threads doesn't
+         * matter) */
+        g_client_threads[i] = g_client_threads[--g_num_client_threads];
 
-void livestatus_cleanup_after_fork()
-{
-    // 4.2.2010: Deactivate the cleanup function. It might cause
-    // more trouble than it tries to avoid. It might lead to a deadlock
-    // with Nagios' fork()-mechanism...
-    // store_deinit();
-    struct stat st;
-
-    int i;
-    // We need to close our server and client sockets. Otherwise
-    // our connections are inherited to host and service checks.
-    // If we close our client connection in such a situation,
-    // the connection will still be open since and the client will
-    // hang while trying to read further data. And the CLOEXEC is
-    // not atomic :-(
-
-    // Eventuell sollte man hier anstelle von store_deinit() nicht
-    // darauf verlassen, dass die ClientQueue alle Verbindungen zumacht.
-    // Es sind ja auch Dateideskriptoren offen, die von Threads gehalten
-    // werden und nicht mehr in der Queue sind. Und in store_deinit()
-    // wird mit mutexes rumgemacht....
-    for (i=3; i < g_max_fd_ever; i++) {
-        if (0 == fstat(i, &st) && S_ISSOCK(st.st_mode))
-        {
-            close(i);
+        if ((g_client_threads = realloc(g_client_threads, g_num_client_threads * sizeof(pthread_t))) == NULL) {
+            if (g_num_client_threads > 0) {
+                logger(LG_ERR, "Failed to shrink client thread array (Number of threads: %d)", g_num_client_threads);
+            }
+            else {
+                logger(LG_DEBUG, "All client threads reaped.");
+            }
         }
     }
 }
 
-void *main_thread(void *data __attribute__ ((__unused__)))
+static int accept_connection(int sd, int events, void *discard)
 {
-    g_thread_pid = getpid();
-    while (!g_should_terminate)
-    {
-        do_statistics();
-        if (g_thread_pid != getpid()) {
-            logger(LG_INFO, "I'm not the main process but %d!", getpid());
-            // return;
-        }
-        struct timeval tv;
-        tv.tv_sec  = 2;
-        tv.tv_usec = 500 * 1000;
+    int cc = accept(sd, NULL, NULL);
+    int ret = 0;
+    pthread_t *thr;
+    pthread_attr_t attr;
+    do_statistics();
+    pthread_attr_init(&attr);
+    size_t defsize;
 
-        fd_set fds;
-        FD_ZERO(&fds);
-        FD_SET(g_unix_socket, &fds);
-        int retval = select(g_unix_socket + 1, &fds, NULL, NULL, &tv);
-        if (retval > 0 && FD_ISSET(g_unix_socket, &fds)) {
-            int cc = accept(g_unix_socket, NULL, NULL);
-            if (cc > g_max_fd_ever)
-                g_max_fd_ever = cc;
-            if (0 < fcntl(cc, F_SETFD, FD_CLOEXEC))
-                logger(LG_INFO, "Cannot set FD_CLOEXEC on client socket: %s", strerror(errno));
-            queue_add_connection(cc); // closes fd
-            g_counters[COUNTER_CONNECTIONS]++;
-        }
+    reap_client_threads(); /* try to join any finished client threads */
+
+    if (g_debug_level >= 2 && 0 == pthread_attr_getstacksize(&attr, &defsize))
+      logger(LG_INFO, "Default stack size is %lu", defsize);
+    if (0 != pthread_attr_setstacksize(&attr, g_thread_stack_size))
+      logger(LG_INFO, "Error: Cannot set thread stack size to %lu", g_thread_stack_size);
+    else {
+      if (g_debug_level >= 2)
+        logger(LG_INFO, "Setting thread stack size to %lu", g_thread_stack_size);
     }
-    logger(LG_INFO, "Socket thread has terminated");
-    return NULL;
+
+    int *arg = malloc(sizeof(int));
+    *arg = cc;
+
+    thr = malloc(sizeof(pthread_t));
+    if (thr == NULL) {
+        /* Just log, and do nothing else, since the pthread_create will abort
+         * anyways */
+        logger(LG_ERR, "Failed to allocate memory for client thread ID: %s",
+                strerror(errno));
+    }
+
+    if ((ret = pthread_create(thr, &attr, client_thread, arg)) != 0) {
+        logger(LG_ERR, "Failed to create client thread: %s", strerror(ret));
+        free(arg);
+        close(cc);
+    }
+    pthread_attr_destroy(&attr);
+
+    if ((g_client_threads = realloc(g_client_threads, (g_num_client_threads + 1) * sizeof(pthread_t))) == NULL) {
+        logger(LG_ERR, "Failed to allocate space for client thread: %s (Number of threads: %d)", strerror(errno), g_num_client_threads + 1);
+        close(cc);
+        logger(LG_ERR, "Joining with client thread right away to avoid losing it.");
+        if (0 != pthread_join(*thr, NULL)) {
+            logger(LG_CRIT, "Failed to join with client thread: %s", strerror(errno));
+        }
+        free(thr);
+    }
+    else {
+        ++g_num_client_threads;
+        g_client_threads[g_num_client_threads-1] = thr;
+    }
+
+    g_counters[COUNTER_CONNECTIONS]++;
+    return 0;
 }
 
-
-void *client_thread(void *data __attribute__ ((__unused__)))
+void *client_thread(void *data)
 {
     void *input_buffer = create_inputbuffer(&g_should_terminate);
     void *output_buffer = create_outputbuffer();
 
-    while (!g_should_terminate) {
-        int cc = queue_pop_connection();
-        if (cc >= 0) {
-            if (g_debug_level >= 2)
-                logger(LG_INFO, "Accepted client connection on fd %d", cc);
-            set_inputbuffer_fd(input_buffer, cc);
-            int keepalive = 1;
-            unsigned requestnr = 1;
-            while (keepalive) {
-                if (g_debug_level >= 2 && requestnr > 1)
-                    logger(LG_INFO, "Handling request %d on same connection", requestnr);
-                keepalive = store_answer_request(input_buffer, output_buffer);
-                flush_output_buffer(output_buffer, cc, &g_should_terminate);
-                g_counters[COUNTER_REQUESTS]++;
-                requestnr ++;
-            }
-            close(cc);
+    int cc = *((int *)data);
+    free(data);
+    if (cc >= 0) {
+        if (g_debug_level >= 2)
+            logger(LG_INFO, "Accepted client connection on fd %d", cc);
+        set_inputbuffer_fd(input_buffer, cc);
+        int keepalive = 1;
+        unsigned requestnr = 1;
+        while (keepalive && !g_should_terminate) {
+            if (g_debug_level >= 2 && requestnr > 1)
+                logger(LG_INFO, "Handling request %d on same connection", requestnr);
+            keepalive = store_answer_request(input_buffer, output_buffer);
+            flush_output_buffer(output_buffer, cc, &g_should_terminate);
+            g_counters[COUNTER_REQUESTS]++;
+            requestnr ++;
         }
+        close(cc);
     }
     delete_outputbuffer(output_buffer);
     delete_inputbuffer(input_buffer);
     return NULL;
-}
-
-void start_threads()
-{
-    if (!g_thread_running) {
-        /* start thread that listens on socket */
-        pthread_atfork(livestatus_count_fork, NULL, livestatus_cleanup_after_fork);
-        g_should_terminate = false;
-        pthread_create(&g_mainthread_id, 0, main_thread, (void *)0);
-        if (g_debug_level > 0)
-            logger(LG_INFO, "Starting %d client threads", g_num_clientthreads);
-
-        unsigned t;
-        g_clientthread_id = (pthread_t *)malloc(sizeof(pthread_t) * g_num_clientthreads);
-        pthread_attr_t attr;
-        pthread_attr_init(&attr);
-        size_t defsize;
-        if (g_debug_level >= 2 && 0 == pthread_attr_getstacksize(&attr, &defsize))
-            logger(LG_INFO, "Default stack size is %lu", defsize);
-        if (0 != pthread_attr_setstacksize(&attr, g_thread_stack_size))
-            logger(LG_INFO, "Error: Cannot set thread stack size to %lu", g_thread_stack_size);
-        else {
-            if (g_debug_level >= 2)
-                logger(LG_INFO, "Setting thread stack size to %lu", g_thread_stack_size);
-        }
-        for (t=0; t < g_num_clientthreads; t++)
-            pthread_create(&g_clientthread_id[t], &attr, client_thread, (void *)0);
-
-        g_thread_running = 1;
-        pthread_attr_destroy(&attr);
-    }
-}
-
-void terminate_threads()
-{
-    if (g_thread_running) {
-        g_should_terminate = true;
-        logger(LG_INFO, "Waiting for main to terminate...");
-        pthread_join(g_mainthread_id, NULL);
-        logger(LG_INFO, "Waiting for client threads to terminate...");
-        queue_wakeup_all();
-        unsigned t;
-        for (t=0; t < g_num_clientthreads; t++) {
-            if (0 != pthread_join(g_clientthread_id[t], NULL))
-                logger(LG_INFO, "Warning: could not join thread %p", g_clientthread_id[t]);
-        }
-        if (g_debug_level > 0)
-            logger(LG_INFO, "Main thread + %u client threads have finished", g_num_clientthreads);
-        g_thread_running = 0;
-    }
-    free(g_clientthread_id);
 }
 
 int open_unix_socket()
@@ -260,7 +218,6 @@ int open_unix_socket()
     }
 
     g_unix_socket = socket(PF_LOCAL, SOCK_STREAM, 0);
-    g_max_fd_ever = g_unix_socket;
     if (g_unix_socket < 0)
     {
         logger(LG_CRIT , "Unable to create UNIX socket: %s", strerror(errno));
@@ -305,10 +262,8 @@ int open_unix_socket()
 void close_unix_socket()
 {
     unlink(g_socket_path);
-    if (g_unix_socket >= 0) {
-        close(g_unix_socket);
-        g_unix_socket = -1;
-    }
+    iobroker_close(nagios_iobs, g_unix_socket);
+    g_unix_socket = -1;
 }
 
 int broker_host(int event_type __attribute__ ((__unused__)), void *data __attribute__ ((__unused__)))
@@ -406,12 +361,19 @@ int broker_event(int event_type __attribute__ ((__unused__)), void *data)
 
 int broker_process(int event_type __attribute__ ((__unused__)), void *data)
 {
+    int ret;
     struct nebstruct_process_struct *ps = (struct nebstruct_process_struct *)data;
     if (ps->type == NEBTYPE_PROCESS_EVENTLOOPSTART) {
         update_timeperiods_cache(time(0));
-        start_threads();
+        do_statistics();
+        if (0 != (ret = iobroker_register(nagios_iobs, g_unix_socket, NULL, accept_connection))) {
+            logger(LG_ERR, "Cannot register unix socket with Naemon listener: %s", iobroker_strerror(ret));
+            close(g_unix_socket);
+            g_unix_socket = -1;
+            return ERROR;
+        }
     }
-    return 0;
+    return OK;
 }
 
 
@@ -577,13 +539,7 @@ void livestatus_parse_arguments(const char *args_orig)
                         g_max_response_size, g_max_response_size / (1024.0*1024.0));
             }
             else if (!strcmp(left, "num_client_threads")) {
-                int c = atoi(right);
-                if (c <= 0 || c > 1000)
-                    logger(LG_INFO, "Error: Cannot set num_client_threads to %d. Must be > 0 and <= 1000", c);
-                else {
-                    logger(LG_INFO, "Setting number of client threads to %d", c);
-                    g_num_clientthreads = c;
-                }
+                logger(LG_INFO, "Ignoring deprecated option %s, there is no longer a limit to the number of concurrent threads", left);
             }
             else if (!strcmp(left, "query_timeout")) {
                 int c = atoi(right);
@@ -676,6 +632,7 @@ void omd_advertize()
 int nebmodule_init(int flags __attribute__ ((__unused__)), char *args, void *handle)
 {
     g_nagios_handle = handle;
+    g_num_client_threads = 0;
     livestatus_parse_arguments(args);
     open_logfile();
 
@@ -696,25 +653,32 @@ int nebmodule_init(int flags __attribute__ ((__unused__)), char *args, void *han
     store_init();
     register_callbacks();
 
-    /* Unfortunately, we cannot start our socket thread right now.
-       Nagios demonizes *after* having loaded the NEB modules. When
-       demonizing we are losing our thread. Therefore, we create the
-       thread the first time one of our callbacks is called. Before
-       that happens, we haven't got any data anyway... */
-
     logger(LG_INFO, "Finished initialization. Further log messages go to %s", g_logfile_path);
-    return 0;
+    return OK;
 }
-
 
 int nebmodule_deinit(int flags __attribute__ ((__unused__)), int reason __attribute__ ((__unused__)))
 {
+    size_t i;
     logger(LG_INFO, "deinitializing");
-    terminate_threads();
+    g_should_terminate = true;
     close_unix_socket();
+
+    /*
+     * Make sure all client connections are terminated before
+     * returning control. Since we touch global naemon state everywhere,
+     * this is strictly mandatory.
+     */
+    for (i = 0; i < g_num_client_threads; ++i) {
+        if (pthread_join(*(g_client_threads[i]), NULL) != 0) {
+            logger(LG_ERR, "Failed to join with client thread");
+        }
+        free(g_client_threads[i]);
+    }
+    free(g_client_threads);
+
     store_deinit();
     deregister_callbacks();
     close_logfile();
     return 0;
 }
-

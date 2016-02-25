@@ -22,31 +22,33 @@
 // to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
 // Boston, MA 02110-1301 USA.
 
-#ifndef ClientQueue_h
-#define ClientQueue_h
+#ifndef Livestatus_h
+#define Livestatus_h
 
-#include "config.h"
+#include <stdio.h>
+#include <vector>
+#include <string>
 
-#include <deque>
-#include <pthread.h>
+// simple C++ API for accessing Livestatus from C++,
+// currently supports only UNIX sockets, no TCP. But
+// this is only a simple enhancement.
 
-using namespace std;
-
-class ClientQueue
+class Livestatus
 {
-    typedef deque<int> _queue_t;
-    _queue_t _queue;
-public:
-    ClientQueue();
-    ~ClientQueue();
-    void addConnection(int);
-    int popConnection();
-    void wakeupAll();
+    int _connection;
+    FILE *_file;
 
-    pthread_mutex_t _lock;
-    pthread_cond_t _signal;
+public:
+    Livestatus() : _connection(-1), _file(0) {};
+    ~Livestatus();
+    void connectUNIX(const char *socketpath);
+    bool isConnected() const { return _connection >= 0; };
+    void disconnect();
+    void sendQuery(const char *query);
+    std::vector<std::string> *nextRow();
 };
 
 
-#endif // ClientQueue_h
+
+#endif // Livestatus_h
 

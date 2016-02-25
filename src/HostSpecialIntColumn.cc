@@ -42,6 +42,8 @@ int32_t HostSpecialIntColumn::getValue(void *data, Query *)
                 return hst->last_hard_state;
         case HSIC_PNP_GRAPH_PRESENT:
             return pnpgraph_present(hst->name, 0);
+        case HSIC_SHOULD_BE_SCHEDULED:
+            return hst->check_interval > 0 && hst->checks_enabled;
     }
     return -1; // never reached
 }

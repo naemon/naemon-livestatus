@@ -28,7 +28,7 @@
 #include <set>
 #include "config.h"
 #include "Table.h"
-#include <naemon/objects.h>
+#include "nagios.h"
 
 class TableContactgroups : public Table
 {

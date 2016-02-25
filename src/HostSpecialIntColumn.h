@@ -31,6 +31,7 @@
 
 #define HSIC_REAL_HARD_STATE   0
 #define HSIC_PNP_GRAPH_PRESENT 1
+#define HSIC_SHOULD_BE_SCHEDULED 2
 
 class HostSpecialIntColumn : public IntColumn
 {

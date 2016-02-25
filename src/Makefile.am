@@ -22,18 +22,18 @@
 # to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
 # Boston, MA 02110-1301 USA.
 
-bin_PROGRAMS = naemon-unixcat
-naemon_unixcat_SOURCES = unixcat.c
-naemon_unixcat_LDADD = -lpthread
+bin_PROGRAMS = unixcat
+unixcat_SOURCES = unixcat.c
+unixcat_LDADD = -lpthread
 
 EXTRA_DIST = *.h
 
 pkglib_LTLIBRARIES = livestatus.la
-livestatus_la_LDFLAGS = -module -avoid-version -shared $(LIBICU_LIBS) $(NAEMON_LIBS)
-livestatus_la_CXXFLAGS = $(CXXFLAGS) $(LIBICU_CFLAGS) -lpthread -lstdc++
-livestatus_la_CPPFLAGS = $(CPPFLAGS)  $(NAEMON_CFLAGS)
+livestatus_la_LDFLAGS = -module -avoid-version -shared $(ICU_LIBS) $(NAEMON_LIBS)
+livestatus_la_CXXFLAGS = $(CXXFLAGS) -lpthread -lstdc++ $(NAEMON_CFLAGS)
+livestatus_la_CFLAGS = $(CFLAGS) $(ICU_CFLAGS) $(NAEMON_CFLAGS)
 livestatus_la_SOURCES = \
-	AndingFilter.cc ClientQueue.cc Column.cc ColumnsColumn.cc CustomVarsExplicitColumn.cc \
+	AndingFilter.cc Column.cc ColumnsColumn.cc CustomVarsExplicitColumn.cc \
 	ContactsColumn.cc CustomVarsColumn.cc CustomVarsFilter.cc DoubleColumn.cc \
 	DoubleColumnFilter.cc DowntimeOrComment.cc DownCommColumn.cc EmptyColumn.cc \
 	Filter.cc GlobalCountersColumn.cc HostContactsColumn.cc HostgroupsColumn.cc \
@@ -51,6 +51,12 @@ livestatus_la_SOURCES = \
 	ContactgroupsMemberColumn.cc OffsetStringMacroColumn.cc OffsetStringServiceMacroColumn.cc \
 	OffsetStringHostMacroColumn.cc StatsColumn.cc IntAggregator.cc CountAggregator.cc \
 	DoubleAggregator.cc AttributelistColumn.cc AttributelistFilter.cc \
-	global_counters.c  module.c  logger.c waittriggers.c TimeperiodsCache.cc pnp4nagios.cc \
+	global_counters.c  module.c  logger.c waittriggers.c TimeperiodsCache.cc \
+	TimeperiodExclusionColumn.cc TimeperiodDaysColumn.cc TimeperiodExceptionsColumn.cc pnp4nagios.cc \
 	ContactgroupsColumn.cc RowSortedSet.cc opids.cc auth.cc
 
+if HAVE_DIET
+	diet -v $(CC) -x c -Wno-deprecated-declarations $(CFLAGS) $(LDFLAGS) -I.. -s -o $@ $^
+else
+	$(CC) -x c -Wno-deprecated-declarations $(CFLAGS) $(LDFLAGS) -I.. -s -o $@ $^
+endif

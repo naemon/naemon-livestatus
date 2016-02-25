@@ -5,7 +5,8 @@
 #include <locale.h>
 #include <stdlib.h>
 #include <vector>
-#include "TestColumnFilters.h"
+#include "StringColumnFilterTest.h"
+#include "../src/OffsetStringServiceMacroColumn.h"
 #include "../src/OffsetStringColumn.h"
 #include "../src/StringColumnFilter.h"
 #include "../src/opids.h"
@@ -156,6 +157,25 @@ StringColumnFilterTest::testLessOp()
 	delete scf;
 	delete column;
 	free(refstring);
+}
+
+void
+StringColumnFilterTest::testOffsetStringMacroColumnFiltering()
+{
+	char * refstring = strdup("A search String");
+	const char *values[] = {"a search string", "some tEXT containing a search strING and also some other stuff", "a seaRCH STring"};
+	vector<string> value_match_v (values, values+(sizeof(values)/sizeof(values[0])));
+	string value_nomatch("Dipsy");
+	OffsetStringServiceMacroColumn * column = new OffsetStringServiceMacroColumn( "a string macro column", "and a description for it", 0);
+	StringColumnFilter *scf = new StringColumnFilter(column, OP_REGEX_ICASE, refstring);
+	for (vector<string>::iterator it = value_match_v.begin(); it != value_match_v.end(); ++it) {
+		CPPUNIT_ASSERT(scf->accepts(&*it));
+	}
+	CPPUNIT_ASSERT(!scf->accepts(&value_nomatch));
+	delete scf;
+	delete column;
+	free(refstring);
+
 }
 
 int main(int argc, char * argv[])

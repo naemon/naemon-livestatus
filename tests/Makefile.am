@@ -1,11 +1,24 @@
 if HAVE_CPPUNIT
-TESTS = TestColumnFilters
+check_PROGRAMS = \
+	StringColumnFilterTest \
+	HostlistColumnFilterTest
 
-check_PROGRAMS = $(TESTS)
+TESTS = $(check_PROGRAMS)
 
-TEST_COLUMN_FILTERS_DEPS = StringColumnFilter.o CustomVarsFilter.o Column.o Filter.o
-TestColumnFilters_SOURCES = $(top_builddir)/src/StringColumnFilter.h $(top_builddir)/src/CustomVarsFilter.h stubs.c TestColumnFilters.h TestColumnFilters.cc
-TestColumnFilters_CXXFLAGS = $(CPPUNIT_FLAGS) -I$(top_builddir)
-TestColumnFilters_LDFLAGS = $(CPPUNIT_LIBS) -ldl -no-install
-TestColumnFilters_LDADD = $(top_builddir)/src/livestatus.la
+StringColumnFilterTest_SOURCES = $(top_builddir)/src/StringColumnFilter.h $(top_builddir)/src/CustomVarsFilter.h stubs.c StringColumnFilterTest.h StringColumnFilterTest.cc
+StringColumnFilterTest_CXXFLAGS = $(CPPUNIT_FLAGS) -I$(top_builddir) $(NAEMON_CFLAGS)
+StringColumnFilterTest_LDFLAGS = $(CPPUNIT_LIBS) -ldl -no-install $(NAEMON_LIBS)
+StringColumnFilterTest_LDADD = $(top_builddir)/src/livestatus.la
+
+HostlistColumnFilterTest_SOURCES = $(top_builddir)/src/StringColumnFilter.h $(top_builddir)/src/CustomVarsFilter.h stubs.c HostlistColumnFilterTest.h HostlistColumnFilterTest.cc
+HostlistColumnFilterTest_CXXFLAGS = $(CPPUNIT_FLAGS) -I$(top_builddir) $(NAEMON_CFLAGS)
+HostlistColumnFilterTest_LDFLAGS = $(CPPUNIT_LIBS) -ldl -no-install $(NAEMON_LIBS)
+HostlistColumnFilterTest_LDADD = $(top_builddir)/src/livestatus.la
+
 endif
+
+check-cucumber:
+	CUKE_CLOBBER_PATH=$(abs_builddir)/tools/ls-clobber CUKE_UNIXCAT_PATH=$(abs_builddir)/../src/unixcat CUKE_LIVESTATUS_PATH=$(abs_builddir)/../src/.libs/livestatus.so cucumber
+
+check-local: check-cucumber
+

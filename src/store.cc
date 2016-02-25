@@ -34,7 +34,6 @@
 #include "store.h"
 #include "Store.h"
 #include "Query.h"
-#include "ClientQueue.h"
 #include "InputBuffer.h"
 #include "OutputBuffer.h"
 #include "logger.h"
@@ -43,7 +42,6 @@
 using namespace std;
 
 Store *g_store = 0;
-ClientQueue *g_client_queue = 0;
 TimeperiodsCache *g_timeperiods_cache = 0;
 
 /* API functions for event broker module (with C linkage) */
@@ -51,7 +49,6 @@ TimeperiodsCache *g_timeperiods_cache = 0;
 void store_init()
 {
     g_store = new Store();
-    g_client_queue = new ClientQueue();
     g_timeperiods_cache = new TimeperiodsCache();
 }
 
@@ -62,31 +59,11 @@ void store_deinit()
         delete g_store;
         g_store = 0;
     }
-    if (g_client_queue) {
-        delete g_client_queue;
-        g_client_queue = 0;
-    }
     if (g_timeperiods_cache) {
         delete g_timeperiods_cache;
         g_timeperiods_cache = 0;
     }
 }
-
-void queue_add_connection(int cc)
-{
-    g_client_queue->addConnection(cc);
-}
-
-int queue_pop_connection()
-{
-    return g_client_queue->popConnection();
-}
-
-void queue_wakeup_all()
-{
-    return g_client_queue->wakeupAll();
-}
-
 
 void store_register_comment(nebstruct_comment_data *d)
 {
