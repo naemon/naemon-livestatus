@@ -38,7 +38,10 @@ BuildRequires: libicu-devel > 4.2
 BuildRequires: cppunit-devel
 BuildRequires: cppunit
 BuildRequires: op5-naemon
+%if 0%{?rhel} >= 7
+%else
 BuildRequires: rubygem20-op5cucumber
+%endif
 BuildRoot: %{_tmppath}/%{name}-%{version}
 
 
@@ -64,7 +67,10 @@ rm -rf %buildroot
 autoreconf -is
 %configure --with-naemon-config-dir=/opt/monitor/etc/mconf
 %__make
+%if 0%{?rhel} >= 7
+%else
 LS_CLOBBER_SOCKET_PATH=/opt/monitor/var/rw/live LC_ALL=en_US.utf-8 %__make check
+%endif
 
 %install
 %__make install DESTDIR=%buildroot
