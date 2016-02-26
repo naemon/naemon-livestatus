@@ -100,7 +100,7 @@ void logger(int priority, const char *loginfo, ...)
         vsnprintf(buffer + strlen(buffer),
         sizeof(buffer) - strlen(buffer), loginfo, ap);
         va_end(ap);
-        nm_log(priority, buffer);
+        nm_log(priority, "%s", buffer);
     } else {
         lock_mutex_or_die(&g_log_file_mutex);
         if (g_logfile) {
