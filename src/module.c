@@ -111,7 +111,7 @@ static void reap_client_threads()
             if (g_num_client_threads > 0) {
                 logger(LG_ERR, "Failed to shrink client thread array (Number of threads: %d)", g_num_client_threads);
             }
-            else {
+            else if (g_debug_level >= 2) {
                 logger(LG_DEBUG, "All client threads reaped.");
             }
         }
