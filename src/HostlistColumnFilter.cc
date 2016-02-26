@@ -22,6 +22,7 @@
 // to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
 // Boston, MA 02110-1301 USA.
 
+#include <glib.h>
 #include "HostlistColumnFilter.h"
 #include "HostlistColumn.h"
 #include "nagios.h"
@@ -32,32 +33,34 @@ bool HostlistColumnFilter::accepts(void *data)
 {
     // data points to a primary data object. We need to extract
     // a pointer to a host list
-    hostsmember *mem = _hostlist_column->getMembers(data);
+    GTree *mem = _hostlist_column->getMembers(data);
 
     // test for empty list
-    if (abs(_opid) == OP_EQUAL && _ref_value == "")
-        return (mem == 0) == (_opid == OP_EQUAL);
-
-    bool is_member = false;
-    while (mem) {
-        char *host_name = mem->host_name;
-        if (!host_name)
-            host_name = mem->host_ptr->name;
-
-        if (host_name == _ref_value) {
-            return true;
-            break;
+    if (abs(_opid) == OP_EQUAL && _ref_value == "") {
+        bool is_empty = false;
+        if(mem == 0) {
+            is_empty = true;
+        } else if(g_tree_nnodes(mem) == 0) {
+            is_empty = true;
         }
-        mem = mem->next;
+        return is_empty == (_opid == OP_EQUAL);
     }
+
+    bool is_member;
+
     switch (_opid) {
         case -OP_LESS: /* !< means >= means 'contains' */
-            return is_member;
+            is_member = true;
+            break;
         case OP_LESS:
-            return !is_member;
+            is_member = false;
+            break;
         default:
             logger(LG_INFO, "Sorry, Operator %s for host lists lists not implemented.", op_names_plus_8[_opid]);
             return true;
     }
+    if (g_tree_lookup(mem, _ref_value.c_str()))
+        return is_member;
+    return !is_member;
 }
 

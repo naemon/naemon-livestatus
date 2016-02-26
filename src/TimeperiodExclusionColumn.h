@@ -22,53 +22,29 @@
 // to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
 // Boston, MA 02110-1301 USA.
 
-#include "ClientQueue.h"
-#include <unistd.h>
+#ifndef ServicelistColumn_h
+#define ServicelistColumn_h
 
-ClientQueue::ClientQueue()
+#include "config.h"
+
+#include "ListColumn.h"
+#include "nagios.h"
+
+class TimeperiodExclusionColumn : public ListColumn
 {
-    pthread_mutex_init(&_lock, 0);
-    pthread_cond_init(&_signal, 0);
-}
-
-ClientQueue::~ClientQueue()
-{
-    for (_queue_t::iterator it = _queue.begin();
-            it != _queue.end();
-            ++it)
-    {
-        close(*it);
-    }
-    pthread_mutex_destroy(&_lock);
-    pthread_cond_destroy(&_signal);
-}
-
-void ClientQueue::addConnection(int fd)
-{
-    pthread_mutex_lock(&_lock);
-    _queue.push_back(fd);
-    pthread_mutex_unlock(&_lock);
-    pthread_cond_signal(&_signal);
-}
+    int _offset;
+    timeperiodexclusion *getData(void *data);
+public:
+    TimeperiodExclusionColumn(string name, string description, int offset, int indirect_offset)
+        : ListColumn(name, description, indirect_offset), _offset(offset) {}
+    int type() { return COLTYPE_LIST; };
+    void output(void *data, Query *query);
+    void *getNagiosObject(char *name);
+    bool isNagiosMember(void *data, void *member);
+    bool isEmpty(void *data);
+};
 
 
-int ClientQueue::popConnection()
-{
-    pthread_mutex_lock(&_lock);
-    if (_queue.size() == 0) {
-        pthread_cond_wait(&_signal, &_lock);
-    }
 
-    int fd = -1;
-    if (_queue.size() > 0) {
-        fd = _queue.front();
-        _queue.pop_front();
-    }
-    pthread_mutex_unlock(&_lock);
-    return fd;
-}
+#endif // ServicelistColumn_h
 
-void ClientQueue::wakeupAll()
-{
-    pthread_cond_broadcast(&_signal);
-}

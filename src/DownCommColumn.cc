@@ -72,7 +72,7 @@ void DownCommColumn::output(void *data, Query *query)
 void *DownCommColumn::getNagiosObject(char *name)
 {
     unsigned int id = strtoul(name, 0, 10);
-    return (void *)id; // Hack. Convert number into pointer.
+    return (void *)(uintptr_t)id; // Hack. Convert number into pointer.
 }
 
 bool DownCommColumn::isNagiosMember(void *data, void *member)
@@ -80,7 +80,7 @@ bool DownCommColumn::isNagiosMember(void *data, void *member)
     TableDownComm *table = _is_downtime ? g_table_downtimes : g_table_comments;
     // data points to a host or service
     // member is not a pointer, but an unsigned int (hack)
-    int64_t id = (int64_t)member; // Hack. Convert it back.
+    int64_t id = (int64_t)(uintptr_t)member; // Hack. Convert it back.
     DowntimeOrComment *dt = table->findEntry(id);
     return dt != 0 &&
         ( dt->_service == (service *)data

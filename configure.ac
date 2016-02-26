@@ -1,5 +1,3 @@
-#!/usr/bin/python
-# -*- encoding: utf-8; py-indent-offset: 4 -*-
 # +------------------------------------------------------------------+
 # |             ____ _               _        __  __ _  __           |
 # |            / ___| |__   ___  ___| | __   |  \/  | |/ /           |
@@ -28,50 +26,45 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([Naemon-Livestatus], [1.0.3-naemon], [naemon-dev@monitoring-lists.org])
+AC_INIT([Naemon Livestatus], [1.2.0p3], [op5-users@lists.op5.com])
 AM_INIT_AUTOMAKE([-Wall foreign])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADER([config.h])
+AC_CONFIG_MACRO_DIR([m4])
 m4_ifdef([AM_PATH_CPPUNIT], [AM_PATH_CPPUNIT([1.12])], [AC_MSG_WARN([CPPUnit is not installed, it is needed to be able to run unit tests <http://cppunit.sourceforge.net/>])])
 AS_IF([test "x$CPPUNIT_LIBS" = "x"],
 	  [has_cppunit="no"],
 	  [has_cppunit="yes"])
 
 AM_CONDITIONAL([HAVE_CPPUNIT], [test "x$has_cppunit" = "xyes"])
+
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC
 AM_PROG_CC_C_O
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR], [true])
 AC_PROG_LIBTOOL
+AM_CONDITIONAL([HAVE_DIET], [which diet >/dev/null 2>&1])
 
 # Checks for libraries.
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(socket, connect)
 AC_CHECK_LIB(socket, shutdown)
-PKG_CHECK_MODULES(LIBICU,
-				  [icu-uc >= 4.2, icu-i18n],
-				  [have_icu=yes],
-				  [have_icu=no]
-				  )
-AS_IF([test "$have_icu" = "no"],
-	  PKG_CHECK_MODULES(LIBICU,
-						[icu >= 4.2],
-						[have_icu=yes],
-						[have_icu=no]
-						))
-
-AS_IF([test "$have_icu" = "no"],
-	  AC_MSG_WARN([no pc file found for libicu, guessing libs]),
-	  [test "$have_icu" = "yes"],
-	  AC_DEFINE([HAVE_ICU], [1], [libicu available.])
-)
-
-AS_IF([test "$have_icu" = "yes"],
-	  [LIBICU_LIBS="-licui18n -licuuc -licudata"]
-)
+PKG_CHECK_MODULES(ICU,
+                  [icu-uc, icu-i18n],
+                  [have_icu=yes],
+                  [PKG_CHECK_MODULES(ICU,
+                   [icu],
+                   [have_icu=yes],
+                   [AX_CHECK_ICU([4], [have_icu=yes], [have_icu=no])])])
+AS_IF([test "x$have_icu" = "xyes"],
+      AC_DEFINE([HAVE_ICU], [], [Have International Components for Unicode (ICU)])
+      )
 
 PKG_CHECK_MODULES(NAEMON, [naemon >= 0.8])
+
+AC_ARG_WITH(naemon-config-dir, AS_HELP_STRING([--with-naemon-config-dir], [Install livestatus' naemon config into this directory (default is your naemon.cfg directory)]), [naemonconfdir=$withval], [naemonconfdir=`AS_DIRNAME([${naemon_cfg}])`])
+AC_SUBST(naemonconfdir)
 
 # Checks for header files.
 AC_HEADER_DIRENT

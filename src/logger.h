@@ -26,9 +26,10 @@
 #define logger_h
 
 #include "config.h"
+#include "nagios.h"
 
 // TODO: Really use log levels
-#define LG_INFO 262144
+#define LG_INFO  NSLOG_INFO_MESSAGE
 #define LG_WARN  LOG_INFO
 #define LG_ERR   LOG_INFO
 #define LG_CRIT  LOG_INFO

@@ -29,6 +29,7 @@
 #include "IntColumn.h"
 
 #define SSIC_PNP_GRAPH_PRESENT 1
+#define SSIC_SHOULD_BE_SCHEDULED 2
 
 class ServiceSpecialIntColumn : public IntColumn
 {

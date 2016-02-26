@@ -35,6 +35,8 @@ int32_t ServiceSpecialIntColumn::getValue(void *data, Query *)
     switch (_type) {
         case SSIC_PNP_GRAPH_PRESENT:
             return pnpgraph_present(svc->host_ptr->name, svc->description);
+        case SSIC_SHOULD_BE_SCHEDULED:
+            return svc->check_interval > 0 && svc->checks_enabled;
     }
     return -1; // never reached
 }

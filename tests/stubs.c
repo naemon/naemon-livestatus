@@ -14,7 +14,6 @@
 int grab_service_macros = 0;
 int enable_event_handlers = 0;
 int nagios_pid = 0;
-int write_to_all_logs = 0;
 int process_external_command1 = 0;
 int check_host_freshness = 0;
 int obsess_over_hosts = 0;
@@ -69,6 +68,8 @@ int servicegroup_list = 0;
 int neb_deregister_callback = 0;
 int clear_volatile_macros = 0;
 int host_list = 0;
+
+void nm_log(int prio, const char *fmt, ...) {}
 char *qh_socket_path = 0;
 int nsock_printf_nul(int sd, const char *fmt, ...) {};
 int nsock_unix(const char *path, unsigned int flags) {};
