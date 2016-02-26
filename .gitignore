@@ -20,7 +20,6 @@ missing
 ar-lib
 compile
 config.h.in~
-src/naemon-unixcat
 config.guess
 libtool
 ltmain.sh
