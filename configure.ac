@@ -50,6 +50,7 @@ AM_CONDITIONAL([HAVE_DIET], [which diet >/dev/null 2>&1])
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(socket, connect)
 AC_CHECK_LIB(socket, shutdown)
+PKG_PROG_PKG_CONFIG([0.23])
 PKG_CHECK_MODULES(ICU,
                   [icu-uc, icu-i18n],
                   [have_icu=yes],
@@ -61,7 +62,8 @@ AS_IF([test "x$have_icu" = "xyes"],
       AC_DEFINE([HAVE_ICU], [], [Have International Components for Unicode (ICU)])
       )
 
-PKG_CHECK_MODULES(NAEMON, [naemon >= 0.8])
+PKG_CHECK_MODULES(NAEMON, [naemon >= 0.8],
+                  [naemon_cfg=`$PKG_CONFIG --variable=mainconf naemon`])
 
 AC_ARG_WITH(naemon-config-dir, AS_HELP_STRING([--with-naemon-config-dir], [Install livestatus' naemon config into this directory (default is your naemon.cfg directory)]), [naemonconfdir=$withval], [naemonconfdir=`AS_DIRNAME([${naemon_cfg}])`])
 AC_SUBST(naemonconfdir)
