@@ -114,5 +114,5 @@ void TimeperiodsCache::logTransition(char *name, int from, int to)
 {
     char buffer[256];
     snprintf(buffer, sizeof(buffer), "TIMEPERIOD TRANSITION: %s;%d;%d", name, from, to);
-    nm_log(NSLOG_INFO_MESSAGE, buffer);
+    nm_log(NSLOG_INFO_MESSAGE, "%s", buffer);
 }
