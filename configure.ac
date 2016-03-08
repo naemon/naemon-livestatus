@@ -57,7 +57,7 @@ PKG_CHECK_MODULES(ICU,
                   [PKG_CHECK_MODULES(ICU,
                    [icu],
                    [have_icu=yes],
-                   [AX_CHECK_ICU([4], [have_icu=yes], [have_icu=no])])])
+                   [AX_CHECK_ICU([4.2], [have_icu=yes], [have_icu=no])])])
 AS_IF([test "x$have_icu" = "xyes"],
       AC_DEFINE([HAVE_ICU], [], [Have International Components for Unicode (ICU)])
       )
