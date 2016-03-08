@@ -43,6 +43,7 @@ AC_PROG_CXX
 AC_PROG_CC
 AM_PROG_CC_C_O
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR], [true])
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AC_PROG_LIBTOOL
 AM_CONDITIONAL([HAVE_DIET], [which diet >/dev/null 2>&1])
 
