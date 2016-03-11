@@ -511,7 +511,10 @@ void livestatus_parse_arguments(const char *args_orig)
         char *left = next_token(&part, '=');
         char *right = next_token(&part, 0);
         if (!right) {
-            strncpy(g_socket_path, left, sizeof(g_socket_path));
+            char *sock_path;
+            sock_path = nspath_absolute(left, config_file_dir);
+            strncpy(g_socket_path, sock_path, sizeof(g_socket_path));
+            free(sock_path);
         }
         else {
             if (!strcmp(left, "debug")) {
