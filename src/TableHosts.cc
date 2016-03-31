@@ -105,7 +105,7 @@ void TableHosts::addColumns(Table *table, string prefix, int indirect_offset)
     table->addColumn(new OffsetStringColumn(prefix +
                 "notes_url", "An optional URL with further information about the host", (char *)(&hst.notes_url) - ref, indirect_offset));
     table->addColumn(new OffsetStringHostMacroColumn(prefix +
-                "notes_url_expanded", "Same es notes_url, but with the most important macros expanded", (char *)(&hst.notes_url) - ref, indirect_offset));
+                "notes_url_expanded", "Same as notes_url, but with the most important macros expanded", (char *)(&hst.notes_url) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "action_url",
                 "An optional URL to custom actions or information about this host", (char *)(&hst.action_url) - ref, indirect_offset));
     table->addColumn(new OffsetStringHostMacroColumn(prefix + "action_url_expanded",

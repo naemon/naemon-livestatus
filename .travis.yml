@@ -11,12 +11,13 @@ before_install:
   - sudo apt-get update
   - sudo apt-get install apt-transport-https
   - sudo sh -c "echo 'deb https://labs.consol.de/repo/testing/ubuntu precise main' >> /etc/apt/sources.list"
-  - gpg --keyserver keys.gnupg.net --recv-keys F8C1CA08A57B9ED7
-  - gpg --armor --export F8C1CA08A57B9ED7 | sudo apt-key add -
+  - wget -q "https://labs.consol.de/repo/stable/RPM-GPG-KEY" -O - | sudo apt-key add -
   - sudo apt-get update
   - sudo apt-get install autoconf
   - sudo apt-get install build-essential
   - sudo apt-get install libcppunit-dev
+  - sudo apt-get install libglib2.0-dev
+  - sudo apt-get install cucumber
   - sudo apt-get install naemon-dev
 notifications:
   irc:
