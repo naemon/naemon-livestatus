@@ -65,7 +65,10 @@ Group: op5/system-addons
 %build
 rm -rf %buildroot
 autoreconf -is
-%configure --with-naemon-config-dir=/opt/monitor/etc/mconf
+%configure \
+	--with-naemon-config-dir=/opt/monitor/etc/mconf \
+	--with-broker-module-options="hidden_custom_var_prefix=OP5SECRET_ pnp_path=/opt/monitor/op5/pnp/perfdata /opt/monitor/var/rw/live"
+
 %__make
 %if 0%{?rhel} >= 7
 %else

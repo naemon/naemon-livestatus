@@ -69,6 +69,9 @@ PKG_CHECK_MODULES(NAEMON, [naemon >= 0.8],
 AC_ARG_WITH(naemon-config-dir, AS_HELP_STRING([--with-naemon-config-dir], [Install livestatus' naemon config into this directory (default is your naemon.cfg directory)]), [naemonconfdir=$withval], [naemonconfdir=`AS_DIRNAME([${naemon_cfg}])`])
 AC_SUBST(naemonconfdir)
 
+AC_ARG_WITH(broker-module-options, AS_HELP_STRING([--with-broker-module-options], [Additional broker module options for the default configuration in livestatus.cfg]), [brokeroptions="$withval"], [brokeroptions="/var/cache/naemon/live"])
+AC_SUBST(brokeroptions)
+
 # Checks for header files.
 AC_HEADER_DIRENT
 AC_HEADER_STDC

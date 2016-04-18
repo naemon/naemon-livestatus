@@ -29,4 +29,5 @@ naemonconf_DATA = livestatus.cfg
 livestatus.cfg : % : %.in
 	$(AM_V_GEN) sed \
 		-e 's,@pkglibdir[@],$(pkglibdir),g' \
+		-e 's,@brokeroptions[@],@brokeroptions@,g' \
 		$< > $@
