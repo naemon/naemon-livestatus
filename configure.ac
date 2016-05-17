@@ -38,6 +38,8 @@ AS_IF([test "x$CPPUNIT_LIBS" = "x"],
 
 AM_CONDITIONAL([HAVE_CPPUNIT], [test "x$has_cppunit" = "xyes"])
 
+AC_CHECK_PROG(has_cucumber, [cucumber], [yes])
+AM_CONDITIONAL([HAVE_CUCUMBER], [test "x$has_cucumber" = "xyes"])
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC
