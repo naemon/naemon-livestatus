@@ -26,7 +26,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([Naemon Livestatus], [1.2.0p3], [op5-users@lists.op5.com])
+AC_INIT([Naemon-Livestatus], [1.0.4], [op5-users@lists.op5.com])
 AM_INIT_AUTOMAKE([-Wall foreign])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADER([config.h])
