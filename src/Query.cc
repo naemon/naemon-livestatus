@@ -460,7 +460,7 @@ void Query::parseStatsLine(char *line)
         stats_col = new StatsColumn(column, 0, operation);
     _stats_columns.push_back(stats_col);
 
-    /* Default to old behaviour: do not output column headers if we 
+    /* Default to old behaviour: do not output column headers if we
        do Stats queries */
     _show_column_headers = false;
 }
@@ -573,8 +573,7 @@ void Query::parseColumnsLine(char *line)
         if (column)
             _columns.push_back(column);
         else {
-            _output->setError(RESPONSE_CODE_INVALID_HEADER,
-                   "Table '%s' has no column '%s'", _table->name(), column_name);
+            logger(LOG_WARNING, "Replacing non-existing column '%s' with null column", column_name);
             Column *col = createDummyColumn(column_name);
             _columns.push_back(col);
         }
@@ -875,7 +874,7 @@ void Query::start()
             outputString(column->name());
         }
 
-        // Output dummy headers for stats columns 
+        // Output dummy headers for stats columns
         int col = 1;
         char colheader[32];
         for (_stats_columns_t::iterator it = _stats_columns.begin();
@@ -1081,7 +1080,7 @@ void Query::finish()
         outputDatasetEnd();
         delete[] _stats_aggregators;
     }
-   
+
     else if( _do_sorting ) {
         vector<void *> outbuf; /* Used to reverse display order */
 
