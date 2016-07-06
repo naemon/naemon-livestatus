@@ -83,6 +83,6 @@ void ServicelistColumn::output(void *data, Query *query)
 
 Filter *ServicelistColumn::createFilter(int opid, char *value)
 {
-    return new ServicelistColumnFilter(this, opid, value);
+    return new ServicelistColumnFilter(this, opid, value, _show_host);
 }
 

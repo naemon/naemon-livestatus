@@ -39,9 +39,10 @@ class ServicelistColumnFilter : public Filter
     int _opid;
     string _ref_host;
     string _ref_service;
+    bool _show_host;
 
 public:
-    ServicelistColumnFilter(ServicelistColumn *column, int opid, char *refvalue);
+    ServicelistColumnFilter(ServicelistColumn *column, int opid, char *refvalue, bool show_host);
     bool accepts(void *data);
 };
 

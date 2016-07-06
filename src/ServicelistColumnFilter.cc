@@ -32,23 +32,26 @@
 
 #define HOSTSERVICE_SEPARATOR '|'
 
-    ServicelistColumnFilter::ServicelistColumnFilter(ServicelistColumn *column, int opid, char *refvalue)
-: _servicelist_column(column), _opid(opid)
+    ServicelistColumnFilter::ServicelistColumnFilter(ServicelistColumn *column, int opid, char *refvalue, bool show_host)
+: _servicelist_column(column), _opid(opid), _show_host(show_host)
 {
     if (abs(_opid) == OP_EQUAL && !refvalue[0])
         return; // test for emptiness is allowed
 
-
-    // ref_value must be of from hostname HOSTSERVICE_SEPARATOR service_description
-    char *sep = index(refvalue, HOSTSERVICE_SEPARATOR);
-    if (!sep) {
-        logger(LG_INFO, "Invalid reference value for service list membership. Must be 'hostname%cservicename'", HOSTSERVICE_SEPARATOR);
-        _ref_host = "";
-        _ref_service = "";
-    }
-    else {
-        _ref_host = string(refvalue, sep - refvalue);
-        _ref_service = sep + 1;
+    if(!_show_host) {
+        _ref_service = refvalue;
+    } else {
+        // ref_value must be of from hostname HOSTSERVICE_SEPARATOR service_description
+        char *sep = index(refvalue, HOSTSERVICE_SEPARATOR);
+        if (!sep) {
+            logger(LG_INFO, "Invalid reference value for service list membership. Must be 'hostname%cservicename'", HOSTSERVICE_SEPARATOR);
+            _ref_host = "";
+            _ref_service = "";
+        }
+        else {
+            _ref_host = string(refvalue, sep - refvalue);
+            _ref_service = sep + 1;
+        }
     }
 }
 
@@ -65,7 +68,7 @@ bool ServicelistColumnFilter::accepts(void *data)
     bool is_member = false;
     while (mem) {
         service *svc = mem->service_ptr;
-        if (svc->host_name == _ref_host && svc->description == _ref_service) {
+        if ((!_show_host || svc->host_name == _ref_host) && svc->description == _ref_service) {
             is_member = true;
             break;
         }
