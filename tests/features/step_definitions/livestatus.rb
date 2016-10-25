@@ -9,6 +9,13 @@ Then /^I should see the following livestatus response$/ do |table|
   end
 end
 
+Then /^I should see the following livestatus response, ignoring whitespace$/ do |output|
+  response = @naemon.brokers[:livestatus].last_response()
+  processed_response = response.join("").gsub(/[ \t\n\r]/,"")
+  processed_output = output.gsub(/[ \t\n\r]/,"")
+  processed_response.should == processed_output
+end
+
 Given /^I clobber livestatus with (\d+) queries with (\d+) seconds idle time$/ do |nqueries, idle_time|
   @naemon.brokers[:livestatus].clobber(nqueries, idle_time)
 end

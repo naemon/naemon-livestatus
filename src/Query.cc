@@ -831,6 +831,7 @@ void Query::start()
 {
     doWait();
 
+    // Never start with a data set separator
     _need_ds_separator = false;
 
     if( _do_sorting || doStats() ) {
@@ -896,9 +897,10 @@ void Query::start()
         if (_output_format == OUTPUT_FORMAT_WRAPPED_JSON)
         {
             _output->addString("],\"data\":[");
-        }
-        else {
-            _need_ds_separator = true;
+            // Since this delimiter is a special kind of dataset separator, the
+            // next data set should not have one implicitly, since one is
+            // written here
+            _need_ds_separator = false;
         }
     } else {
         if (_output_format == OUTPUT_FORMAT_WRAPPED_JSON)
@@ -980,12 +982,6 @@ bool Query::processDataset(void *data)
 }
 
 void Query::printRow( void *data ) {
-    // output data of current row
-    if (_need_ds_separator && _output_format != OUTPUT_FORMAT_CSV)
-        _output->addBuffer(",\n", 2);
-    else
-        _need_ds_separator = true;
-
     outputDatasetBegin();
     for (_columns_t::iterator it = _columns.begin();
             it != _columns.end();
@@ -1024,10 +1020,6 @@ void Query::finish()
             data = outbuf.back();
             outbuf.pop_back();
             currow++;
-
-            // dataset separator after first group
-            if (currow>1 && _output_format != OUTPUT_FORMAT_CSV)
-                _output->addBuffer(",\n", 2);
 
             outputDatasetBegin();
 
@@ -1130,6 +1122,10 @@ void Query::optimizeBitmask(const char *columnname, uint32_t *bitmask)
 // output helpers, called from columns
 void Query::outputDatasetBegin()
 {
+    // output data of current row
+    if (_need_ds_separator && _output_format != OUTPUT_FORMAT_CSV)
+        _output->addBuffer(",\n", 2);
+
     if (_output_format != OUTPUT_FORMAT_CSV)
         _output->addChar('[');
 }
@@ -1140,6 +1136,7 @@ void Query::outputDatasetEnd()
         _output->addBuffer(_dataset_separator.c_str(), _dataset_separator.size());
     else
         _output->addChar(']');
+    _need_ds_separator = true;
 }
 
 void Query::outputFieldSeparator()
