@@ -8,7 +8,7 @@ end
 And /^I start naemon$/ do
   @naemon = Naemon.new
   @naemon.set_object_config @naemonconfig
-  livestatus = Livestatus.new "/tmp/live"
+  livestatus = Livestatus.new Dir.pwd+"/live"
   @naemon.add_broker livestatus
   @naemon.start()
 end
