@@ -33,10 +33,6 @@ BuildRequires: libicu-devel > 4.2
 BuildRequires: cppunit-devel
 BuildRequires: cppunit
 BuildRequires: op5-naemon
-%if 0%{?rhel} >= 7
-%else
-BuildRequires: rubygem20-op5cucumber
-%endif
 BuildRoot: %{_tmppath}/%{name}-%{version}
 
 
@@ -52,6 +48,27 @@ Summary: unixcat is a utility used to send data to a unix domain socket
 Group: op5/system-addons
 
 %description -n unixcat
+
+%package test
+Summary: Test requirements for Livestatus
+Group: Development/Libraries
+Requires: gcc
+Requires: python-argparse
+Requires: autoconf, automake
+Requires: pkgconfig
+Requires: libtool
+Requires: op5-naemon-devel, op5-naemon
+Requires: cppunit, cppunit-devel
+%if 0%{?rhel} <= 6
+Requires: ruby20
+Requires: ruby20-devel
+%else
+Requires: ruby
+Requires: ruby-devel
+%endif
+
+%description test
+Test requirements
 
 %prep
 %setup -q
@@ -103,6 +120,8 @@ test -f /etc/init.d/monitor && /etc/init.d/monitor restart || :
 %files -n unixcat
 %defattr(755,root,root)
 %_bindir/unixcat
+
+%files test
 
 %clean
 rm -rf %buildroot
