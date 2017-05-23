@@ -636,6 +636,9 @@ int nebmodule_init(int flags __attribute__ ((__unused__)), char *args, void *han
 {
     g_nagios_handle = handle;
     g_num_client_threads = 0;
+    g_should_terminate = false;
+    g_client_threads = NULL;
+    g_num_client_threads = 0;
     livestatus_parse_arguments(args);
     open_logfile();
 
