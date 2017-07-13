@@ -351,12 +351,12 @@ int broker_program(int event_type __attribute__ ((__unused__)), void *data __att
     return 0;
 }
 
-static void broker_event(struct nm_event_execution_properties *evprop)
+static void schedule_timeperiods_cache_update(struct nm_event_execution_properties *evprop)
 {
     g_counters[COUNTER_NEB_CALLBACKS]++;
-    update_timeperiods_cache(time(0));
-    if(!sigshutdown && !sigrestart) {
-        schedule_event(1, broker_event, NULL);
+    if (evprop->execution_type == EVENT_EXEC_NORMAL) {
+        update_timeperiods_cache(time(0));
+        schedule_event(1, schedule_timeperiods_cache_update, NULL);
     }
     return;
 }
@@ -445,7 +445,7 @@ void register_callbacks()
     neb_register_callback(NEBCALLBACK_STATE_CHANGE_DATA,     g_nagios_handle, 0, broker_state); // only for trigger 'state'
     neb_register_callback(NEBCALLBACK_ADAPTIVE_PROGRAM_DATA, g_nagios_handle, 0, broker_program); // only for trigger 'program'
     neb_register_callback(NEBCALLBACK_PROCESS_DATA,          g_nagios_handle, 0, broker_process); // used for starting threads
-    schedule_event(1, broker_event, NULL);  // used for timeperiods cache
+    schedule_event(1, schedule_timeperiods_cache_update, NULL);
 }
 
 void deregister_callbacks()
