@@ -1,4 +1,6 @@
 post:
+        install:
+                - libyaml
         steps: |
                 # Install requirements for cucumber test
                 if [ -f /usr/bin/systemctl ]; then
