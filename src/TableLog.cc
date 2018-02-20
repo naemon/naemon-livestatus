@@ -293,7 +293,7 @@ void TableLog::dumpLogfiles()
  */
 void TableLog::handleNewMessage(Logfile *logfile, time_t since __attribute__ ((__unused__)), time_t until __attribute__ ((__unused__)), unsigned logclasses)
 {
-    if (++_num_cached_messages <= _max_cached_messages)
+    if ((_num_cached_messages + 1) <= _max_cached_messages)
         return; // current message count still allowed, everything ok
 
     /* Memory checking an freeing consumes CPU ressources. We save
