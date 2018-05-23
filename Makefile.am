@@ -25,9 +25,20 @@
 ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = src tests
 
+EXTRA_DIST = naemon-livestatus.spec \
+             api \
+             debian \
+             livestatus.cfg.in
+
 naemonconf_DATA = livestatus.cfg
 livestatus.cfg : % : %.in
 	$(AM_V_GEN) sed \
 		-e 's,@pkglibdir[@],$(pkglibdir),g' \
 		-e 's,@brokeroptions[@],@brokeroptions@,g' \
 		$< > $@
+
+rpm: dist
+	rpmbuild -tb naemon-livestatus-${VERSION}.tar.gz
+
+deb:
+	debuild -i -us -uc -b

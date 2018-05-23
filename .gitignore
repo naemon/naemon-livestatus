@@ -26,3 +26,8 @@ ltmain.sh
 src/.libs/
 tests/.deps/
 tests/TestColumnFilters
+debian/files
+debian/*.debhelper.log
+debian/*.substvars
+debian/naemon-livestatus/
+livestatus.cfg
