@@ -17,10 +17,12 @@ Packager: Naemon Core Development Team <naemon-dev@monitoring-lists.org>
 Vendor: Naemon Core Development Team
 Source0: http://labs.consol.de/naemon/download/naemon-livestatus-%{version}.tar.gz
 BuildRoot: %{_tmppath}/naemon-%{version}-%{release}
+BuildRequires: naemon-devel
 BuildRequires: autoconf
 BuildRequires: automake
 BuildRequires: libtool
 BuildRequires: gcc-c++
+BuildRequires: python-devel
 
 
 %description
@@ -34,6 +36,7 @@ database.
 
 
 %build
+test -f configure || ./autogen.sh
 %configure \
     --libdir="%{_libdir}/naemon" \
     --with-naemon-config-dir="/etc/naemon/module-conf.d"
@@ -116,6 +119,10 @@ exit 0
 %attr(0644,root,root) %{_libdir}/naemon/naemon-livestatus/livestatus.so
 %attr(0755,naemon,naemon) %dir %{_localstatedir}/log/naemon
 %attr(-,root,root) %{python_sitelib}/livestatus/
+%if 0%{?suse_version} >= 1315
+%attr(0755,naemon,naemon) %dir %{_sysconfdir}/naemon/
+%attr(0755,naemon,naemon) %dir %{_sysconfdir}/naemon/module-conf.d/
+%endif
 %attr(0644,naemon,naemon) %config(noreplace) %{_sysconfdir}/naemon/module-conf.d/livestatus.cfg
 
 %changelog
