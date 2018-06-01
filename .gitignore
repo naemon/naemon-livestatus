@@ -2,6 +2,8 @@ Makefile.in
 autom4te.cache/
 configure
 aclocal.m4
+m4/
+/test-*
 Makefile
 config.h
 config.h.in
@@ -26,3 +28,8 @@ ltmain.sh
 src/.libs/
 tests/.deps/
 tests/TestColumnFilters
+debian/files
+debian/*.debhelper.log
+debian/*.substvars
+debian/naemon-livestatus/
+livestatus.cfg

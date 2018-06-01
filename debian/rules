@@ -1,0 +1,29 @@
+#!/usr/bin/make -f
+# debian/rules makefile for naemon-livestatus
+
+export DH_VERBOSE=1
+DESTDIR=$(CURDIR)/debian/tmp/
+
+PYTHON_SITELIB=$(shell python -c 'from distutils.sysconfig import get_python_lib; print(get_python_lib())')
+
+override_dh_auto_configure:
+	dh_auto_configure -- --prefix=/usr \
+				--bindir="/usr/bin" \
+				--libdir="/usr/lib/naemon" \
+				--with-naemon-config-dir="/etc/naemon/module-conf.d" \
+				--mandir="/usr/share/man"
+
+override_dh_auto_install:
+	dh_auto_install
+	# get rid of dependency_libs in la files, see https://wiki.debian.org/ReleaseGoals/LAFileRemoval
+	sed -i "/dependency_libs/ s/'.*'/''/" `find . -name '*.la'`
+	dh_install api/python/__init__.py $(PYTHON_SITELIB)/livestatus/
+	dh_install api/python/livestatus.py $(PYTHON_SITELIB)/livestatus/
+	rm debian/naemon-livestatus/usr/lib/naemon/naemon-livestatus/livestatus.la
+
+override_dh_gencontrol:
+	dh_gencontrol
+
+%:
+	dh $@
+

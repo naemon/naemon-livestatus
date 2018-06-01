@@ -1,0 +1,17 @@
+Source: naemon-livestatus
+Section: net
+Priority: optional
+Maintainer: Naemon Core Development Team <naemon-dev@monitoring-lists.org>
+Build-Depends: debhelper (>= 9)
+Standards-Version: 3.7.3
+Homepage: http://www.naemon.org
+Bugs: https://github.com/naemon/naemon-livestatus/issues
+Vcs-Browser: https://github.com/naemon/naemon-livestatus
+Vcs-Git: git://github.com:naemon/naemon-livestatus.git
+
+Package: naemon-livestatus
+Architecture: any
+Depends: ${misc:Depends}, ${perl:Depends}, ${shlibs:Depends}
+Description: contains the Naemon livestatus eventbroker module
+ Naemon is a monitoring and management system for hosts, services and
+ networks.
