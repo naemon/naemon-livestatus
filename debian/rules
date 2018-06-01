@@ -7,6 +7,7 @@ DESTDIR=$(CURDIR)/debian/tmp/
 PYTHON_SITELIB=$(shell python -c 'from distutils.sysconfig import get_python_lib; print(get_python_lib())')
 
 override_dh_auto_configure:
+	test -f configure || ./autogen.sh
 	dh_auto_configure -- --prefix=/usr \
 				--bindir="/usr/bin" \
 				--libdir="/usr/lib/naemon" \
