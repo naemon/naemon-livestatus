@@ -158,7 +158,7 @@ TableStatus::TableStatus()
     addColumn(new IntPointerColumn("cached_log_messages",
                 "The current number of log messages Naemon Livestatus keeps in memory", &num_cached_log_messages ));
     addColumn(new StringPointerColumn("livestatus_version",
-                "The version of the Naemon Livestatus module", (char *)VERSION));
+                "The version of the Naemon Livestatus module", (char *)(VERSION"-naemon")));
 
     // Livecheck
 }
