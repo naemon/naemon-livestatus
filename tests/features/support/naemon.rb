@@ -2,7 +2,7 @@ class Naemon
   attr_accessor :brokers
 
   def initialize
-    @config_dir = Dir.mktmpdir("naemon_test_")
+    @config_dir = (`mktemp --directory --tmpdir=.`).strip()
     @pid = nil
     @configuration =  {
       :command_file => "naemon.cmd",
@@ -69,7 +69,7 @@ class Naemon
         f.write(@oconf.configfile)
       }
     end
-    `naemon -d #{@config_dir}/naemon.cfg`
+    `naemon --allow-root -d #{@config_dir}/naemon.cfg`
     self.wait_for_start
   end
 

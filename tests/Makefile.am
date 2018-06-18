@@ -16,10 +16,3 @@ HostlistColumnFilterTest_LDFLAGS = $(CPPUNIT_LIBS) -ldl -no-install $(NAEMON_LIB
 HostlistColumnFilterTest_LDADD = $(top_builddir)/src/livestatus.la
 
 endif
-
-if HAVE_CUCUMBER
-check-cucumber:
-	CUKE_CLOBBER_PATH=$(abs_builddir)/tools/ls-clobber CUKE_UNIXCAT_PATH=$(abs_builddir)/../src/unixcat CUKE_LIVESTATUS_PATH=$(abs_builddir)/../src/.libs/livestatus.so cucumber
-
-check-local: check-cucumber
-endif
