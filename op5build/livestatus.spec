@@ -7,13 +7,8 @@
 %define daemon_group apache
 %endif
 
-%if ! ( 0%{?rhel} > 5 )
-%{!?python_sitelib: %global python_sitelib %(/usr/bin/python26 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
-%{!?python_sitearch: %global python_sitearch %(/usr/bin/python26 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
-%else
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
-%endif
 
 Summary: MK-Livestatus is a module for fetching status data from Nagios
 Name: monitor-livestatus
@@ -38,10 +33,6 @@ BuildRequires: libicu-devel > 4.2
 BuildRequires: cppunit-devel
 BuildRequires: cppunit
 BuildRequires: op5-naemon
-%if 0%{?rhel} >= 7
-%else
-BuildRequires: rubygem20-op5cucumber
-%endif
 BuildRoot: %{_tmppath}/%{name}-%{version}
 
 
@@ -57,6 +48,27 @@ Summary: unixcat is a utility used to send data to a unix domain socket
 Group: op5/system-addons
 
 %description -n unixcat
+
+%package test
+Summary: Test requirements for Livestatus
+Group: Development/Libraries
+Requires: gcc
+Requires: python-argparse
+Requires: autoconf, automake
+Requires: pkgconfig
+Requires: libtool
+Requires: op5-naemon-devel, op5-naemon
+Requires: cppunit, cppunit-devel
+%if 0%{?rhel} <= 6
+Requires: ruby20
+Requires: ruby20-devel
+%else
+Requires: ruby
+Requires: ruby-devel
+%endif
+
+%description test
+Test requirements
 
 %prep
 %setup -q
@@ -108,6 +120,8 @@ test -f /etc/init.d/monitor && /etc/init.d/monitor restart || :
 %files -n unixcat
 %defattr(755,root,root)
 %_bindir/unixcat
+
+%files test
 
 %clean
 rm -rf %buildroot
