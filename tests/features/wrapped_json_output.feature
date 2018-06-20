@@ -31,9 +31,9 @@ Feature: JSON output works as intended
 		Then I should see the following livestatus response, ignoring whitespace
 			"""
 			{
-				"columns":[
+				"columns":
 					["name"]
-				],
+				,
 				"data":[
 					["host1"],
 					["host2"]
@@ -53,9 +53,9 @@ Feature: JSON output works as intended
 		Then I should see the following livestatus response, ignoring whitespace
 			"""
 			{
-				"columns":[
+				"columns":
 					["name"]
-				],
+				,
 				"data":[
 					["host3"],
 					["host2"]
@@ -73,9 +73,9 @@ Feature: JSON output works as intended
 		Then I should see the following livestatus response, ignoring whitespace
 			"""
 			{
-				"columns":[
+				"columns":
 					["stats_1"]
-				],
+				,
 				"data":[
 					[3]
 				],
@@ -93,9 +93,9 @@ Feature: JSON output works as intended
 		Then I should see the following livestatus response, ignoring whitespace
 			"""
 			{
-				"columns":[
+				"columns":
 					["name", "stats_1"]
-				],
+				,
 				"data":[
 					["host1", 1],
 					["host2", 1],
