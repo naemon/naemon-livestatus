@@ -858,7 +858,7 @@ void Query::start()
     {
         if (_output_format == OUTPUT_FORMAT_WRAPPED_JSON)
             _output->addString("{\"columns\":");
-        if (_output_format != OUTPUT_FORMAT_CSV)
+        if (_output_format != OUTPUT_FORMAT_CSV && _output_format != OUTPUT_FORMAT_WRAPPED_JSON)
             _output->addChar('[');
 
         outputDatasetBegin();
@@ -896,7 +896,7 @@ void Query::start()
 
         if (_output_format == OUTPUT_FORMAT_WRAPPED_JSON)
         {
-            _output->addString("],\"data\":[");
+            _output->addString(",\"data\":[");
             // Since this delimiter is a special kind of dataset separator, the
             // next data set should not have one implicitly, since one is
             // written here
