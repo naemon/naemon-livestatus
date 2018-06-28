@@ -119,7 +119,7 @@ class Livestatus < NaemonModule
     else
       unixcat = "unixcat"
     end
-    cmd = "echo -e \"#{q}\"| #{unixcat} #{@sockpath}"
+    cmd = "/bin/echo -e \"#{q}\"| #{unixcat} #{@sockpath}"
     @last_response = `#{cmd}`.split("\n")
   end
   
