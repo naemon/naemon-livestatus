@@ -90,6 +90,7 @@ char g_hidden_custom_var_prefix[256];
 int g_service_authorization = AUTH_LOOSE;
 int g_group_authorization = AUTH_STRICT;
 int g_data_encoding = ENCODING_UTF8;
+int g_listen_backlog = 3;
 
 void *client_thread(void *data __attribute__ ((__unused__)));
 
@@ -247,7 +248,7 @@ int open_unix_socket()
         return false;
     }
 
-    if (0 != listen(g_unix_socket, 3 /* backlog */)) {
+    if (0 != listen(g_unix_socket, g_listen_backlog /* backlog */)) {
         logger(LG_ERR , "Cannot listen to unix socket at %s: %s", g_socket_path, strerror(errno));
         close(g_unix_socket);
         return false;
@@ -544,6 +545,13 @@ void livestatus_parse_arguments(const char *args_orig)
             }
             else if (!strcmp(left, "num_client_threads")) {
                 logger(LG_INFO, "Ignoring deprecated option %s, there is no longer a limit to the number of concurrent threads", left);
+            }
+            else if (!strcmp(left, "listen_backlog")) {
+                if (!strcmp(right, "max"))
+                    g_listen_backlog = SOMAXCONN;
+                else
+                    g_listen_backlog = strtoul(right, 0, 10);
+                logger(LG_INFO, "Setting listen backlog parameter to %lu", g_listen_backlog);
             }
             else if (!strcmp(left, "query_timeout")) {
                 int c = atoi(right);
