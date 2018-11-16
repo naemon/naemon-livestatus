@@ -47,7 +47,7 @@ class StringColumnFilter : public Filter
     int _opid;
     bool _negate;
 #ifdef HAVE_ICU
-    RegexMatcher *_regex_matcher;
+    icu::RegexMatcher *_regex_matcher;
 #else
     regex_t *_regex;
 #endif
