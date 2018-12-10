@@ -86,6 +86,7 @@ int g_should_terminate = false;
 unsigned long g_max_cached_messages = 500000;
 unsigned long g_max_lines_per_logfile = 1000000; // do never read more than that number of lines from a logfile
 unsigned long g_max_response_size = 100 * 1024 * 1024; // limit answer to 10 MB
+unsigned int g_max_backlog = 3; // backlog used in listen(<socket>, <backlog>)
 char g_hidden_custom_var_prefix[256];
 int g_service_authorization = AUTH_LOOSE;
 int g_group_authorization = AUTH_STRICT;
@@ -247,14 +248,14 @@ int open_unix_socket()
         return false;
     }
 
-    if (0 != listen(g_unix_socket, 3 /* backlog */)) {
+    if (0 != listen(g_unix_socket, g_max_backlog)) {
         logger(LG_ERR , "Cannot listen to unix socket at %s: %s", g_socket_path, strerror(errno));
         close(g_unix_socket);
         return false;
     }
 
     if (g_debug_level > 0)
-        logger(LG_INFO, "Opened UNIX socket %s\n", g_socket_path);
+        logger(LG_INFO, "Opened UNIX socket %s, backlog %d\n", g_socket_path, g_max_backlog);
     return true;
 
 }
@@ -602,6 +603,15 @@ void livestatus_parse_arguments(const char *args_orig)
                     g_data_encoding = ENCODING_MIXED;
                 else {
                     logger(LG_INFO, "Invalid data_encoding %s. Allowed are utf8, latin1 and mixed.", right);
+                }
+            }
+            else if (!strcmp(left, "max_backlog")) {
+                int c = atoi(right);
+                if (c < 0)
+                    logger(LG_INFO, "Error: max_backlog must be >= 0");
+                else {
+                    g_max_backlog = c;
+                    logger(LG_INFO, "Setting listen backlog to %d", c);
                 }
             }
             else if (!strcmp(left, "livecheck")) {
