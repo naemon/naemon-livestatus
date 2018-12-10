@@ -50,8 +50,8 @@
         }
         else {
 #ifdef HAVE_ICU
-            UnicodeString s = UnicodeString::fromUTF8(value);
-            _regex_matcher = new RegexMatcher(s, (_opid == OP_REGEX_ICASE ? UREGEX_CASE_INSENSITIVE : 0), status);
+            icu::UnicodeString s = icu::UnicodeString::fromUTF8(value);
+            _regex_matcher = new icu::RegexMatcher(s, (_opid == OP_REGEX_ICASE ? UREGEX_CASE_INSENSITIVE : 0), status);
             if (U_FAILURE(status)) {
                 setError(RESPONSE_CODE_INVALID_HEADER, "invalid regular expression '%s'", value);
                 delete _regex_matcher;
@@ -98,7 +98,7 @@ bool StringColumnFilter::accepts(void *data)
         case OP_REGEX_ICASE:
 #ifdef HAVE_ICU
             if ( _regex_matcher != 0 ) {
-                UnicodeString s = UnicodeString::fromUTF8(act_string);
+                icu::UnicodeString s = icu::UnicodeString::fromUTF8(act_string);
                 _regex_matcher->reset(s);
                 pass = _regex_matcher->find();
             }

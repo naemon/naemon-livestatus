@@ -42,7 +42,7 @@ class CustomVarsFilter : public Filter
     bool _negate;
     string _ref_text;
 #ifdef HAVE_ICU
-    RegexMatcher * _regex_matcher;
+    icu::RegexMatcher * _regex_matcher;
 #else
     regex_t *_regex;
 #endif
