@@ -132,7 +132,7 @@ bool Store::answerRequest(InputBuffer *input, OutputBuffer *output)
     else if (!strcmp(line, "GET"))
         answerGetRequest(input, output, ""); // only to get error message
     else if (!strncmp(line, "COMMAND ", 8)) {
-        answerCommandRequest(lstrip((char *)line + 8));
+        answerCommandRequest(lstrip((char *)line + 8), output);
         output->setDoKeepalive(true);
     }
     else if (!strncmp(line, "LOGROTATE", 9)) {
@@ -146,10 +146,10 @@ bool Store::answerRequest(InputBuffer *input, OutputBuffer *output)
     return output->doKeepalive();
 }
 
-void Store::answerCommandRequest(const char *command)
+void Store::answerCommandRequest(const char *command, OutputBuffer *output)
 {
     int ret, sd;
-    char *buf;
+    char buf[4096];
     sd = nsock_unix(qh_socket_path, NSOCK_TCP | NSOCK_CONNECT);
     if (sd < 0) {
         logger(LG_INFO, "Failed to connect to query socket '%s': %s: %s", qh_socket_path, nsock_strerror(sd), strerror(errno));
@@ -159,8 +159,13 @@ void Store::answerCommandRequest(const char *command)
     if (ret < 0) {
         logger(LG_INFO, "failed to submit command by query handler");
     }
-    while(read(sd, buf, 1024) > 0) {
-        logger(LG_INFO, "query handler: %s\n", buf);
+    output->reset();
+    while(read(sd, buf, 4095) > 0) {
+        int code = atoi(buf);
+        if(code != 200) {
+            logger(LG_INFO, "Unsuccessful command: '%s'", command);
+            output->setError(RESPONSE_CODE_INVALID_REQUEST, "%s", rstrip(buf));
+        }
     }
     close(sd);
     return;

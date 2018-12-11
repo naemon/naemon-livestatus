@@ -74,7 +74,7 @@ public:
 private:
     Table *findTable(string name);
     void answerGetRequest(InputBuffer *, OutputBuffer *, const char *);
-    void answerCommandRequest(const char *);
+    void answerCommandRequest(const char *, OutputBuffer *);
 };
 
 #endif // Store_h

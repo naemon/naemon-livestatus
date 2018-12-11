@@ -93,26 +93,24 @@ void OutputBuffer::needSpace(unsigned len)
 
 void OutputBuffer::flush(int fd, int *termination_flag)
 {
+    const char *buffer = _buffer;
+    int s = size();
+    // if response code is not OK, output error
+    // message instead of data
+    if (_response_code != RESPONSE_CODE_OK)
+    {
+        buffer = _error_message.c_str();
+        s = _error_message.size();
+    }
     if (_response_header == RESPONSE_HEADER_FIXED16)
     {
-        const char *buffer = _buffer;
-        int s = size();
-
-        // if response code is not OK, output error
-        // message instead of data
-        if (_response_code != RESPONSE_CODE_OK)
-        {
-            buffer = _error_message.c_str();
-            s = _error_message.size();
-        }
-
         char header[17];
         snprintf(header, sizeof(header), "%03d %11d\n", _response_code, s);
         writeData(fd, termination_flag, header, 16);
         writeData(fd, termination_flag, buffer, s);
     }
     else
-        writeData(fd, termination_flag, _buffer, size());
+        writeData(fd, termination_flag, buffer, s);
     reset();
 }
 
@@ -161,4 +159,3 @@ void OutputBuffer::setError(unsigned code, const char *format, ...)
         _response_code = code;
     }
 }
-
