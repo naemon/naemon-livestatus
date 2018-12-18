@@ -1,11 +1,3 @@
-%if ! ( 0%{?rhel} > 5 )
-%{!?python_sitelib: %global python_sitelib %(/usr/bin/python26 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
-%{!?python_sitearch: %global python_sitearch %(/usr/bin/python26 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
-%else
-%{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
-%{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
-%endif
-
 Summary: Naemon Livestatus Eventbroker Module
 Name: naemon-livestatus
 Version: 1.0.9
@@ -22,7 +14,6 @@ BuildRequires: autoconf
 BuildRequires: automake
 BuildRequires: libtool
 BuildRequires: gcc-c++
-BuildRequires: python-devel
 
 
 %description
@@ -49,11 +40,6 @@ test -f configure || ./autogen.sh
 
 # We don't really want to distribute this
 rm -f %{buildroot}%{_libdir}/naemon/naemon-livestatus/livestatus.la
-
-# Livestatus Python API
-install -d %buildroot%{python_sitelib}/livestatus
-install -pm 0755 api/python/livestatus.py %buildroot%{python_sitelib}/livestatus/
-install -pm 0644 api/python/__init__.py %buildroot%{python_sitelib}/livestatus/
 
 install -d %{buildroot}%{_localstatedir}/log/naemon
 
@@ -118,7 +104,6 @@ exit 0
 %attr(0755,naemon,naemon) %dir %{_libdir}/naemon/naemon-livestatus
 %attr(0644,root,root) %{_libdir}/naemon/naemon-livestatus/livestatus.so
 %attr(0755,naemon,naemon) %dir %{_localstatedir}/log/naemon
-%attr(-,root,root) %{python_sitelib}/livestatus/
 %if 0%{?suse_version} >= 1315
 %attr(0755,naemon,naemon) %dir %{_sysconfdir}/naemon/
 %attr(0755,naemon,naemon) %dir %{_sysconfdir}/naemon/module-conf.d/
