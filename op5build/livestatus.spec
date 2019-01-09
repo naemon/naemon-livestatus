@@ -7,9 +7,6 @@
 %define daemon_group apache
 %endif
 
-%{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
-%{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
-
 Summary: MK-Livestatus is a module for fetching status data from Nagios
 Name: monitor-livestatus
 Version: %{op5version}
@@ -20,9 +17,6 @@ URL: http://www.op5.se
 Source0: %name-%version.tar.gz
 Prefix: /usr
 Requires: monitor
-Requires: python
-BuildRequires: python
-BuildRequires: python-argparse
 BuildRequires: libstdc++-devel
 BuildRequires: gcc-c++
 BuildRequires: pkgconfig
@@ -90,10 +84,6 @@ LS_CLOBBER_SOCKET_PATH=/opt/monitor/var/rw/live LC_ALL=en_US.utf-8 %__make check
 %install
 %__make install DESTDIR=%buildroot
 
-install -d %buildroot%{python_sitelib}/livestatus
-install -pm 0644 api/python/livestatus.py %buildroot%{python_sitelib}/livestatus/
-install -pm 0644 api/python/__init__.py %buildroot%{python_sitelib}/livestatus/
-
 %post
 # delete livestatus from main config, it's in a mconf dir
 if grep -q 'broker_module.*livestatus\.' %nagios_cfg; then
@@ -113,7 +103,6 @@ test -f /etc/init.d/monitor && /etc/init.d/monitor restart || :
 %mod_path
 %mod_path/livestatus.so
 %mod_path/livestatus.la
-%{python_sitelib}/livestatus
 %attr(755,monitor,%daemon_group) %config(noreplace) /opt/monitor/etc/mconf/livestatus.cfg
 
 
