@@ -30,8 +30,6 @@
 #include "opids.h"
 #include "logger.h"
 
-#define HOSTSERVICE_SEPARATOR '|'
-
     ServicelistColumnFilter::ServicelistColumnFilter(ServicelistColumn *column, int opid, char *refvalue, bool show_host)
 : _servicelist_column(column), _opid(opid), _show_host(show_host)
 {

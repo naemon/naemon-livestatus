@@ -41,6 +41,7 @@
 #include "CustomVarsColumn.h"
 #include "CustomVarsExplicitColumn.h"
 #include "HostlistColumn.h"
+#include "HostlistDependencyColumn.h"
 #include "ServicelistColumn.h"
 #include "ServicelistStateColumn.h"
 #include "HostgroupsColumn.h"
@@ -278,6 +279,15 @@ void TableHosts::addColumns(Table *table, string prefix, int indirect_offset)
                 "A list of all direct parents of the host", (char *)(&hst.parent_hosts) - ref, indirect_offset, false));
     table->addColumn(new HostlistColumn(prefix + "childs",
                 "A list of all direct childs of the host", (char *)(&hst.child_hosts) - ref, indirect_offset, false));
+
+    table->addColumn(new HostlistDependencyColumn(prefix + "depends_exec",
+                "A list of all hosts this hosts depends on to execute", (char *)(&hst.exec_deps) - ref, indirect_offset, false));
+    table->addColumn(new HostlistDependencyColumn(prefix + "depends_exec_with_info",
+                "A list of all hosts this hosts depends on to execute including information: host_name, failure_options, dependency_period and inherits_parent", (char *)(&hst.exec_deps) - ref, indirect_offset, true));
+    table->addColumn(new HostlistDependencyColumn(prefix + "depends_notify",
+                "A list of all hosts this hosts depends on to notify", (char *)(&hst.notify_deps) - ref, indirect_offset, false));
+    table->addColumn(new HostlistDependencyColumn(prefix + "depends_notify_with_info",
+                "A list of all hosts this hosts depends on to notify including information: host_name, failure_options, dependency_period and inherits_parent", (char *)(&hst.notify_deps) - ref, indirect_offset, true));
 
     table->addColumn(new ServicelistStateColumn(prefix + "num_services",
                 "The total number of services of the host",         SLSC_NUM,         (char *)(&hst.services) - ref, indirect_offset));
