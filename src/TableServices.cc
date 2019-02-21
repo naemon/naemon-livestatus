@@ -37,6 +37,7 @@
 #include "OffsetStringServiceMacroColumn.h"
 #include "ServiceSpecialIntColumn.h"
 #include "ServiceSpecialDoubleColumn.h"
+#include "ServicelistDependencyColumn.h"
 #include "AttributelistColumn.h"
 #include "TableHosts.h"
 #include "TableServicegroups.h"
@@ -377,6 +378,15 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
                 "Whether the service is currently in its check period (0/1)", (char *)&svc.check_period_ptr - ref, indirect_offset));
     table->addColumn(new OffsetTimeperiodColumn(prefix + "in_notification_period",
                 "Whether the service is currently in its notification period (0/1)", (char *)&svc.notification_period_ptr - ref, indirect_offset));
+
+    table->addColumn(new ServicelistDependencyColumn(prefix + "depends_exec",
+                "A list of all services this service depends on to execute", (char *)(&svc.exec_deps) - ref, indirect_offset, false));
+    table->addColumn(new ServicelistDependencyColumn(prefix + "depends_exec_with_info",
+                "A list of all services this service depends on to execute including information: host_name, service_description, failure_options, dependency_period and inherits_parent", (char *)(&svc.exec_deps) - ref, indirect_offset, true));
+    table->addColumn(new ServicelistDependencyColumn(prefix + "depends_notify",
+                "A list of all services this service depends on to notify", (char *)(&svc.notify_deps) - ref, indirect_offset, false));
+    table->addColumn(new ServicelistDependencyColumn(prefix + "depends_notify_with_info",
+                "A list of all services this service depends on to notify including information: host_name, service_description, failure_options, dependency_period and inherits_parent", (char *)(&svc.notify_deps) - ref, indirect_offset, true));
 
 
     table->addColumn(new ServiceContactsColumn(prefix + "contacts",

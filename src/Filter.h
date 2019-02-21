@@ -32,6 +32,9 @@
 #include <stdint.h>
 
 using namespace std;
+
+#define HOSTSERVICE_SEPARATOR '|'
+
 class Query;
 
 class Filter
