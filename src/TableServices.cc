@@ -37,6 +37,7 @@
 #include "OffsetStringServiceMacroColumn.h"
 #include "ServiceSpecialIntColumn.h"
 #include "ServiceSpecialDoubleColumn.h"
+#include "ServicelistColumn.h"
 #include "ServicelistDependencyColumn.h"
 #include "AttributelistColumn.h"
 #include "TableHosts.h"
@@ -387,6 +388,8 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
                 "A list of all services this service depends on to notify", (char *)(&svc.notify_deps) - ref, indirect_offset, false));
     table->addColumn(new ServicelistDependencyColumn(prefix + "depends_notify_with_info",
                 "A list of all services this service depends on to notify including information: host_name, service_description, failure_options, dependency_period and inherits_parent", (char *)(&svc.notify_deps) - ref, indirect_offset, true));
+    table->addColumn(new ServicelistColumn(prefix + "parents",
+                "A list of all parent services (descriptions only, because they are all same-host)", (char *)(&svc.parents) - ref, indirect_offset, false, 0));
 
 
     table->addColumn(new ServiceContactsColumn(prefix + "contacts",
