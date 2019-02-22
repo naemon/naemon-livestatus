@@ -428,8 +428,8 @@ void Query::parseStatsLine(char *line)
 
     Column *column = _table->column(column_name);
     if (!column) {
-        _output->setError(RESPONSE_CODE_INVALID_HEADER, "invalid stats header: table '%s' has no column '%s'", _table->name(), column_name);
-        return;
+        column = createDummyColumn(column_name);
+        logger(LOG_DEBUG, "Replacing non-existing column '%s' with null column", column_name);
     }
 
     StatsColumn *stats_col;
@@ -479,8 +479,8 @@ void Query::parseFilterLine(char *line, bool is_filter)
 
     Column *column = _table->column(column_name);
     if (!column) {
-        _output->setError(RESPONSE_CODE_INVALID_HEADER, "invalid filter: table '%s' has no column '%s'", _table->name(), column_name);
-        return;
+        logger(LOG_DEBUG, "Replacing non-existing column '%s' with null column", column_name);
+        column = createDummyColumn(column_name);
     }
 
     char *operator_name = next_field(&line);
@@ -530,8 +530,7 @@ void Query::parseSortLine(char *line)
     if( column_name != 0 ) {
         Column *column = _table->column(column_name);
         if (column == 0) {
-            _output->setError(RESPONSE_CODE_INVALID_HEADER,
-                   "Table '%s' has no column '%s'", _table->name(), column_name);
+            logger(LOG_DEBUG, "Replacing non-existing column '%s' with null column", column_name);
             column = createDummyColumn(column_name);
         }
 
@@ -573,8 +572,7 @@ void Query::parseColumnsLine(char *line)
         if (column)
             _columns.push_back(column);
         else {
-            _output->setError(RESPONSE_CODE_INVALID_HEADER,
-                   "Table '%s' has no column '%s'", _table->name(), column_name);
+            logger(LOG_DEBUG, "Replacing non-existing column '%s' with null column", column_name);
             Column *col = createDummyColumn(column_name);
             _columns.push_back(col);
         }
