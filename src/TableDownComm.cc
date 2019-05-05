@@ -36,9 +36,6 @@
 #include <pthread.h>
 #include <string.h>
 
-// Todo: the dynamic data in this table must be
-// locked with a mutex
-
 TableDownComm::TableDownComm(bool is_downtime)
 {
     int err;
@@ -258,4 +255,24 @@ DowntimeOrComment *TableDownComm::findEntry(unsigned long id)
     return res;
 }
 
+void TableDownComm::lock()
+{
+    int err;
+    char errmsg[256] = "unknown error";
+    err = pthread_mutex_lock(&_entries_mutex);
+    if(err) {
+        strerror_r(err, errmsg, 256);
+        logger(LG_INFO, "Error locking mutex: %s (%d)", errmsg, err);
+    }
+}
 
+void TableDownComm::unlock()
+{
+    int err;
+    char errmsg[256] = "unknown error";
+    err = pthread_mutex_unlock(&_entries_mutex);
+    if(err) {
+        strerror_r(err, errmsg, 256);
+        logger(LG_INFO, "Error unlocking mutex: %s (%d)", errmsg, err);
+    }
+}
