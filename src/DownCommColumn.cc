@@ -32,6 +32,7 @@
 void DownCommColumn::output(void *data, Query *query)
 {
     TableDownComm *table = _is_downtime ? g_table_downtimes : g_table_comments;
+    table->lock();
     query->outputBeginList();
     data = shiftPointer(data); // points to host or service
     if (data)
@@ -66,6 +67,7 @@ void DownCommColumn::output(void *data, Query *query)
             }
         }
     }
+    table->unlock();
     query->outputEndList();
 }
 
@@ -92,6 +94,7 @@ bool DownCommColumn::isEmpty(void *data)
     if (!data) return true;
 
     TableDownComm *table = _is_downtime ? g_table_downtimes : g_table_comments;
+    table->lock();
     for (map<unsigned long, DowntimeOrComment *>::iterator it = table->entriesIteratorBegin();
             it != table->entriesIteratorEnd();
             ++it)
@@ -100,8 +103,10 @@ bool DownCommColumn::isEmpty(void *data)
         if ((void *)dt->_service == data ||
                 (dt->_service == 0 && dt->_host == data))
         {
+            table->unlock();
             return false;
         }
     }
+    table->unlock();
     return true; // empty
 }

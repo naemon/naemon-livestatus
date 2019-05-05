@@ -59,8 +59,9 @@ public:
     bool isAuthorized(contact *ctc, void *data);
     _entries_t::iterator entriesIteratorBegin() { return _entries.begin(); }
     _entries_t::iterator entriesIteratorEnd() { return _entries.end(); }
+    void lock();
+    void unlock();
 };
 
 
 #endif // TableDownComm_h
-
