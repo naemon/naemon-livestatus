@@ -83,7 +83,7 @@ TableLog::TableLog(unsigned long max_cached_messages)
     addColumn(new OffsetIntColumn("lineno",
                 "The number of the line in the log file", (char *)&(ref->_lineno) - (char *)ref, -1));
     addColumn(new OffsetIntColumn("class",
-                "The class of the message as integer (0:info, 1:state, 2:program, 3:notification, 4:passive, 5:command)", (char *)&(ref->_logclass) - (char *)ref, -1));
+                "The class of the message as integer (0:info, 1:alert, 2:program, 3:notification, 4:passive, 5:command, 6:state)", (char *)&(ref->_logclass) - (char *)ref, -1));
 
     addColumn(new OffsetStringColumn("message",
                 "The complete message line including the timestamp", (char *)&(ref->_complete) - (char *)ref, -1));
