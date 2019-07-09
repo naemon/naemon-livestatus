@@ -315,6 +315,8 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
                 "The time of the last state change - soft or hard (Unix timestamp)", (char *)&svc.last_state_change - ref, indirect_offset));
     table->addColumn(new OffsetTimeColumn(prefix + "last_hard_state_change",
                 "The time of the last hard state change (Unix timestamp)", (char *)&svc.last_hard_state_change - ref, indirect_offset));
+    table->addColumn(new OffsetTimeColumn(prefix + "last_update",
+                "Time of the last update of this service (Unix timestamp)", (char *)(&svc.last_update) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "scheduled_downtime_depth",
                 "The number of scheduled downtimes the service is currently in", (char *)(&svc.scheduled_downtime_depth) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "is_flapping",
