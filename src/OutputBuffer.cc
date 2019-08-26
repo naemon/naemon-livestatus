@@ -35,8 +35,9 @@
 #define WRITE_TIMEOUT_USEC 100000
 
 
-OutputBuffer::OutputBuffer()
-  : _max_size(INITIAL_OUTPUT_BUFFER_SIZE)
+OutputBuffer::OutputBuffer(int *termination_flag) :
+  _termination_flag(termination_flag),
+  _max_size(INITIAL_OUTPUT_BUFFER_SIZE)
 {
     _buffer = (char *)malloc(_max_size);
     _end = _buffer + _max_size;
@@ -91,7 +92,7 @@ void OutputBuffer::needSpace(unsigned len)
     }
 }
 
-void OutputBuffer::flush(int fd, int *termination_flag)
+void OutputBuffer::flush(int fd)
 {
     const char *buffer = _buffer;
     int s = size();
@@ -106,19 +107,19 @@ void OutputBuffer::flush(int fd, int *termination_flag)
     {
         char header[17];
         snprintf(header, sizeof(header), "%03d %11d\n", _response_code, s);
-        writeData(fd, termination_flag, header, 16);
-        writeData(fd, termination_flag, buffer, s);
+        writeData(fd, header, 16);
+        writeData(fd, buffer, s);
     }
     else
-        writeData(fd, termination_flag, buffer, s);
+        writeData(fd, buffer, s);
     reset();
 }
 
 
-void OutputBuffer::writeData(int fd, int *termination_flag, const char *write_from, int to_write)
+void OutputBuffer::writeData(int fd, const char *write_from, int to_write)
 {
     struct timeval tv;
-    while (!*termination_flag && to_write > 0)
+    while (!*_termination_flag && to_write > 0)
     {
         tv.tv_sec  = WRITE_TIMEOUT_USEC / 1000000;
         tv.tv_usec = WRITE_TIMEOUT_USEC % 1000000;
@@ -158,4 +159,12 @@ void OutputBuffer::setError(unsigned code, const char *format, ...)
         _error_message = buffer;
         _response_code = code;
     }
+}
+
+bool OutputBuffer::shouldTerminate()
+{
+    if(*_termination_flag) {
+        return true;
+    }
+    return false;
 }

@@ -460,7 +460,7 @@ void Query::parseStatsLine(char *line)
         stats_col = new StatsColumn(column, 0, operation);
     _stats_columns.push_back(stats_col);
 
-    /* Default to old behaviour: do not output column headers if we 
+    /* Default to old behaviour: do not output column headers if we
        do Stats queries */
     _show_column_headers = false;
 }
@@ -874,7 +874,7 @@ void Query::start()
             outputString(column->name());
         }
 
-        // Output dummy headers for stats columns 
+        // Output dummy headers for stats columns
         int col = 1;
         char colheader[32];
         for (_stats_columns_t::iterator it = _stats_columns.begin();
@@ -918,6 +918,10 @@ bool Query::processDataset(void *data)
         return false;
     }
 
+    if (_output->shouldTerminate()) {
+        _output->setError(RESPONSE_CODE_LIMIT_EXCEEDED, "Query canceled, core is shutting down.");
+        return false;
+    }
 
     if (_filter.accepts(data) && (!_auth_user || _table->isAuthorized(_auth_user, data))) {
 
@@ -926,6 +930,11 @@ bool Query::processDataset(void *data)
         if (_time_limit >= 0 && time(0) >= _time_limit_timeout) {
             logger(LG_INFO, "Maximum query time of %d seconds exceeded!", _time_limit);
             _output->setError(RESPONSE_CODE_LIMIT_EXCEEDED, "Maximum query time of %d seconds exceeded!", _time_limit);
+            return false;
+        }
+
+        if (_output->shouldTerminate()) {
+            _output->setError(RESPONSE_CODE_LIMIT_EXCEEDED, "Query canceled, core is shutting down.");
             return false;
         }
 
@@ -1069,7 +1078,7 @@ void Query::finish()
         outputDatasetEnd();
         delete[] _stats_aggregators;
     }
-   
+
     else if( _do_sorting ) {
         vector<void *> outbuf; /* Used to reverse display order */
 
@@ -1447,5 +1456,3 @@ void Query::doWait()
         }
     } while (!_wait_condition.accepts(_wait_object));
 }
-
-

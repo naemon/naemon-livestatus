@@ -179,7 +179,7 @@ static int accept_connection(int sd, int events, void *discard)
 void *client_thread(void *data)
 {
     void *input_buffer = create_inputbuffer(&g_should_terminate);
-    void *output_buffer = create_outputbuffer();
+    void *output_buffer = create_outputbuffer(&g_should_terminate);
 
     int cc = *((int *)data);
     free(data);
@@ -193,7 +193,7 @@ void *client_thread(void *data)
             if (g_debug_level >= 2 && requestnr > 1)
                 logger(LG_INFO, "Handling request %d on same connection", requestnr);
             keepalive = store_answer_request(input_buffer, output_buffer);
-            flush_output_buffer(output_buffer, cc, &g_should_terminate);
+            flush_output_buffer(output_buffer, cc);
             g_counters[COUNTER_REQUESTS]++;
             requestnr ++;
         }
