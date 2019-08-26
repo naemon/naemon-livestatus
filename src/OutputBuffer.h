@@ -43,6 +43,7 @@ using namespace std;
 
 class OutputBuffer
 {
+    int *_termination_flag;
     char *_buffer;
     char *_writepos;
     char *_end;
@@ -53,7 +54,7 @@ class OutputBuffer
     bool _do_keepalive;
 
 public:
-    OutputBuffer();
+    OutputBuffer(int *termination_flag);
     ~OutputBuffer();
     const char *buffer() { return _buffer; }
     unsigned size() { return _writepos - _buffer; }
@@ -61,7 +62,8 @@ public:
     void addString(const char *);
     void addBuffer(const char *, unsigned);
     void reset();
-    void flush(int fd, int *termination_flag);
+    void flush(int fd);
+    bool shouldTerminate();
     void setResponseHeader(int r) { _response_header = r; }
     int responseHeader() { return _response_header; }
     void setDoKeepalive(bool d) { _do_keepalive = d; }
@@ -71,9 +73,8 @@ public:
 
 private:
     void needSpace(unsigned);
-    void writeData(int fd, int *, const char *, int);
+    void writeData(int fd, const char *, int);
 };
 
 
 #endif // OutputBuffer_h
-

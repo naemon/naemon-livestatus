@@ -80,14 +80,14 @@ int store_answer_request(void *ib, void *ob)
     return g_store->answerRequest((InputBuffer *)ib, (OutputBuffer *)ob);
 }
 
-void *create_outputbuffer()
+void *create_outputbuffer(int *termination_flag)
 {
-    return new OutputBuffer();
+    return new OutputBuffer(termination_flag);
 }
 
-void flush_output_buffer(void *ob, int fd, int *termination_flag)
+void flush_output_buffer(void *ob, int fd)
 {
-    ((OutputBuffer *)ob)->flush(fd, termination_flag);
+    ((OutputBuffer *)ob)->flush(fd);
 }
 
 void delete_outputbuffer(void *ob)
@@ -114,4 +114,3 @@ void update_timeperiods_cache(time_t now)
 {
     g_timeperiods_cache->update(now);
 }
-
