@@ -273,7 +273,12 @@ bool LogEntry::handleProgrammEntry()
 
 int LogEntry::serviceStateToInt(char *s)
 {
-    char *last = s + strlen(s) - 1;
+    char *last;
+    int len = strlen(s);
+    if(len == 0) {
+        return 3;
+    }
+    last = s + len - 1;
     if (*last == ')')
         last--;
 
@@ -291,7 +296,12 @@ int LogEntry::serviceStateToInt(char *s)
 
 int LogEntry::hostStateToInt(char *s)
 {
-    char *last = s + strlen(s) - 1;
+    char *last;
+    int len = strlen(s);
+    if(len == 0) {
+        return 3;
+    }
+    last = s + len - 1;
     if (*last == ')') // handle CUSTOM (UP) and DOWNTIMESTOPPED (DOWN)
         last--;
 
@@ -304,4 +314,3 @@ int LogEntry::hostStateToInt(char *s)
         default:  return 3;
     }
 }
-
