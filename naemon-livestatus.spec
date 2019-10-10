@@ -14,6 +14,9 @@ BuildRequires: autoconf
 BuildRequires: automake
 BuildRequires: libtool
 BuildRequires: gcc-c++
+%if 0%{?el8}
+BuildRequires: gdb-headless
+%endif
 
 
 %description
