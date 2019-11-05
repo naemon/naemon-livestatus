@@ -192,7 +192,7 @@ void *client_thread(void *data)
         while (keepalive && !g_should_terminate) {
             if (g_debug_level >= 2 && requestnr > 1)
                 logger(LG_INFO, "Handling request %d on same connection", requestnr);
-            keepalive = store_answer_request(input_buffer, output_buffer);
+            keepalive = store_answer_request(input_buffer, output_buffer, cc);
             flush_output_buffer(output_buffer, cc);
             g_counters[COUNTER_REQUESTS]++;
             requestnr ++;

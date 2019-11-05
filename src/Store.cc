@@ -113,7 +113,7 @@ void Store::registerDowntime(nebstruct_downtime_data *d)
     _table_downtimes.addDowntime(d);
 }
 
-bool Store::answerRequest(InputBuffer *input, OutputBuffer *output)
+bool Store::answerRequest(InputBuffer *input, OutputBuffer *output, int fd)
 {
     output->reset();
     int r = input->readRequest();
@@ -134,6 +134,10 @@ bool Store::answerRequest(InputBuffer *input, OutputBuffer *output)
     else if (!strncmp(line, "COMMAND ", 8)) {
         answerCommandRequest(lstrip((char *)line + 8), output);
         output->setDoKeepalive(true);
+    }
+    else if (!strncmp(line, "QH ", 3)) {
+        output->setDoKeepalive(true);
+        answerQueryHandlerRequest(lstrip((char *)line + 3), output, fd);
     }
     else if (!strncmp(line, "LOGROTATE", 9)) {
         logger(LG_INFO, "Forcing logfile rotation");
@@ -170,6 +174,33 @@ void Store::answerCommandRequest(const char *command, OutputBuffer *output)
     close(sd);
     return;
 }
+
+void Store::answerQueryHandlerRequest(const char *command, OutputBuffer *output, int fd)
+{
+    int ret, sd;
+    char buf[4096];
+    sd = nsock_unix(qh_socket_path, NSOCK_TCP | NSOCK_CONNECT);
+    if (sd < 0) {
+        logger(LG_INFO, "Failed to connect to query socket '%s': %s: %s", qh_socket_path, nsock_strerror(sd), strerror(errno));
+        return;
+    }
+    ret = nsock_printf_nul(sd, "%s", command);
+    if (ret < 0) {
+        logger(LG_INFO, "failed to submit command by query handler");
+    }
+    output->reset();
+    while(TRUE) {
+        ret = read(sd, buf, 4095);
+        if(ret <= 0)
+            break;
+        buf[ret] = 0;
+        dprintf(fd, "%s", buf);
+    }
+    close(sd);
+    return;
+}
+
+
 
 
 void Store::answerGetRequest(InputBuffer *input, OutputBuffer *output, const char *tablename)
