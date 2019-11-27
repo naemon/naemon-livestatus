@@ -1,5 +1,6 @@
 class Naemon
   attr_accessor :brokers
+  attr_accessor :config_dir
 
   def initialize
     @config_dir = (`mktemp --directory --tmpdir=.`).strip()
