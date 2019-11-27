@@ -46,3 +46,11 @@ Feature: Queries work as expected
 			|host1|
 			|host2|
 			|host3|
+
+	Scenario: Get comments
+		Given I submit the following external command "ADD_HOST_COMMENT;host1;1;admin;Comment"
+		And I submit the following livestatus query
+			|GET comments|
+			|Columns: host_comments|
+		Then I should see the following livestatus response
+			|1|

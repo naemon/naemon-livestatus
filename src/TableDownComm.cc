@@ -40,11 +40,27 @@ TableDownComm::TableDownComm(bool is_downtime)
 {
     int err;
     char errmsg[256] = "unknown error";
-    err = pthread_mutex_init(&_entries_mutex, NULL);
+
+    pthread_mutexattr_t attr;
+    err = pthread_mutexattr_init(&attr);
+    if(err) {
+        strerror_r(err, errmsg, 256);
+        logger(LG_INFO, "Error creating mutex attr: %s (%d)", errmsg, err);
+   }
+
+    err = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    if(err) {
+        strerror_r(err, errmsg, 256);
+        logger(LG_INFO, "Error setting mutex type: %s (%d)", errmsg, err);
+    }
+
+    err = pthread_mutex_init(&_entries_mutex, &attr);
     if(err) {
         strerror_r(err, errmsg, 256);
         logger(LG_INFO, "Error creating mutex: %s (%d)", errmsg, err);
     }
+
+    pthread_mutexattr_destroy(&attr);
 
     if (is_downtime)
         _name = "downtimes";

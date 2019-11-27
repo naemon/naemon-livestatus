@@ -13,6 +13,11 @@ And /^I start naemon$/ do
   @naemon.start()
 end
 
+Given(/^I submit the following external command "(.*?)"$/) do |cmd|
+  shell = "/usr/bin/printf \"[%lu] #{cmd}\n\" `date +%s` > #{@naemon.config_dir}/naemon.cmd"
+  `#{shell}`
+end
+
 After do
   @naemon.stop
 end
