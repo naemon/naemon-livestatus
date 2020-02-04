@@ -30,6 +30,8 @@
 #include <sys/stat.h>
 #include <sys/un.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <unistd.h>
 #include <sys/select.h>
 #include <pthread.h>
@@ -77,8 +79,9 @@ size_t g_num_client_threads;
 #define true 1
 
 void *g_nagios_handle;
-int g_unix_socket = -1;
-char g_socket_path[4096];
+int g_socket_fd = -1;
+char g_socket_addr[4096];
+int g_use_inet_socket = false;
 char g_pnp_path[4096];
 char g_logfile_path[4096];
 int g_debug_level = 0;
@@ -207,64 +210,141 @@ void *client_thread(void *data)
 int open_unix_socket()
 {
     struct stat st;
-    if (0 == stat(g_socket_path, &st)) {
-        if (0 == unlink(g_socket_path)) {
-            logger(LG_DEBUG , "Removed old left over socket file %s", g_socket_path);
+    if (0 == stat(g_socket_addr, &st)) {
+        if (0 == unlink(g_socket_addr)) {
+            logger(LG_DEBUG , "Removed old left over socket file %s", g_socket_addr);
         }
         else {
             logger(LG_ALERT, "Cannot remove in the way file %s: %s",
-                    g_socket_path, strerror(errno));
+                    g_socket_addr, strerror(errno));
             return false;
         }
     }
 
-    g_unix_socket = socket(PF_LOCAL, SOCK_STREAM, 0);
-    if (g_unix_socket < 0)
+    g_socket_fd = socket(PF_LOCAL, SOCK_STREAM, 0);
+    if (g_socket_fd < 0)
     {
         logger(LG_CRIT , "Unable to create UNIX socket: %s", strerror(errno));
         return false;
     }
 
     // Imortant: close on exec -> check plugins must not inherit it!
-    if (0 < fcntl(g_unix_socket, F_SETFD, FD_CLOEXEC))
+    if (0 < fcntl(g_socket_fd, F_SETFD, FD_CLOEXEC))
         logger(LG_INFO, "Cannot set FD_CLOEXEC on socket: %s", strerror(errno));
 
-    // Bind it to its address. This creates the file with the name g_socket_path
+    // Bind it to its address. This creates the file with the name g_socket_addr
     struct sockaddr_un sockaddr;
     sockaddr.sun_family = AF_LOCAL;
-    strncpy(sockaddr.sun_path, g_socket_path, sizeof(sockaddr.sun_path));
-    if (bind(g_unix_socket, (struct sockaddr *) &sockaddr, SUN_LEN(&sockaddr)) < 0)
+    strncpy(sockaddr.sun_path, g_socket_addr, sizeof(sockaddr.sun_path));
+    if (bind(g_socket_fd, (struct sockaddr *) &sockaddr, SUN_LEN(&sockaddr)) < 0)
     {
         logger(LG_ERR , "Unable to bind adress %s to UNIX socket: %s",
-                g_socket_path, strerror(errno));
-        close(g_unix_socket);
+                g_socket_addr, strerror(errno));
+        close(g_socket_fd);
         return false;
     }
 
     // Make writable group members
-    if (0 != chmod(g_socket_path, 0660)) {
-        logger(LG_ERR , "Cannot chown unix socket at %s to 0660: %s", g_socket_path, strerror(errno));
-        close(g_unix_socket);
+    if (0 != chmod(g_socket_addr, 0660)) {
+        logger(LG_ERR , "Cannot chown unix socket at %s to 0660: %s", g_socket_addr, strerror(errno));
+        close(g_socket_fd);
         return false;
     }
 
-    if (0 != listen(g_unix_socket, g_max_backlog)) {
-        logger(LG_ERR , "Cannot listen to unix socket at %s: %s", g_socket_path, strerror(errno));
-        close(g_unix_socket);
+    if (0 != listen(g_socket_fd, g_max_backlog)) {
+        logger(LG_ERR , "Cannot listen to unix socket at %s: %s", g_socket_addr, strerror(errno));
+        close(g_socket_fd);
         return false;
     }
 
     if (g_debug_level > 0)
-        logger(LG_INFO, "Opened UNIX socket %s, backlog %d\n", g_socket_path, g_max_backlog);
+        logger(LG_INFO, "Opened UNIX socket %s, backlog %d\n", g_socket_addr, g_max_backlog);
     return true;
 
 }
 
-void close_unix_socket()
+int open_inet_socket()
 {
-    unlink(g_socket_path);
-    iobroker_close(nagios_iobs, g_unix_socket);
-    g_unix_socket = -1;
+    char *socket_addr, *ip_str, *port_str, *save;
+    unsigned long port;
+
+    g_socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (g_socket_fd < 0) {
+        logger(LG_CRIT , "Unable to create socket: %s", strerror(errno));
+        return false;
+    }
+
+    // Get ip address and port number from g_socket_addr.
+    socket_addr = strdup(g_socket_addr);
+    save = socket_addr;  // Save pointer to that we can free it later.
+    ip_str = next_token(&socket_addr, ':');
+    port_str = next_token(&socket_addr, 0);
+    if (!ip_str || !port_str) {
+        logger(LG_ERR, "Invalid TCP address for config option 'inet_addr': %s", g_socket_addr);
+        close(g_socket_fd);
+        return false;
+    }
+
+    // Convert ":port" specification to unsigned short.
+    errno = 0;
+    port = strtoul(port_str, NULL, 10);
+    if (errno || port == 0 || port > UINT16_MAX) {
+        logger(LG_ERR, "Invalid port number for inet_addr \"%s\" (errno: %s)",
+            port_str, (errno ? strerror(errno) : ""));
+        close(g_socket_fd);
+        return false;
+    }
+
+    // Bind socket to its address.
+    struct sockaddr_in sockaddr;
+    sockaddr.sin_family = AF_INET;
+    sockaddr.sin_port = htons((uint16_t) port);
+    if (strcmp(ip_str, "0.0.0.0") == 0) {
+        if (g_debug_level)
+            logger(LG_DEBUG, "Setup socket to listen on all interfaces");
+        sockaddr.sin_addr.s_addr = INADDR_ANY;
+    }
+    else {
+        if (g_debug_level)
+            logger(LG_DEBUG, "Setup socket to listen on '%s'", ip_str);
+        if (!inet_aton(ip_str, &sockaddr.sin_addr)) {
+            logger(LG_ERR, "Invalid IPv4 address: %s", ip_str);
+            close(g_socket_fd);
+            return false;
+        }
+    }
+    if (bind(g_socket_fd, (struct sockaddr *) &sockaddr, sizeof(sockaddr)) < 0) {
+        logger(LG_ERR, "Unable to bind to '%s'", g_socket_addr, strerror(errno));
+        close(g_socket_fd);
+        return false;
+    }
+
+    if (listen(g_socket_fd, g_max_backlog) != 0) {
+        logger(LG_ERR , "Cannot listen to socket at %s: %s", g_socket_addr, strerror(errno));
+        close(g_socket_fd);
+        return false;
+    }
+
+    free(save);
+
+    if (g_debug_level > 0)
+        logger(LG_INFO, "Opened TCP socket %s, backlog %d\n", g_socket_addr, g_max_backlog);
+    return true;
+}
+
+int open_socket()
+{
+    if (g_use_inet_socket)
+        return open_inet_socket();
+    return open_unix_socket();
+}
+
+void close_socket()
+{
+    if (!g_use_inet_socket)
+        unlink(g_socket_addr);
+    iobroker_close(nagios_iobs, g_socket_fd);
+    g_socket_fd = -1;
 }
 
 int broker_host(int event_type __attribute__ ((__unused__)), void *data __attribute__ ((__unused__)))
@@ -369,10 +449,10 @@ int broker_process(int event_type __attribute__ ((__unused__)), void *data)
     if (ps->type == NEBTYPE_PROCESS_EVENTLOOPSTART) {
         update_timeperiods_cache(time(0));
         do_statistics();
-        if (0 != (ret = iobroker_register(nagios_iobs, g_unix_socket, NULL, accept_connection))) {
+        if (0 != (ret = iobroker_register(nagios_iobs, g_socket_fd, NULL, accept_connection))) {
             logger(LG_ERR, "Cannot register unix socket with Naemon listener: %s", iobroker_strerror(ret));
-            close(g_unix_socket);
-            g_unix_socket = -1;
+            close(g_socket_fd);
+            g_socket_fd = -1;
             return ERROR;
         }
     }
@@ -483,7 +563,7 @@ void check_pnp_path()
 void livestatus_parse_arguments(const char *args_orig)
 {
     /* set default socket path */
-    strncpy(g_socket_path, DEFAULT_SOCKET_PATH, sizeof(g_socket_path));
+    strncpy(g_socket_addr, DEFAULT_SOCKET_PATH, sizeof(g_socket_addr));
 
     /* set default path to our logfile to be in the same path as nagios.log */
     strncpy(g_logfile_path, log_file, sizeof(g_logfile_path) - 16 /* len of "livestatus.log" */);
@@ -515,7 +595,7 @@ void livestatus_parse_arguments(const char *args_orig)
         if (!right) {
             char *sock_path;
             sock_path = nspath_absolute(left, config_file_dir);
-            strncpy(g_socket_path, sock_path, sizeof(g_socket_path));
+            strncpy(g_socket_addr, sock_path, sizeof(g_socket_addr));
             free(sock_path);
         }
         else {
@@ -525,6 +605,14 @@ void livestatus_parse_arguments(const char *args_orig)
             }
             else if (!strcmp(left, "log_file")) {
                 strncpy(g_logfile_path, right, sizeof(g_logfile_path));
+            }
+            else if (!strcmp(left, "inet_addr")) {
+                /* If option "inet_addr=ipv4:port" is used instead of a lone
+                 * unix socket path argument, a TCP socket is created.
+                 * Use "inet_addr=0.0.0.0:port" to bind to all interfaces.
+                 */
+                g_use_inet_socket = true;
+                strncpy(g_socket_addr, right, sizeof(g_socket_addr));
             }
             else if (!strcmp(left, "max_cached_messages")) {
                 g_max_cached_messages = strtoul(right, 0, 10);
@@ -625,6 +713,13 @@ void livestatus_parse_arguments(const char *args_orig)
             }
         }
     }
+    if (g_use_inet_socket && strchr(g_socket_addr, '/')) {
+        logger(LG_WARN, "WARNING: Use of 'inet_addr' and UNIX socket "
+            "in broker_module options. Continuing using '%s' as UNIX socket.",
+            g_socket_addr);
+        g_use_inet_socket = false;
+    }
+
     free(tmp);
 }
 
@@ -654,12 +749,13 @@ int nebmodule_init(int flags __attribute__ ((__unused__)), char *args, void *han
     livestatus_parse_arguments(args);
     open_logfile();
 
-    logger(LG_INFO, "Naemon Livestatus %s Socket: '%s'", VERSION, g_socket_path);
+    logger(LG_INFO, "Naemon Livestatus %s, %s: '%s'", VERSION,
+        (g_use_inet_socket ? "TCP" : "Socket"), g_socket_addr);
 
-    if (!open_unix_socket())
+    if (!open_socket())
         return 1;
 
-	event_broker_options = ~0; /* force settings to "everything" */
+    event_broker_options = ~0; /* force settings to "everything" */
     if (!verify_event_broker_options()) {
         logger(LG_CRIT, "Fatal: bailing out. Please fix event_broker_options.");
         logger(LG_CRIT, "Hint: your event_broker_options are set to %d. Try setting it to -1.", event_broker_options);
@@ -680,7 +776,7 @@ int nebmodule_deinit(int flags __attribute__ ((__unused__)), int reason __attrib
     size_t i;
     logger(LG_INFO, "deinitializing");
     g_should_terminate = true;
-    close_unix_socket();
+    close_socket();
 
     /*
      * Make sure all client connections are terminated before
