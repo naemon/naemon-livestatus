@@ -58,6 +58,11 @@ static void unlock_mutex_or_die(pthread_mutex_t *mutex) {
     }
 }
 
+void initialize_logger()
+{
+    /* Needed to determine main thread in logger() calls. */
+    g_mainthread_id = pthread_self();
+}
 
 void open_logfile()
 {
@@ -65,7 +70,6 @@ void open_logfile()
     if (g_logfile)
         return;
 
-    g_mainthread_id = pthread_self(); /* needed to determine main thread later */
     if ((status = pthread_mutex_init(&g_log_file_mutex, NULL)) != 0){
         /* Logging here is okay, under the assumption that we never try to open_logfile() from anywhere but the
          * main thread - meaning that the log message will go to the naemon log */
