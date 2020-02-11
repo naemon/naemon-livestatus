@@ -101,8 +101,9 @@ end
 class Livestatus < NaemonModule
   attr_accessor :last_response, :clobber_data
 
-  def initialize(sockpath)
-    @sockpath = sockpath
+  def initialize(socket_type, socket_addr)
+    @socket_type = socket_type
+    @socket_addr = socket_addr
   end
 
   def broker_config
@@ -111,7 +112,11 @@ class Livestatus < NaemonModule
     else
       so_path = "/usr/lib64/naemon-livestatus/livestatus.so"
     end
-    "#{so_path} #{@sockpath} debug=1"
+    if @socket_type == "tcp"
+      "#{so_path} inet_addr=0.0.0.0:#{@socket_addr} debug=1 max_backlog=128"
+    else
+      "#{so_path} #{@socket_addr} debug=1"
+    end
   end
 
   def query(q)
@@ -120,21 +125,28 @@ class Livestatus < NaemonModule
     else
       unixcat = "unixcat"
     end
-    cmd = "/bin/echo -e \"#{q}\"| #{unixcat} #{@sockpath}"
+    if @socket_type == "tcp"
+      cmd = "/bin/echo -e \"#{q}\"| ls-query.py 127.0.0.1 #{@socket_addr}"
+    else
+      cmd = "/bin/echo -e \"#{q}\"| #{unixcat} #{@socket_addr}"
+    end
     @last_response = `#{cmd}`.split("\n")
   end
-  
+
   def is_initialized?()
-    File.exists? @sockpath
+    if @socket_type == "tcp"
+      system("ls-query.py --test-connect 127.0.0.1 #{@socket_addr}")
+    else
+      File.exists? @socket_addr
+    end
   end
 
   def clobber(n_queries, idle_time)
-    if ENV['CUKE_CLOBBER_PATH']
-      clobber = ENV['CUKE_CLOBBER_PATH']
+    if @socket_type == "tcp"
+      clobber_output = `ls-clobber.py --tcp-port #{@socket_addr} #{n_queries} #{idle_time}`
     else
-      clobber = 'ls-clobber'
+      clobber_output = `ls-clobber.py --unix-socket #{@socket_addr} #{n_queries} #{idle_time}`
     end
-    clobber_output = `#{clobber} #{@sockpath} #{n_queries} #{idle_time}`
     @clobber_data = JSON.load(clobber_output)
   end
 end
