@@ -22,6 +22,8 @@
 // to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
 // Boston, MA 02110-1301 USA.
 
+#define _GNU_SOURCE /* for pthread_tryjoin_np */
+
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
