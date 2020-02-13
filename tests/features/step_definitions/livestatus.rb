@@ -16,6 +16,12 @@ Then /^I should see the following livestatus response, ignoring whitespace$/ do 
   processed_response.should == processed_output
 end
 
+Then /^I should see the following livestatus response, using regular expression$/ do |output|
+  response = @naemon.brokers[:livestatus].last_response()
+  processed_response = response.join("\n")
+  expect(processed_response).to match(output)
+end
+
 Given /^I clobber livestatus with (\d+) queries with (\d+) seconds idle time$/ do |nqueries, idle_time|
   @naemon.brokers[:livestatus].clobber(nqueries, idle_time)
 end
@@ -32,5 +38,5 @@ Then /^the slowest query should be no more than (\d+) times slower than the fast
 end
 
 Then /^the average query response time should be no more than (\d+.\d+) seconds$/ do |threshold|
-  @naemon.brokers[:livestatus].clobber_data()['avg_time'].should < threshold.to_f 
+  @naemon.brokers[:livestatus].clobber_data()['avg_time'].should < threshold.to_f
 end
