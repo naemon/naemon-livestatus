@@ -5,7 +5,7 @@
 // |           | |___| | | |  __/ (__|   <    | |  | | . \            |
 // |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
 // |                                                                  |
-// | Copyright Mathias Kettner 2012             mk@mathias-kettner.de |
+// | Copyright Mathias Kettner 2014             mk@mathias-kettner.de |
 // +------------------------------------------------------------------+
 //
 // This file is part of Check_MK.
@@ -22,43 +22,45 @@
 // to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
 // Boston, MA 02110-1301 USA.
 
-#ifndef tables_h
-#define tables_h
+#include <stdlib.h>
+#include "HostServiceState.h"
 
-#ifndef EXTERN
-#define EXTERN extern
-#endif
+HostServiceState::HostServiceState()
+    : _is_host(false)
+    , _time(0)
+    , _lineno(0)
+    , _from(0)
+    , _until(0)
+    , _duration(0)
+    , _duration_part(0)
+    , _duration_state_UNMONITORED(0)
+    , _duration_part_UNMONITORED(0)
+    , _duration_state_OK(0)
+    , _duration_part_OK(0)
+    , _duration_state_WARNING(0)
+    , _duration_part_WARNING(0)
+    , _duration_state_CRITICAL(0)
+    , _duration_part_CRITICAL(0)
+    , _duration_state_UNKNOWN(0)
+    , _duration_part_UNKNOWN(0)
+    , _host_down(0)
+    , _state(0)
+    , _in_notification_period(0)
+    , _in_service_period(0)
+    , _in_downtime(0)
+    , _in_host_downtime(0)
+    , _is_flapping(0)
+    , _may_no_longer_exist(false)
+    , _has_vanished(false)
+    , _last_known_time(0)
+    , _host(NULL)
+    , _service(NULL)
+    , _log_output(0)
+    , _notification_period(0)
+    , _service_period(0) {}
 
-class TableContacts;
-EXTERN TableContacts      *g_table_contacts;
-class TableCommands;
-EXTERN TableCommands      *g_table_commands;
-class TableHosts;
-EXTERN TableHosts         *g_table_hosts;
-EXTERN TableHosts         *g_table_hostsbygroup;
-class TableServices;
-EXTERN TableServices      *g_table_services;
-EXTERN TableServices      *g_table_servicesbygroup;
-EXTERN TableServices      *g_table_servicesbyhostgroup;
-class TableHostgroups;
-EXTERN TableHostgroups    *g_table_hostgroups;
-class TableServicegroups;
-EXTERN TableServicegroups *g_table_servicegroups;
-class TableDownComm;
-EXTERN TableDownComm      *g_table_downtimes;
-EXTERN TableDownComm      *g_table_comments;
-class TableTimeperiods;
-EXTERN TableTimeperiods   *g_table_timeperiods;
-class TableContactgroups;
-EXTERN TableContactgroups *g_table_contactgroups;
-class TableStatus;
-EXTERN TableStatus        *g_table_status;
-class TableLog;
-EXTERN TableLog           *g_table_log;
-class TableStateHistory;
-EXTERN TableStateHistory  *g_table_statehistory;
-class TableColumns;
-EXTERN TableColumns       *g_table_columns;
-
-#endif // tables_h
-
+HostServiceState::~HostServiceState()
+{
+    if (_log_output != 0)
+        free(_log_output);
+}

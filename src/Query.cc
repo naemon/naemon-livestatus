@@ -213,6 +213,10 @@ void Query::addColumn(Column *column)
     _columns.push_back(column);
 }
 
+void Query::setError(int error_code, const char* msg)
+{
+	_output->setError(error_code, msg);
+}
 
 bool Query::hasNoColumns()
 {
@@ -910,6 +914,17 @@ void Query::start()
 }
 
 
+bool Query::timelimitReached()
+{
+    if (_time_limit >= 0 && time(0) >= _time_limit_timeout) {
+        logger(LG_INFO, "Maximum query time of %d seconds exceeded!", _time_limit);
+        _output->setError(RESPONSE_CODE_LIMIT_EXCEEDED, "Maximum query time of %d seconds exceeded!", _time_limit);
+        return true;
+    }
+    else
+        return false;
+}
+
 bool Query::processDataset(void *data)
 {
     if (_output->size() > g_max_response_size) {
@@ -1108,7 +1123,6 @@ void Query::finish()
     }
 }
 
-
 void *Query::findIndexFilter(const char *columnname)
 {
     return _filter.findIndexFilter(columnname);
@@ -1194,6 +1208,24 @@ void Query::outputDouble(double value)
     _output->addBuffer(buf, l);
 }
 
+void Query::outputNull()
+{
+    if (_output_format == OUTPUT_FORMAT_CSV) {
+        // output empty cell
+    }
+    else if (_output_format == OUTPUT_FORMAT_PYTHON)
+        _output->addBuffer("None", 4);
+    else
+        _output->addBuffer("null", 4); // JSON
+}
+
+void Query::outputAsciiEscape(char value)
+{
+    char buf[8];
+    snprintf(buf, sizeof(buf), "\\%03o", value);
+    _output->addBuffer(buf, 4);
+}
+
 void Query::outputUnicodeEscape(unsigned value)
 {
     char buf[8];
@@ -1216,6 +1248,15 @@ void Query::outputHostService(const char *host_name, const char *service_descrip
         _output->addChar(']');
     }
 }
+
+void Query::outputBlob(const char *buffer, int size)
+{
+    if (_output_format != OUTPUT_FORMAT_CSV)
+        outputString(buffer);
+    else
+        _output->addBuffer(buffer, size);
+}
+
 
 void Query::outputString(const char *value)
 {
