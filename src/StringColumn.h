@@ -45,4 +45,3 @@ public:
 };
 
 #endif // StringColumn_h
-

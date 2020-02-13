@@ -105,11 +105,13 @@ public:
     Query(InputBuffer *, OutputBuffer *out, Table *);
     ~Query();
     bool processDataset(void *);
+    bool timelimitReached();
     void start();
     void finish();
     void setDefaultColumns(const char *);
     void addColumn(Column *column);
     void setShowColumnHeaders(bool x) { _show_column_headers = x; }
+    void setError(int error_code, const char * msg);
     bool hasNoColumns();
     contact *authUser() { return _auth_user; }
     void outputDatasetBegin();
@@ -121,8 +123,11 @@ public:
     void outputUnsignedLong(unsigned long);
     void outputCounter(counter_t);
     void outputDouble(double);
+    void outputNull();
+    void outputAsciiEscape(char value);
     void outputUnicodeEscape(unsigned value);
     void outputString(const char *);
+    void outputBlob(const char *buffer, int size);
     void outputHostService(const char *, const char *);
     void outputBeginList();
     void outputListSeparator();
@@ -139,6 +144,7 @@ public:
     void findIntLimits(const char *columnname, int *lower, int *upper);
     void optimizeBitmask(const char *columnname, uint32_t *bitmask);
     int timezoneOffset() { return _timezone_offset; }
+    AndingFilter *filter() { return &_filter; }
 
 private:
     bool doStats();

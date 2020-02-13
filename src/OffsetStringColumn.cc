@@ -41,4 +41,3 @@ const char *OffsetStringColumn::getValue(void *data)
     else
         return (char *)"";
 }
-

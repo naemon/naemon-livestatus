@@ -5,7 +5,7 @@
 // |           | |___| | | |  __/ (__|   <    | |  | | . \            |
 // |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
 // |                                                                  |
-// | Copyright Mathias Kettner 2012             mk@mathias-kettner.de |
+// | Copyright Mathias Kettner 2014             mk@mathias-kettner.de |
 // +------------------------------------------------------------------+
 //
 // This file is part of Check_MK.
@@ -22,32 +22,64 @@
 // to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
 // Boston, MA 02110-1301 USA.
 
-#ifndef TableLog_h
-#define TableLog_h
+#ifndef TableStateHistory_h
+#define TableStateHistory_h
 
 #include <map>
 #include <time.h>
 #include "config.h"
-#include "Table.h"
+#include "string.h"
+#include "logger.h"
+#include "nagios.h"
+#include "Logfile.h"
+#include "LogCache.h"
+#include "HostServiceState.h"
+#include "Query.h"
 
-class Logfile;
+#define CLASSMASK_STATEHIST 0xC6
 
-class TableLog : public Table
+class HostServiceState;
+
+typedef map<HostServiceKey, HostServiceState*> state_info_t;
+class TableStateHistory : public Table
 {
+    int      _query_timeframe;
+    Query   *_query;
+    int      _since;
+    int      _until;
+
+    // Notification periods information, name: active(1)/inactive(0)
+    typedef map<string, int> _notification_periods_t;
+    _notification_periods_t  _notification_periods;
+
+    // Helper functions to traverse through logfiles
+    _logfiles_t::iterator         _it_logs;
+    logfile_entries_t            *_entries;
+    logfile_entries_t::iterator   _it_entries;
+    LogEntry                     *_current_entry;
+    state_info_t                  _state_info;
+
+protected:
+    bool     _abort_query;
 
 public:
-    TableLog();
-    ~TableLog();
-    const char *name() { return "log"; }
-    const char *prefixname() { return "logs"; }
+    TableStateHistory();
+    const char *name() { return "statehist"; }
+    const char *prefixname() { return "statehist_"; }
     bool isAuthorized(contact *ctc, void *data);
     void handleNewMessage(Logfile *logfile, time_t since, time_t until, unsigned logclasses);
-    void addColumns(Table *, string prefix, int indirect_offset, bool add_host = true, bool add_service = true);
     void answerQuery(Query *query);
+    void cleanupQuery(Query *query);
     Column *column(const char *colname); // override in order to handle current_
+    int updateHostServiceState(Query *query, const LogEntry *entry, HostServiceState *state, const bool only_update);
+    static void addColumns(Table *);
 
 private:
-    bool answerQuery(Query *, Logfile *, time_t, time_t);
+    LogEntry* getPreviousLogentry();
+    LogEntry* getNextLogentry();
+    void      process(Query *query, HostServiceState *hs_state);
+    bool      objectFilteredOut(Query *, void *entry);
 };
 
-#endif // TableLog_h
+
+#endif // TableStateHistory_h
