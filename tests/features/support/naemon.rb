@@ -9,15 +9,15 @@ class Naemon
       :command_file => "naemon.cmd",
       :lock_file => "naemon.pid",
       :log_file => "naemon.log",
-      :query_socket => "naemon.qh"
-
+      :query_socket => "naemon.qh",
+      :log_initial_states => "1"
     }
     @oconf = nil
     @brokers = {}
   end
 
   def set_object_config(objectconfig)
-    @configuration[:cfg_file] = "objects.cfg" 
+    @configuration[:cfg_file] = "objects.cfg"
     @oconf = objectconfig
   end
 
