@@ -29,6 +29,7 @@ EXTRA_DIST = naemon-livestatus.spec \
              naemon-livestatus.rpmlintrc \
              api \
              debian \
+             version.sh \
              livestatus.cfg.in
 
 naemonconf_DATA = livestatus.cfg
