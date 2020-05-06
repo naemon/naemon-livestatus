@@ -283,9 +283,9 @@ int open_inet_socket()
     port_str = next_token(&socket_addr, 0);
     if (!ip_str || !port_str) {
         logger(LG_ERR, "Invalid TCP address for config option 'inet_addr': %s", g_socket_addr);
-		if(save)
-			free(save);
-		close(g_socket_fd);
+        if(save)
+            free(save);
+        close(g_socket_fd);
         return false;
     }
 
@@ -296,7 +296,7 @@ int open_inet_socket()
         logger(LG_ERR, "Invalid port number for inet_addr \"%s\" (errno: %s)",
             port_str, (errno ? strerror(errno) : ""));
         if(save)
-        	free(save);
+            free(save);
         close(g_socket_fd);
         return false;
     }
@@ -316,7 +316,7 @@ int open_inet_socket()
         if (!inet_aton(ip_str, &sockaddr.sin_addr)) {
             logger(LG_ERR, "Invalid IPv4 address: %s", ip_str);
             if(save)
-            	free(save);
+                free(save);
             close(g_socket_fd);
             return false;
         }
@@ -325,7 +325,7 @@ int open_inet_socket()
         logger(LG_ERR, "Unable to bind to '%s'", g_socket_addr, strerror(errno));
         close(g_socket_fd);
         if(save)
-        	free(save);
+            free(save);
         return false;
     }
 
