@@ -284,7 +284,7 @@ int open_inet_socket()
     if (!ip_str || !port_str) {
         logger(LG_ERR, "Invalid TCP address for config option 'inet_addr': %s", g_socket_addr);
         if(save)
-	  free(save);
+          free(save);
     	close(g_socket_fd);
         return false;
     }
@@ -295,8 +295,8 @@ int open_inet_socket()
     if (errno || port == 0 || port > UINT16_MAX) {
         logger(LG_ERR, "Invalid port number for inet_addr \"%s\" (errno: %s)",
             port_str, (errno ? strerror(errno) : ""));
-	if(save)
-	  free(save);
+        if(save)
+          free(save);
         close(g_socket_fd);
         return false;
     }
@@ -315,8 +315,8 @@ int open_inet_socket()
             logger(LG_DEBUG, "Setup socket to listen on '%s'", ip_str);
         if (!inet_aton(ip_str, &sockaddr.sin_addr)) {
             logger(LG_ERR, "Invalid IPv4 address: %s", ip_str);
-	    if(save)
-	      free(save);
+            if(save)
+              free(save);
             close(g_socket_fd);
             return false;
         }
@@ -324,16 +324,16 @@ int open_inet_socket()
     if (bind(g_socket_fd, (struct sockaddr *) &sockaddr, sizeof(sockaddr)) < 0) {
         logger(LG_ERR, "Unable to bind to '%s'", g_socket_addr, strerror(errno));
         close(g_socket_fd);
-	if(save)
-	  free(save);
+        if(save)
+          free(save);
         return false;
     }
 
     if (listen(g_socket_fd, g_max_backlog) != 0) {
         logger(LG_ERR , "Cannot listen to socket at %s: %s", g_socket_addr, strerror(errno));
         close(g_socket_fd);
-	if(save)
-	  free(save);
+        if(save)
+          free(save);
         return false;
     }
 
