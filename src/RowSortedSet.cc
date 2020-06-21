@@ -81,6 +81,13 @@ void *RowSortedSet::extract()
         return 0;
 
     data = _heap[0];
+
+    if (_heap.size() == 1) {
+        // bugfix: last entry remove from _heap and return entry instead try to sort and crash on EL8
+        _heap.pop_back();
+        return data;
+    };
+
     last = _heap.back();
     _heap.pop_back();
 
@@ -98,7 +105,7 @@ void *RowSortedSet::extract()
         }
     }
 
-    _heap[cur] = last;
+    _heap[cur] = last; // here it would crash on EL8 in case of _heap.size() == 1 if not catched earlier
 
     return data;
 }
