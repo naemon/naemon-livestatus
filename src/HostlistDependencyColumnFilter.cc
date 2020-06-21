@@ -22,7 +22,7 @@ bool HostlistDependencyColumnFilter::accepts(void *data)
     objectlist *list = _hostlist_dependency_column->getList(data);
 
     // test for empty list
-    if(abs(_opid == OP_EQUAL) && _ref_host == "")
+    if(abs(_opid) == OP_EQUAL && _ref_host == "") // bugfix (found by clang warning -Wabsolute-value)
         return (list == 0) == (_opid == OP_EQUAL);
 
     bool is_member = false;

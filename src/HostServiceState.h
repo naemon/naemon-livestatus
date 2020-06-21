@@ -78,11 +78,11 @@ struct HostServiceState {
 
     // Pointer to dynamically allocated strings (strdup) that live here.
     // These pointers are 0, if there is no output (e.g. downtime)
+    host        *_host; // satisfy -Wreorder
+    service     *_service; // satisfy -Wreorder
     char        *_log_output;
     char        *_notification_period;  // may be "": -> no period known, we assume "always"
     char        *_service_period;  // may be "": -> no period known, we assume "always"
-    host        *_host;
-    service     *_service;
     const char  *_host_name;            // Fallback if host no longer exists
     const char  *_service_description;  // Fallback if service no longer exists
 

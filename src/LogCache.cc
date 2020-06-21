@@ -52,7 +52,7 @@ extern char *log_file;
 
 int num_cached_log_messages = 0;
 
-LogCache::LogCache(unsigned long max_cached_messages)
+LogCache::LogCache(long max_cached_messages) // satisfy -Wsign-compare
     : _max_cached_messages(max_cached_messages)
     , _num_at_last_check(0)
 {
@@ -60,7 +60,7 @@ LogCache::LogCache(unsigned long max_cached_messages)
     updateLogfileIndex();
 }
 
-void LogCache::setMaxCachedMessages(unsigned long m)
+void LogCache::setMaxCachedMessages(long m) // satisfy -Wsign-compare
 {
     if (m != _max_cached_messages) {
         logger(LG_INFO, "Logfile cache: Changing max messages to %ld", m);
@@ -128,12 +128,20 @@ void LogCache::updateLogfileIndex()
 
     if (dir) {
         char abspath[4096];
+#if __GLIBC_PREREQ(2, 24)
+        struct dirent *ent; // satisfy -Wdeprecated-declarations (deprecated since glibc 2.24)
+#else
         struct dirent *ent, *result;
+#endif
         int len = offsetof(struct dirent, d_name)
             + pathconf(log_archive_path, _PC_NAME_MAX) + 1;
         ent = (struct dirent *)malloc(len);
 
+#if __GLIBC_PREREQ(2, 24)
+        while ((ent = readdir(dir)) && ent != NULL) // satisfy -Wdeprecated-declarations (deprecated since glibc 2.24)
+#else
         while (0 == readdir_r(dir, ent, &result) && result != 0)
+#endif
         {
             if (ent->d_name[0] != '.') {
                 snprintf(abspath, sizeof(abspath), "%s/%s", log_archive_path, ent->d_name);
@@ -173,7 +181,7 @@ void LogCache::dumpLogfiles()
             it != _logfiles.end();
             ++it)
     {
-        Logfile *log = it->second;
+        // Logfile *log = it->second; // satisfy -Wunused-variable
     }
 }
 

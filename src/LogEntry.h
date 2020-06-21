@@ -63,7 +63,7 @@ struct LogEntry
 {
     unsigned     _lineno;      // line number in file
     time_t       _time;
-    unsigned     _logclass;
+    int          _logclass; // satisfy -Wsign-compare
     LogEntryType _type;
     char        *_complete;  // copy of complete unsplit message
     char        *_options;   // points into _complete after ':'
