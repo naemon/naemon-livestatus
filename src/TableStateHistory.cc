@@ -314,6 +314,14 @@ void TableStateHistory::answerQuery(Query *query)
         key = 0;
         bool is_service = false;
         switch (entry->_type) {
+	case NONE: // satisfy -Wswitch
+	case CORE_STARTING: // satisfy -Wswitch
+	case CORE_STOPPING: // satisfy -Wswitch
+	case LOG_VERSION: // satisfy -Wswitch
+	case ACKNOWLEDGE_ALERT_HOST: // satisfy -Wswitch
+	case ACKNOWLEDGE_ALERT_SERVICE: // satisfy -Wswitch
+	    break; // do nothing, satisfy -Wswitch
+
         case ALERT_SERVICE:
         case STATE_SERVICE:
         case STATE_SERVICE_INITIAL:
@@ -614,6 +622,15 @@ inline int TableStateHistory::updateHostServiceState(Query *query, const LogEntr
 
     switch (entry->_type)
     {
+    case NONE: // satisfy -Wswitch
+    case CORE_STARTING: // satisfy -Wswitch
+    case CORE_STOPPING: // satisfy -Wswitch
+    case LOG_VERSION: // satisfy -Wswitch
+    case LOG_INITIAL_STATES: // satisfy -Wswitch
+    case ACKNOWLEDGE_ALERT_HOST: // satisfy -Wswitch
+    case ACKNOWLEDGE_ALERT_SERVICE: // satisfy -Wswitch
+	 break; // do nothing, satisfy -Wswitch
+
     case STATE_HOST:
     case STATE_HOST_INITIAL:
     case ALERT_HOST:
@@ -628,7 +645,7 @@ inline int TableStateHistory::updateHostServiceState(Query *query, const LogEntr
             } else
                 state_changed = 0;
         }
-        else if (hs_state->_host_down != entry->_state > 0)
+        else if ((hs_state->_host_down != entry->_state) > 0) // satisfy -Wparentheses
         {
             if (!only_update)
                 process(query, hs_state);

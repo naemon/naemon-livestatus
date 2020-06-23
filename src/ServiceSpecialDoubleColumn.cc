@@ -49,7 +49,7 @@ double ServiceSpecialDoubleColumn::getValue(void *data)
             if (is_cmk_passive) {
                 host *host = svc->host_ptr;
                 servicesmember *svc_member = host->services;
-                double check_interval = 1;
+                // double check_interval = 1; // satisfy -Wunused-variable
                 while (svc_member != 0) {
                     tmp_svc = svc_member->service_ptr;
                     if (!strncmp(tmp_svc->check_command_ptr->name, "check-mk", 9)) {

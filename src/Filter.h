@@ -49,7 +49,7 @@ protected:
     void setError(unsigned code, const char *format, ...);
 
 public:
-    Filter() : _query(0), _column(0) {}
+    Filter() : _column(0), _query(0) {} // satisfy -Wreorder
     virtual ~Filter() {}
     string errorMessage() { return _error_message; }
     unsigned errorCode() { return _error_code; }

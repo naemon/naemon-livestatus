@@ -1018,7 +1018,7 @@ void Query::printRow( void *data ) {
 void Query::finish()
 {
     void *data;
-    long i;
+    std::vector<StatsColumn*>::size_type i; // satisfy -Wsign-compare
     long numelems;
     long currow;
 

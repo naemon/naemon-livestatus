@@ -66,7 +66,7 @@ class Query
     contact      *_auth_user;
     AndingFilter  _wait_condition;
     unsigned      _wait_timeout;
-    unsigned      _wait_trigger;
+    int           _wait_trigger; // satisfy -Wsign-compare
     void         *_wait_object;
     string        _field_separator;
     string        _dataset_separator;
@@ -79,8 +79,6 @@ class Query
     int           _time_limit;
     time_t        _time_limit_timeout;
     int           _offset;
-    unsigned      _current_line;
-    int           _timezone_offset;
 
     // normal queries
     typedef vector<Column *> _columns_t;
@@ -88,6 +86,8 @@ class Query
     _columns_t _dummy_columns; // dynamically allocated. Must delete them.
 
     bool          _do_sorting;
+    unsigned      _current_line; // satisfy -Wreorder
+    int           _timezone_offset; // satisfy -Wreorder
     RowSortedSet  _sorter;
 
     // stats queries
