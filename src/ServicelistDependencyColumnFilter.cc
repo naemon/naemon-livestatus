@@ -33,7 +33,7 @@ bool ServicelistDependencyColumnFilter::accepts(void *data)
     objectlist *list = _servicelist_dependency_column->getList(data);
 
     // test for empty list
-    if(abs(_opid == OP_EQUAL) && _ref_service == "")
+    if(abs(_opid) == OP_EQUAL && _ref_service == "")
         return (list == 0) == (_opid == OP_EQUAL);
 
     bool is_member = false;
