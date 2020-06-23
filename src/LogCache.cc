@@ -128,12 +128,20 @@ void LogCache::updateLogfileIndex()
 
     if (dir) {
         char abspath[4096];
+#if __GLIBC_PREREQ(2, 24)
+        struct dirent *ent; // satisfy -Wdeprecated-declarations (deprecated since glibc 2.24)
+#else
         struct dirent *ent, *result;
+#endif
         int len = offsetof(struct dirent, d_name)
             + pathconf(log_archive_path, _PC_NAME_MAX) + 1;
         ent = (struct dirent *)malloc(len);
 
+#if __GLIBC_PREREQ(2, 24)
+        while ((ent = readdir(dir)) && ent != NULL) // satisfy -Wdeprecated-declarations (deprecated since glibc 2.24)
+#else
         while (0 == readdir_r(dir, ent, &result) && result != 0)
+#endif
         {
             if (ent->d_name[0] != '.') {
                 snprintf(abspath, sizeof(abspath), "%s/%s", log_archive_path, ent->d_name);
