@@ -128,12 +128,12 @@ void LogCache::updateLogfileIndex()
 
     if (dir) {
         char abspath[4096];
-        struct dirent *ent, *result;
+        struct dirent *ent;
         int len = offsetof(struct dirent, d_name)
             + pathconf(log_archive_path, _PC_NAME_MAX) + 1;
         ent = (struct dirent *)malloc(len);
 
-        while (0 == readdir_r(dir, ent, &result) && result != 0)
+        while ((ent = readdir(dir)) && ent != NULL)
         {
             if (ent->d_name[0] != '.') {
                 snprintf(abspath, sizeof(abspath), "%s/%s", log_archive_path, ent->d_name);
