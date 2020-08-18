@@ -8,7 +8,7 @@ case "$1" in
           # livestatus config moved to single drop dir file
           sed -i /etc/naemon/naemon.cfg -e 's~^\s*\(broker_module=/usr/lib[0-9]*/naemon/naemon-livestatus/livestatus.so.*\)~#\1~'
         fi
-        invoke-rc.d naemon condrestart || true
+        deb-systemd-invoke condrestart naemon || true
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
