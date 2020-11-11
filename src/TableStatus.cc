@@ -100,7 +100,7 @@ TableStatus::TableStatus()
     addColumn(new GlobalCountersColumn("livechecks",
                 "The number of checks executed via livecheck",                COUNTER_LIVECHECKS,    false));
     addColumn(new GlobalCountersColumn("livechecks_rate",
-                "The averaged number of livechecks executes per second",      COUNTER_LIVECHECKS,    true));
+                "The averaged number of livechecks executed per second",      COUNTER_LIVECHECKS,    true));
 
     addColumn(new GlobalCountersColumn("livecheck_overflows",
                 "The number of times a check could not be executed "

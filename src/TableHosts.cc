@@ -280,7 +280,7 @@ void TableHosts::addColumns(Table *table, string prefix, int indirect_offset)
     table->addColumn(new HostlistColumn(prefix + "parents",
                 "A list of all direct parents of the host", (char *)(&hst.parent_hosts) - ref, indirect_offset, false));
     table->addColumn(new HostlistColumn(prefix + "childs",
-                "A list of all direct childs of the host", (char *)(&hst.child_hosts) - ref, indirect_offset, false));
+                "A list of all direct children of the host", (char *)(&hst.child_hosts) - ref, indirect_offset, false));
 
     table->addColumn(new HostlistDependencyColumn(prefix + "depends_exec",
                 "A list of all hosts this hosts depends on to execute", (char *)(&hst.exec_deps) - ref, indirect_offset, false));
