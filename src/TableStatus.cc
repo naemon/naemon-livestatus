@@ -33,7 +33,7 @@
 #include "logger.h"
 #include "string.h"
 
-// Nagios status values
+// Naemon status values
 
 extern time_t program_start;
 extern int nagios_pid;
@@ -108,9 +108,9 @@ TableStatus::TableStatus()
     addColumn(new GlobalCountersColumn("livecheck_overflows_rate",
                 "The number of livecheck overflows per second",               COUNTER_LIVECHECK_OVERFLOWS,    true));
 
-    // Nagios program status data
+    // Naemon program status data
     addColumn(new IntPointerColumn("nagios_pid",
-                "The process ID of the Nagios main process", &nagios_pid ));
+                "The process ID of the Naemon main process", &nagios_pid ));
     addColumn(new IntPointerColumn("enable_notifications",
                 "Whether notifications are enabled in general (0/1)", &enable_notifications ));
     addColumn(new IntPointerColumn("execute_service_checks",
@@ -124,9 +124,9 @@ TableStatus::TableStatus()
     addColumn(new IntPointerColumn("enable_event_handlers",
                 "Whether event handlers are activated in general (0/1)", &enable_event_handlers));
     addColumn(new IntPointerColumn("obsess_over_services",
-                "Whether Nagios will obsess over service checks and run the ocsp_command (0/1)", &obsess_over_services));
+                "Whether Naemon will obsess over service checks and run the ocsp_command (0/1)", &obsess_over_services));
     addColumn(new IntPointerColumn("obsess_over_hosts",
-                "Whether Nagios will obsess over host checks (0/1)", &obsess_over_hosts));
+                "Whether Naemon will obsess over host checks (0/1)", &obsess_over_hosts));
     addColumn(new IntPointerColumn("check_service_freshness",
                 "Whether service freshness checking is activated in general (0/1)", &check_service_freshness));
     addColumn(new IntPointerColumn("check_host_freshness",
@@ -136,7 +136,7 @@ TableStatus::TableStatus()
     addColumn(new IntPointerColumn("process_performance_data",
                 "Whether processing of performance data is activated in general (0/1)", &process_performance_data));
     addColumn(new IntPointerColumn("check_external_commands",
-                "Whether Nagios checks for external commands at its command pipe (0/1)", &check_external_commands));
+                "Whether Naemon checks for external commands at its command pipe (0/1)", &check_external_commands));
     addColumn(new TimePointerColumn("program_start",
                 "The time of the last program start as UNIX timestamp", (int*)&program_start));
     addColumn(new TimePointerColumn("last_command_check",
@@ -144,7 +144,7 @@ TableStatus::TableStatus()
     addColumn(new TimePointerColumn("last_log_rotation",
                 "Time time of the last log file rotation", (int*)&last_log_rotation));
     addColumn(new IntPointerColumn("interval_length",
-                "The default interval length from nagios.cfg", (int*)&interval_length));
+                "The default interval length from naemon.cfg", (int*)&interval_length));
 
     addColumn(new IntPointerColumn("num_hosts",
                 "The total number of hosts", (int*)&num_objects.hosts));

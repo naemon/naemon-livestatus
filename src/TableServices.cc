@@ -224,11 +224,11 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
     table->addColumn(new OffsetStringColumn(prefix + "description",
                 "Description of the service (also used as key)", (char *)(&svc.description) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "display_name",
-                "An optional display name (not used by Nagios standard web pages)", (char *)(&svc.display_name) - ref, indirect_offset));
+                "An optional display name", (char *)(&svc.display_name) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "check_command",
-                "Nagios command used for active checks", (char *)(&svc.check_command) - ref, indirect_offset));
+                "Naemon command used for active checks", (char *)(&svc.check_command) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "event_handler",
-                "Nagios command used as event handler", (char *)(&svc.event_handler) - ref, indirect_offset));
+                "Naemon command used as event handler", (char *)(&svc.event_handler) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "plugin_output",
                 "Output of the last check plugin", (char *)(&svc.plugin_output) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "long_plugin_output",
@@ -298,7 +298,7 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
     table->addColumn(new OffsetIntColumn(prefix + "hourly_value",
                 "Hourly Value", (char *)(&svc.hourly_value) - ref, indirect_offset));
     table->addColumn(new ServiceSpecialIntColumn(prefix + "should_be_scheduled",
-                "Whether nagios still tries to run checks on this service (0/1)", SSIC_SHOULD_BE_SCHEDULED, indirect_offset));
+                "Whether naemon still tries to run checks on this service (0/1)", SSIC_SHOULD_BE_SCHEDULED, indirect_offset));
 
 
     table->addColumn(new OffsetTimeColumn(prefix + "last_check",
