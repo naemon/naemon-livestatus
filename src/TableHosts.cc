@@ -86,15 +86,15 @@ void TableHosts::addColumns(Table *table, string prefix, int indirect_offset)
     table->addColumn(new OffsetStringColumn(prefix + "name",
                 "Host name", (char *)(&hst.name) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "display_name",
-                "Optional display name of the host - not used by Nagios' web interface", (char *)(&hst.display_name) - ref, indirect_offset));
+                "Optional display name of the host", (char *)(&hst.display_name) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "alias",
                 "An alias name for the host", (char *)(&hst.alias) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "address",
                 "IP address", (char *)(&hst.address) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "check_command",
-                "Nagios command for active host check of this host", (char *)(&hst.check_command) - ref, indirect_offset));
+                "Naemon command for active host check of this host", (char *)(&hst.check_command) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "event_handler",
-                "Nagios command used as event handler", (char *)(&hst.event_handler) - ref, indirect_offset));
+                "Naemon command used as event handler", (char *)(&hst.event_handler) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "notification_period",
                 "Time period in which problems of this host will be notified. If empty then notification will be always", (char *)(&hst.notification_period) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "check_period",
@@ -194,7 +194,7 @@ void TableHosts::addColumns(Table *table, string prefix, int indirect_offset)
     table->addColumn(new OffsetTimeColumn(prefix + "last_state_change",
                 "Time of the last state change - soft or hard (Unix timestamp)", (char *)(&hst.last_state_change) - ref, indirect_offset));
     table->addColumn(new HostSpecialIntColumn(prefix + "should_be_scheduled",
-                "Whether nagios still tries to run checks on this host (0/1)", HSIC_SHOULD_BE_SCHEDULED, indirect_offset));
+                "Whether naemon still tries to run checks on this host (0/1)", HSIC_SHOULD_BE_SCHEDULED, indirect_offset));
 
     table->addColumn(new OffsetTimeColumn(prefix + "last_time_up",
                 "The last time the host was UP (Unix timestamp)", (char *)&hst.last_time_up - ref, indirect_offset));
@@ -273,7 +273,7 @@ void TableHosts::addColumns(Table *table, string prefix, int indirect_offset)
 
     // Add direct access to the custom macro _FILENAME. In a future version of Livestatus
     // this will probably be configurable so access to further custom variable can be
-    // added, such that those variables are presented like ordinary Nagios columns.
+    // added, such that those variables are presented like ordinary Naemon columns.
     table->addColumn(new CustomVarsExplicitColumn(prefix + "filename",
                 "The value of the custom variable FILENAME", (char *)(&hst.custom_variables) - ref, indirect_offset, "FILENAME"));
 
