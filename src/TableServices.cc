@@ -281,7 +281,7 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
     table->addColumn(new OffsetIntColumn(prefix + "acknowledged",
                 "Whether the current service problem has been acknowledged (0/1)", (char *)&svc.problem_has_been_acknowledged - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "acknowledgement_type",
-                "The type of the acknownledgement (0: none, 1: normal, 2: sticky)", (char *)&svc.acknowledgement_type - ref, indirect_offset));
+                "The type of the acknowledgement (0: none, 1: normal, 2: sticky)", (char *)&svc.acknowledgement_type - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "no_more_notifications",
                 "Whether to stop sending notifications (0/1)", (char *)(&svc.no_more_notifications) - ref, indirect_offset));
     table->addColumn(new OffsetTimeColumn(prefix + "last_state_change",
@@ -413,7 +413,7 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
     table->addColumn(new CustomVarsColumn(prefix + "custom_variable_values",
                 "A list of the values of all custom variable of the service", (char *)(&svc.custom_variables) - ref, indirect_offset, CVT_VALUES));
     table->addColumn(new CustomVarsColumn(prefix + "custom_variables",
-                "A dictorionary of the custom variables", (char *)(&svc.custom_variables) - ref, indirect_offset, CVT_DICT));
+                "A dictionary of the custom variables", (char *)(&svc.custom_variables) - ref, indirect_offset, CVT_DICT));
 
     table->addColumn(new ServicegroupsColumn(prefix + "groups",
                 "A list of all service groups the service is in", (char *)(&svc.servicegroups_ptr) - ref, indirect_offset));
