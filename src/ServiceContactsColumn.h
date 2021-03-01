@@ -36,7 +36,8 @@ public:
         : ContactsColumn(name, description, indirect_offset) {}
     int type() { return COLTYPE_LIST; }
     bool isNagiosMember(void *data, void *member);
+    bool isEmpty(void *data);
+    void output(void *, Query *);
 };
 
 #endif // ServiceContactsColumn_h
-
