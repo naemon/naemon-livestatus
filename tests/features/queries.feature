@@ -54,3 +54,13 @@ Feature: Queries work as expected
 			|Columns: host_comments|
 		Then I should see the following livestatus response
 			|1|
+
+	Scenario: Livestatus host lists contacts
+		Given I submit the following livestatus query
+			|GET hosts|
+			|Columns: host_name|
+			|Columns: contacts|
+		Then I should see the following livestatus response
+			|host1;default-contact|
+			|host2;default-contact|
+			|host3;default-contact|
