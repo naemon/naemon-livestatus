@@ -34,13 +34,12 @@ bool HostContactsColumn::isNagiosMember(void *hst, void *ctc)
 
 void HostContactsColumn::output(void *data, Query *query)
 {
-    host *hst;
     data = shiftPointer(data);
+    host *hst = (host *)data;
 
     // create list of contacts by merging contacts and contact group members
     std::list<contactsmember*> result;
     if(hst) {
-        hst = (host *)data;
         contactsmember *cm = hst->contacts;
         while(cm) {
             contact *ctc = cm->contact_ptr;
