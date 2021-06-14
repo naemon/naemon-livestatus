@@ -58,7 +58,7 @@ void ServiceContactsColumn::output(void *data, Query *query)
             cgm = cgm->next;
         }
         result.sort(compare_contactsmember);
-        result.unique();
+        result.unique(equals_contactsmember);
     }
 
     query->outputBeginList();

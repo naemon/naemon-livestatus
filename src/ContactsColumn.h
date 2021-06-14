@@ -29,6 +29,7 @@
 #include "nagios.h"
 
 bool compare_contactsmember(const contactsmember *m1, const contactsmember *m2);
+bool equals_contactsmember(const contactsmember *m1, const contactsmember *m2);
 
 #include "ListColumn.h"
 class TableContacts;
