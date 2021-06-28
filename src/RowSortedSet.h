@@ -51,7 +51,7 @@ public:
     void addSortColumn( Column *col, bool desc );
     void setQuery( Query *query );
 
-    void insert( void *data, int limit );
+    void insert( void *data, std::vector<void*>::size_type limit ); // satisfy -Wsign-compare
     void *extract();
 
     int  size();

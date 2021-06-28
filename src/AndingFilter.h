@@ -42,7 +42,7 @@ public:
     Filter *stealLastSubfiler();
     bool accepts(void *data);
     void combineFilters(int count, int andor);
-    unsigned numFilters() { return _subfilters.size(); }
+    int numFilters() { return _subfilters.size(); } // satisfy -Wsign-compare
     _subfilters_t::iterator begin() { return _subfilters.begin(); }
     _subfilters_t::iterator end() { return _subfilters.end(); }
     void *findIndexFilter(const char *columnname);

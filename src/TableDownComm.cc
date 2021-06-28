@@ -44,19 +44,19 @@ TableDownComm::TableDownComm(bool is_downtime)
     pthread_mutexattr_t attr;
     err = pthread_mutexattr_init(&attr);
     if(err) {
-        strerror_r(err, errmsg, 256);
+        if (strerror_r(err, errmsg, 256)) { }; // satisfy -Wunused-result
         logger(LG_INFO, "Error creating mutex attr: %s (%d)", errmsg, err);
    }
 
     err = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
     if(err) {
-        strerror_r(err, errmsg, 256);
+        if (strerror_r(err, errmsg, 256)) { }; // satisfy -Wunused-result
         logger(LG_INFO, "Error setting mutex type: %s (%d)", errmsg, err);
     }
 
     err = pthread_mutex_init(&_entries_mutex, &attr);
     if(err) {
-        strerror_r(err, errmsg, 256);
+        if (strerror_r(err, errmsg, 256)) { }; // satisfy -Wunused-result
         logger(LG_INFO, "Error creating mutex: %s (%d)", errmsg, err);
     }
 
@@ -129,7 +129,7 @@ TableDownComm::~TableDownComm()
     int err;
     err = pthread_mutex_destroy(&_entries_mutex);
     if(err) {
-        strerror_r(err, errmsg, 256);
+        if (strerror_r(err, errmsg, 256)) { }; // satisfy -Wunused-result
         logger(LG_INFO, "Error destroying mutex: %s (%d)", errmsg, err);
     }
 }
@@ -165,7 +165,7 @@ void TableDownComm::add(DowntimeOrComment *data)
     char errmsg[256] = "unknown error";
     err = pthread_mutex_lock(&_entries_mutex);
     if(err) {
-        strerror_r(err, errmsg, 256);
+        if (strerror_r(err, errmsg, 256)) {}; // satisfy -Wunused-result
         logger(LG_INFO, "Error locking mutex: %s (%d)", errmsg, err);
     }
 
@@ -179,7 +179,7 @@ void TableDownComm::add(DowntimeOrComment *data)
 
     err = pthread_mutex_unlock(&_entries_mutex);
     if(err) {
-        strerror_r(err, errmsg, 256);
+        if (strerror_r(err, errmsg, 256)) { }; // satisfy -Wunused-result
         logger(LG_INFO, "Error unlocking mutex: %s (%d)", errmsg, err);
     }
 }
@@ -192,7 +192,7 @@ void TableDownComm::remove(unsigned id)
     char errmsg[256] = "unknown error";
     err = pthread_mutex_lock(&_entries_mutex);
     if(err) {
-        strerror_r(err, errmsg, 256);
+        if (strerror_r(err, errmsg, 256)) { }; // satisfy -Wunused-result
         logger(LG_INFO, "Error locking mutex: %s (%d)", errmsg, err);
     }
 
@@ -206,7 +206,7 @@ void TableDownComm::remove(unsigned id)
 
     err = pthread_mutex_unlock(&_entries_mutex);
     if(err) {
-        strerror_r(err, errmsg, 256);
+        if (strerror_r(err, errmsg, 256)) {}; // satisfy -Wunused-result
         logger(LG_INFO, "Error unlocking mutex: %s (%d)", errmsg, err);
     }
 }
@@ -217,7 +217,7 @@ void TableDownComm::answerQuery(Query *query)
     char errmsg[256] = "unknown error";
     err = pthread_mutex_lock(&_entries_mutex);
     if(err) {
-        strerror_r(err, errmsg, 256);
+        if (strerror_r(err, errmsg, 256)) { }; // satisfy -Wunused-result
         logger(LG_INFO, "Error locking mutex: %s (%d)", errmsg, err);
     }
 
@@ -231,7 +231,7 @@ void TableDownComm::answerQuery(Query *query)
 
     err = pthread_mutex_unlock(&_entries_mutex);
     if(err) {
-        strerror_r(err, errmsg, 256);
+        if (strerror_r(err, errmsg, 256)) { }; // satisfy -Wunused-result
         logger(LG_INFO, "Error unlocking mutex: %s (%d)", errmsg, err);
     }
 }
@@ -253,7 +253,7 @@ DowntimeOrComment *TableDownComm::findEntry(unsigned long id)
     char errmsg[256] = "unknown error";
     err = pthread_mutex_lock(&_entries_mutex);
     if(err) {
-        strerror_r(err, errmsg, 256);
+        if (strerror_r(err, errmsg, 256)) { }; // satisfy -Wunused-result
         logger(LG_INFO, "Error locking mutex: %s (%d)", errmsg, err);
     }
 
@@ -264,7 +264,7 @@ DowntimeOrComment *TableDownComm::findEntry(unsigned long id)
 
     err = pthread_mutex_unlock(&_entries_mutex);
     if(err) {
-        strerror_r(err, errmsg, 256);
+        if (strerror_r(err, errmsg, 256)) { }; // satisfy -Wunused-result
         logger(LG_INFO, "Error unlocking mutex: %s (%d)", errmsg, err);
     }
 
@@ -277,7 +277,7 @@ void TableDownComm::lock()
     char errmsg[256] = "unknown error";
     err = pthread_mutex_lock(&_entries_mutex);
     if(err) {
-        strerror_r(err, errmsg, 256);
+        if (strerror_r(err, errmsg, 256)) { }; // satisfy -Wunused-result
         logger(LG_INFO, "Error locking mutex: %s (%d)", errmsg, err);
     }
 }
@@ -288,7 +288,7 @@ void TableDownComm::unlock()
     char errmsg[256] = "unknown error";
     err = pthread_mutex_unlock(&_entries_mutex);
     if(err) {
-        strerror_r(err, errmsg, 256);
+        if (strerror_r(err, errmsg, 256)) { }; // satisfy -Wunused-result
         logger(LG_INFO, "Error unlocking mutex: %s (%d)", errmsg, err);
     }
 }

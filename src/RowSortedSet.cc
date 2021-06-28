@@ -37,7 +37,7 @@ void RowSortedSet::setQuery( Query *query )
 /* Direction should be as dataa-datab; positive if dataa>datab */
 int RowSortedSet::compare( void *dataa, void *datab )
 {
-    int i;
+    std::vector<RowSortedSet::_sort_col_t>::size_type i; // satisfy -Wsign-compare
     int diff;
     for (i=0; i<_sort_cols.size(); i++) {
         diff = _sort_cols[i].col->compare( dataa, datab, _query );
@@ -51,9 +51,9 @@ int RowSortedSet::compare( void *dataa, void *datab )
     return 0;
 }
 
-void RowSortedSet::insert( void *data, int limit )
+void RowSortedSet::insert( void *data, std::vector<void*>::size_type limit ) // satisfy -Wsign-compare
 {
-    int cur;
+    std::vector<void*>::size_type cur; // satisfy -Wsign-compare
     _heap.push_back( data ); /* Make space for object */
 
     for( cur=_heap.size()-1;
@@ -74,8 +74,8 @@ void *RowSortedSet::extract()
 {
     void *data;
     void *last;
-    int   cur;
-    int   child;
+    std::vector<void*>::size_type cur; // satisfy -Wsign-compare;
+    std::vector<void*>::size_type child; // satisfy -Wsign-compare;
 
     if( _heap.empty() )
         return 0;

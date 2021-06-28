@@ -52,7 +52,7 @@ extern char *log_file;
 
 int num_cached_log_messages = 0;
 
-LogCache::LogCache(unsigned long max_cached_messages)
+LogCache::LogCache(long max_cached_messages) // satisfy -Wsign-compare
     : _max_cached_messages(max_cached_messages)
     , _num_at_last_check(0)
 {
@@ -60,7 +60,7 @@ LogCache::LogCache(unsigned long max_cached_messages)
     updateLogfileIndex();
 }
 
-void LogCache::setMaxCachedMessages(unsigned long m)
+void LogCache::setMaxCachedMessages(long m) // satisfy -Wsign-compare
 {
     if (m != _max_cached_messages) {
         logger(LG_INFO, "Logfile cache: Changing max messages to %ld", m);
@@ -173,7 +173,7 @@ void LogCache::dumpLogfiles()
             it != _logfiles.end();
             ++it)
     {
-        Logfile *log = it->second;
+        // Logfile *log = it->second; // satisfy -Wunused-variable
     }
 }
 

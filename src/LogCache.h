@@ -37,14 +37,14 @@ typedef map<time_t, Logfile *> _logfiles_t;
 class LogCache
 {
     pthread_mutex_t _lock;
-    unsigned long   _max_cached_messages;
-    unsigned long   _num_at_last_check;
+    long            _max_cached_messages; // satisfy -Wsign-compare
+    long            _num_at_last_check; // satisfy -Wsign-compare
     _logfiles_t     _logfiles;
 
 public:
-    LogCache(unsigned long max_cached_messages);
+    LogCache(long max_cached_messages); // satisfy -Wsign-compare
     ~LogCache();
-    void setMaxCachedMessages(unsigned long m);
+    void setMaxCachedMessages(long m);  // satisfy -Wsign-compare
     time_t _last_index_update;
 
     const char *name() { return "log"; }

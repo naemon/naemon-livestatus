@@ -113,7 +113,7 @@ void PerfdataAggregator::output(Query *q)
             it != _aggr.end();
             ++it)
     {
-        double value;
+        double value = 0.0; // default, satisfy 'may be used uninitialized in this function'
         switch (_operation) {
             case STATS_OP_SUM:
             case STATS_OP_MIN:
