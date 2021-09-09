@@ -269,6 +269,7 @@ int open_inet_socket()
 {
     char *socket_addr, *ip_str, *port_str, *save;
     unsigned long port;
+    int yes = 1;
 
     g_socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (g_socket_fd < 0) {
@@ -321,6 +322,17 @@ int open_inet_socket()
             return false;
         }
     }
+
+    if (setsockopt(g_socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) < 0) {
+        logger(LG_CRIT , "Unable to set setsockopt(SO_REUSEADDR): %s", strerror(errno));
+        return false;
+    }
+
+    if (setsockopt(g_socket_fd, SOL_SOCKET, SO_REUSEPORT, &yes, sizeof(yes)) < 0) {
+        logger(LG_CRIT , "Unable to set setsockopt(SO_REUSEPORT): %s", strerror(errno));
+        return false;
+    }
+
     if (bind(g_socket_fd, (struct sockaddr *) &sockaddr, sizeof(sockaddr)) < 0) {
         logger(LG_ERR, "Unable to bind to '%s'", g_socket_addr, strerror(errno));
         close(g_socket_fd);
