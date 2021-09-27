@@ -328,10 +328,12 @@ int open_inet_socket()
         return false;
     }
 
+#ifdef SO_REUSEPORT
     if (setsockopt(g_socket_fd, SOL_SOCKET, SO_REUSEPORT, &yes, sizeof(yes)) < 0) {
         logger(LG_CRIT , "Unable to set setsockopt(SO_REUSEPORT): %s", strerror(errno));
         return false;
     }
+#endif
 
     if (bind(g_socket_fd, (struct sockaddr *) &sockaddr, sizeof(sockaddr)) < 0) {
         logger(LG_ERR, "Unable to bind to '%s'", g_socket_addr, strerror(errno));
