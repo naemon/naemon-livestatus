@@ -3,7 +3,7 @@ Source: naemon-livestatus
 Architecture: any
 Version:
 Maintainer: Naemon Core Development Team <naemon-dev@monitoring-lists.org>
-Homepage: http://www.naemon.org
+Homepage: https://www.naemon.io
 Bugs: https://github.com/naemon/naemon-livestatus/issues
 Vcs-Browser: https://github.com/naemon/naemon-livestatus
 Vcs-Git: git://github.com:naemon/naemon-livestatus.git
