@@ -4,7 +4,7 @@ Version: 1.3.0
 Release: 0
 License: GPL-2.0-only
 Group: Applications/System
-URL: http://www.naemon.org/
+URL: https://www.naemon.io/
 Packager: Naemon Core Development Team <naemon-dev@monitoring-lists.org>
 Vendor: Naemon Core Development Team
 Source0: http://labs.consol.de/naemon/download/naemon-livestatus-%{version}.tar.gz

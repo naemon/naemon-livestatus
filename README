@@ -48,7 +48,7 @@ The result set is packed in a json object, with a couple of possible fields:
 
 === About Naemon ===
 
-To find out more about Naemon, see http://naemon.org
+To find out more about Naemon, see https://www.naemon.io
 
 === INSTALL ===
 
