@@ -70,7 +70,8 @@ class Naemon
         f.write(@oconf.configfile)
       }
     end
-    `naemon --allow-root -d #{@config_dir}/naemon.cfg`
+    job = fork { `naemon --allow-root -d #{@config_dir}/naemon.cfg` }
+    Process.detach(job)
     self.wait_for_start
   end
 
