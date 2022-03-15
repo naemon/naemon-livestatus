@@ -10,6 +10,7 @@ from __future__ import print_function, unicode_literals
 
 import argparse
 import contextlib
+import json
 import logging
 import socket
 import sys
@@ -23,11 +24,11 @@ class LivestatusError(Exception):
     """Errors raised while communicating with Livestatus."""
 
 
-def query_livestatus(address, port, query):
-    """Send query to Livestatus and return the reponse as str."""
+def query_livestatus(address, port, query, timeout=1.0, error_loglevel=logging.ERROR):
+    """Send query to Livestatus and return the response as str."""
     chunks = []
     with contextlib.closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
-        sock.settimeout(1.0)
+        sock.settimeout(timeout)
         try:
             sock.connect((address, port))
             sock.sendall(query.encode("utf-8"))
@@ -40,7 +41,7 @@ def query_livestatus(address, port, query):
                 logging.debug("Received chunk of %d bytes", len(buf))
                 chunks.append(buf)
         except (socket.timeout, socket.error) as e:
-            logging.error("%s", e)
+            logging.log(error_loglevel, "%s", e)
             logging.debug("Got socket exception", exc_info=1)
             raise LivestatusError("Failed while communicating with Livestatus")
 
@@ -49,19 +50,23 @@ def query_livestatus(address, port, query):
     return response.decode("utf-8")
 
 
-def connect_livestatus(address, port, timeout):
-    """Test connection to Livestatus. Return True on success, False on error."""
-    with contextlib.closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
-        logging.info("Connect to Livestatus at %s:%s ...", address, port)
-        sock.settimeout(timeout)
-        try:
-            sock.connect((address, port))
-        except (socket.timeout, socket.error) as e:
-            logging.info("Failed to connect to %s:%s: %s", address, port, e)
-            return False
-        else:
-            logging.info("Successfully opened connection to Livestatus")
-            return True
+def livestatus_ready(address, port, timeout):
+    """Test a simple query to Livestatus to determine if it's initialized.
+    Return True on success, False on error."""
+    query = "GET status\nColumns: program_version\nOutputFormat: wrapped_json\n"
+    logging.debug("Query Livestatus at %s:%s with: %r", address, port, query)
+    try:
+        response = query_livestatus(
+            address, port, query, timeout=timeout, error_loglevel=logging.INFO
+        )
+        decoded = json.loads(response)
+        assert decoded["total_count"]
+    except (LivestatusError, ValueError) as e:
+        logging.info("Failed to connect to %s:%s: %s", address, port, e)
+    else:
+        logging.info("Successfully queried Livestatus")
+        return True
+    return False
 
 
 def main():
@@ -98,7 +103,7 @@ def main():
 
     logging.debug("Python version: %r", sys.version)
     if args.test_connect:
-        if connect_livestatus(args.address, args.port, args.test_timeout):
+        if livestatus_ready(args.address, args.port, args.test_timeout):
             return
         sys.exit(1)
 
