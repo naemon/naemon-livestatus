@@ -134,7 +134,7 @@ bool Store::answerRequest(InputBuffer *input, OutputBuffer *output)
     else if (!strcmp(line, "GET"))
         answerGetRequest(input, output, ""); // only to get error message
     else if (!strncmp(line, "COMMAND ", 8)) {
-        answerCommandRequest(lstrip((char *)line + 8), output);
+        answerCommandRequest(unescape_newlines(lstrip((char *)line + 8)), output);
         output->setDoKeepalive(true);
     }
     else if (!strncmp(line, "LOGROTATE", 9)) {
