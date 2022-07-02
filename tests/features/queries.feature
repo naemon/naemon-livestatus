@@ -64,3 +64,13 @@ Feature: Queries work as expected
 			|host1;default-contact|
 			|host2;default-contact|
 			|host3;default-contact|
+
+	Scenario: Submit multiline plugin output
+		Given I submit the following livestatus external command "PROCESS_SERVICE_CHECK_RESULT;host1;service1;0;A short output\\\nFirst line of long output\\\nSecond line of long output"
+		And I submit the following livestatus query
+			|GET services|
+			|Filter: host_name = host1|
+			|Filter: description = service1|
+			|Columns: plugin_output long_plugin_output|
+		Then I should see the following raw livestatus response
+			|A short output;First line of long output\\u005cnSecond line of long output|

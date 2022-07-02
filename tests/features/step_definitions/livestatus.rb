@@ -2,6 +2,17 @@ Given /^I submit the following livestatus query$/ do |table|
   @naemon.brokers[:livestatus].query(table.raw.join('\n'))
 end
 
+Given(/^I submit the following livestatus external command "(.*?)"$/) do |cmd|
+  @naemon.brokers[:livestatus].query("COMMAND [#{Time.now.to_i}] #{cmd}")
+end
+
+Then /^I should see the following raw livestatus response$/ do |table|
+  response = @naemon.brokers[:livestatus].last_response()
+  table.raw.each_with_index do |line, idx|
+    response[idx].should == "\"#{line[0]}\"".undump
+  end
+end
+
 Then /^I should see the following livestatus response$/ do |table|
   response = @naemon.brokers[:livestatus].last_response()
   table.raw.each_with_index do |line, idx|
