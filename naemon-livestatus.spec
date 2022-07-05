@@ -16,6 +16,7 @@ BuildRequires: libtool
 BuildRequires: gcc-c++
 %if 0%{?el8}
 BuildRequires: gdb-headless
+%endif
 
 # On Fedora-33+ and RHEL-8+, %__python triggers an error.
 %if 0%{?fedora} > 32 || 0%{?rhel} > 7
