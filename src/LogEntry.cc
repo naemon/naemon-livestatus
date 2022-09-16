@@ -163,6 +163,20 @@ inline bool LogEntry::handleStatusEntry()
         return true;
     }
 
+    else if (!strncmp(_text, "HOST NOTIFICATION SUPPRESSED: ", 30)
+          || !strncmp(_text, "HOST INFO: ", 11))
+    {
+        _logclass = LOGCLASS_INFO;
+        _type     = NONE;
+        char *scan = _text;
+        _text = next_token(&scan, ':');
+        scan++;
+
+        _host_name    = next_token(&scan, ';');
+        _comment      = next_token(&scan, ';');
+        return true;
+    }
+
     // SERVICE states
     else if (!strncmp(_text, "INITIAL SERVICE STATE: ", 23)
           || !strncmp(_text, "CURRENT SERVICE STATE: ", 23)
@@ -235,6 +249,21 @@ inline bool LogEntry::handleStatusEntry()
         _host_name    = next_token(&scan, ';');
         _svc_desc     = next_token(&scan, ';');
         _state_type   = next_token(&scan, ';');
+        _comment      = next_token(&scan, ';');
+        return true;
+    }
+
+    else if (!strncmp(_text, "SERVICE NOTIFICATION SUPPRESSED: ", 33)
+          || !strncmp(_text, "SERVICE INFO: ", 14))
+    {
+        _logclass = LOGCLASS_INFO;
+        _type     = NONE;
+        char *scan = _text;
+        _text = next_token(&scan, ':');
+        scan++;
+
+        _host_name    = next_token(&scan, ';');
+        _svc_desc     = next_token(&scan, ';');
         _comment      = next_token(&scan, ';');
         return true;
     }
@@ -324,16 +353,24 @@ inline bool LogEntry::handlePassiveCheckEntry()
 
 inline bool LogEntry::handleExternalCommandEntry()
 {
-    if (!strncmp(_text, "EXTERNAL COMMAND:", 17))
+    if (!strncmp(_text, "EXTERNAL COMMAND: ", 18))
     {
         _logclass = LOGCLASS_COMMAND;
         char *scan = _text;
         _text = next_token(&scan, ':');
-        return true; // TODO: join with host/service information?
-        /* Damit wir die restlichen Spalten ordentlich befuellen, braeuchten
-           wir eine komplette Liste von allen external commands und
-           deren Parameteraufbau. Oder gibt es hier auch eine bessere
-           Loesung? */
+
+        scan++;
+
+        char * cmd = next_token(&scan, ';');
+        if(strstr(cmd, "_HOST") && !strstr(cmd, "_HOSTGROUP")) {
+            _host_name    = next_token(&scan, ';');
+        }
+        else if(strstr(cmd, "_SVC")) {
+            _host_name    = next_token(&scan, ';');
+            _svc_desc     = next_token(&scan, ';');
+        }
+
+        return true;
     }
     return false;
 }
