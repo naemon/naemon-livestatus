@@ -111,7 +111,8 @@ int32_t HostlistStateColumn::getValue(void *data, Query *query)
     params.query = query;
     params.logictype = _logictype;
     params.result = 0;
+    if(mem == NULL)
+        return params.result;
     g_tree_foreach(mem, get_subvalue, &params);
     return params.result;
 }
-
