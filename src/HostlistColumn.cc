@@ -75,6 +75,10 @@ void HostlistColumn::output(void *data, Query *query)
 {
     query->outputBeginList();
     GTree *mem = getMembers(data);
+    if(mem == NULL) {
+        query->outputEndList();
+        return;
+    }
     output_parameters params;
     params.query = query;
     params.first = true;
@@ -87,4 +91,3 @@ Filter *HostlistColumn::createFilter(int opid, char *value)
 {
     return new HostlistColumnFilter(this, opid, value);
 }
-
