@@ -96,6 +96,7 @@ char g_hidden_custom_var_prefix[256];
 int g_service_authorization = AUTH_LOOSE;
 int g_group_authorization = AUTH_STRICT;
 int g_data_encoding = ENCODING_UTF8;
+time_t g_last_log_rotation = -1;
 
 void *client_thread(void *data __attribute__ ((__unused__)));
 
@@ -458,6 +459,19 @@ int broker_program(int event_type __attribute__ ((__unused__)), void *data __att
     return 0;
 }
 
+int broker_program_data(int event_type __attribute__ ((__unused__)), void *data)
+{
+    // check cores last_log_rotation if we should reopen our logfile
+    struct nebstruct_program_status_struct *pd = (struct nebstruct_program_status_struct *)data;
+    if (pd->type == NEBTYPE_PROGRAMSTATUS_UPDATE) {
+        if(pd->last_log_rotation != g_last_log_rotation) {
+            g_last_log_rotation = pd->last_log_rotation;
+            reopen_logfile();
+        }
+    }
+    return 0;
+}
+
 static void schedule_timeperiods_cache_update(struct nm_event_execution_properties *evprop)
 {
     g_counters[COUNTER_NEB_CALLBACKS]++;
@@ -552,6 +566,7 @@ void register_callbacks()
     neb_register_callback(NEBCALLBACK_STATE_CHANGE_DATA,     g_nagios_handle, 0, broker_state); // only for trigger 'state'
     neb_register_callback(NEBCALLBACK_ADAPTIVE_PROGRAM_DATA, g_nagios_handle, 0, broker_program); // only for trigger 'program'
     neb_register_callback(NEBCALLBACK_PROCESS_DATA,          g_nagios_handle, 0, broker_process); // used for starting threads
+    neb_register_callback(NEBCALLBACK_PROGRAM_STATUS_DATA,   g_nagios_handle, 0, broker_program_data); // used for reopening logfile
     schedule_event(1, schedule_timeperiods_cache_update, NULL);
 }
 
@@ -567,6 +582,7 @@ void deregister_callbacks()
     neb_deregister_callback(NEBCALLBACK_STATE_CHANGE_DATA,     broker_state);
     neb_deregister_callback(NEBCALLBACK_ADAPTIVE_PROGRAM_DATA, broker_program);
     neb_deregister_callback(NEBCALLBACK_PROCESS_DATA,          broker_program);
+    neb_deregister_callback(NEBCALLBACK_PROGRAM_STATUS_DATA,   broker_program);
 }
 
 

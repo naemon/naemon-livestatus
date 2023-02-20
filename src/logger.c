@@ -82,6 +82,17 @@ void open_logfile()
         logger(LG_WARN, "Cannot open logfile %s: %s", g_logfile_path, strerror(errno));
 }
 
+void reopen_logfile()
+{
+    lock_mutex_or_die(&g_log_file_mutex);
+    if(g_logfile)
+        fclose(g_logfile);
+    g_logfile = fopen(g_logfile_path, "a");
+    if (!g_logfile)
+        logger(LG_WARN, "Cannot open logfile %s: %s", g_logfile_path, strerror(errno));
+    unlock_mutex_or_die(&g_log_file_mutex);
+}
+
 void close_logfile()
 {
     lock_mutex_or_die(&g_log_file_mutex);
@@ -112,7 +123,7 @@ void logger(int priority, const char *loginfo, ...)
             char timestring[64];
             time_t now_t = time(0);
             struct tm now; localtime_r(&now_t, &now);
-            strftime(timestring, 64, "%F %T ", &now); 
+            strftime(timestring, 64, "%F %T ", &now);
             fputs(timestring, g_logfile);
 
             /* write log message */
@@ -124,4 +135,3 @@ void logger(int priority, const char *loginfo, ...)
         unlock_mutex_or_die(&g_log_file_mutex);
     }
 }
-

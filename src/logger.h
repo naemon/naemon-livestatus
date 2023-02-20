@@ -43,6 +43,7 @@ void logger(int priority, const char *loginfo, ...);
 void initialize_logger();
 void open_logfile();
 void close_logfile();
+void reopen_logfile();
 
 #ifdef __cplusplus
 }
