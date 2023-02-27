@@ -97,6 +97,7 @@ int g_service_authorization = AUTH_LOOSE;
 int g_group_authorization = AUTH_STRICT;
 int g_data_encoding = ENCODING_UTF8;
 time_t g_last_log_rotation = -1;
+int g_eventloopstarted = false;
 
 void *client_thread(void *data __attribute__ ((__unused__)));
 
@@ -487,6 +488,7 @@ int broker_process(int event_type __attribute__ ((__unused__)), void *data)
     int ret;
     struct nebstruct_process_struct *ps = (struct nebstruct_process_struct *)data;
     if (ps->type == NEBTYPE_PROCESS_EVENTLOOPSTART) {
+        g_eventloopstarted = true;
         update_timeperiods_cache(time(0));
         do_statistics();
         if (0 != (ret = iobroker_register(nagios_iobs, g_socket_fd, NULL, accept_connection))) {
@@ -793,6 +795,7 @@ int nebmodule_init(int flags __attribute__ ((__unused__)), char *args, void *han
     g_num_client_threads = 0;
     if(g_thread_stack_size < PTHREAD_STACK_MIN)
         g_thread_stack_size = PTHREAD_STACK_MIN;
+    g_eventloopstarted = false;
     initialize_logger();
     livestatus_parse_arguments(args);
     open_logfile();
