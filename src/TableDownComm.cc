@@ -36,6 +36,8 @@
 #include <pthread.h>
 #include <string.h>
 
+extern int g_eventloopstarted;
+
 TableDownComm::TableDownComm(bool is_downtime)
 {
     int err;
@@ -197,8 +199,10 @@ void TableDownComm::remove(unsigned id)
     }
 
     it = _entries.find(id);
-    if (it == _entries.end())
-        logger(LG_INFO, "Cannot delete non-existing downtime/comment %u", id);
+    if (it == _entries.end()) {
+        if(g_eventloopstarted)
+            logger(LG_INFO, "Cannot delete non-existing downtime/comment %u", id);
+    }
     else {
         delete it->second;
         _entries.erase(it);
