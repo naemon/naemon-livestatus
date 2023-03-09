@@ -30,6 +30,7 @@
 #include "OffsetTimeperiodColumn.h"
 #include "AttributelistColumn.h"
 #include "CustomVarsColumn.h"
+#include "ContactgroupsObjectlistColumn.h"
 
 TableContacts::TableContacts()
 {
@@ -83,6 +84,8 @@ void TableContacts::addColumns(Table *table, string prefix, int indirect_offset)
                 "A bitmask specifying which attributes have been modified", (char *)(&ctc.modified_attributes) - ref, indirect_offset, false));
     table->addColumn(new AttributelistColumn(prefix + "modified_attributes_list",
                 "A list of all modified attributes", (char *)(&ctc.modified_attributes) - ref, indirect_offset, true));
+    table->addColumn(new ContactgroupsObjectlistColumn(prefix + "groups",
+                "A list of all contact groups this contact is in", (char *)(&ctc.contactgroups_ptr) - ref, indirect_offset));
 
     table->clearNatSort();
     table->addNatSort( prefix + "name" );
