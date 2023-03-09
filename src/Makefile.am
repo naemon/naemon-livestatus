@@ -55,7 +55,8 @@ livestatus_la_SOURCES = \
 	TimeperiodExclusionColumn.cc TimeperiodDaysColumn.cc TimeperiodExceptionsColumn.cc pnp4nagios.cc \
 	HostlistDependencyColumn.cc HostlistDependencyColumnFilter.cc \
 	ServicelistDependencyColumn.cc ServicelistDependencyColumnFilter.cc \
-	ContactgroupsColumn.cc RowSortedSet.cc HostServiceState.cc opids.cc auth.cc
+	ContactgroupsColumn.cc RowSortedSet.cc HostServiceState.cc opids.cc auth.cc \
+	ContactgroupsObjectlistColumn.cc
 
 if HAVE_DIET
 	diet -v $(CC) -x c -Wno-deprecated-declarations $(CFLAGS) $(LDFLAGS) -I.. -s -o $@ $^
