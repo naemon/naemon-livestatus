@@ -158,7 +158,7 @@ int InputBuffer::readRequest()
         {
             if (_read_pointer == r) { // empty line found => end of request
                 _read_pointer = r + 1;
-                // Was ist, wenn noch keine korrekte Zeile gelesen wurde?
+                // no valid line read yet
                 if (_requestlines.size() == 0) {
                     return IB_EMPTY_REQUEST;
                 }
@@ -242,4 +242,3 @@ bool timeout_reached(const struct timeval *start, int timeout_ms)
     elapsed += now.tv_usec - start->tv_usec;
     return elapsed / 1000 >= timeout_ms;
 }
-
