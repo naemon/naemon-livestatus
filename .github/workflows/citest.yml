@@ -16,8 +16,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install apt-transport-https
-          sudo sh -c "echo 'deb http://download.opensuse.org/repositories/home:/naemon:/daily/xUbuntu_$(lsb_release -rs)/ ./' >> /etc/apt/sources.list"
-          wget -q "https://build.opensuse.org/projects/home:naemon:daily/public_key" -O - | sudo apt-key add -
+          sudo sh -c "echo 'deb [signed-by=/etc/apt/trusted.gpg.d/naemon.asc] http://download.opensuse.org/repositories/home:/naemon:/daily/xUbuntu_$(lsb_release -rs)/ ./' >> /etc/apt/sources.list"
+          sudo curl -s -o /etc/apt/trusted.gpg.d/naemon.asc "https://build.opensuse.org/projects/home:naemon/signing_keys/download?kind=gpg"
           sudo apt-get update
           sudo apt-get install autoconf
           sudo apt-get install build-essential
