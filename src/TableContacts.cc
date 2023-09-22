@@ -31,6 +31,7 @@
 #include "AttributelistColumn.h"
 #include "CustomVarsColumn.h"
 #include "ContactgroupsObjectlistColumn.h"
+#include "CommandsMemberColumn.h"
 
 TableContacts::TableContacts()
 {
@@ -86,6 +87,10 @@ void TableContacts::addColumns(Table *table, string prefix, int indirect_offset)
                 "A list of all modified attributes", (char *)(&ctc.modified_attributes) - ref, indirect_offset, true));
     table->addColumn(new ContactgroupsObjectlistColumn(prefix + "groups",
                 "A list of all contact groups this contact is in", (char *)(&ctc.contactgroups_ptr) - ref, indirect_offset));
+    table->addColumn(new CommandsMemberColumn(prefix + "host_notification_commands",
+                "A list of all host notifications commands for this contact", (char *)(&ctc.host_notification_commands) - ref, indirect_offset));
+    table->addColumn(new CommandsMemberColumn(prefix + "service_notification_commands",
+                "A list of all service notifications commands for this contact", (char *)(&ctc.service_notification_commands) - ref, indirect_offset));
 
     table->clearNatSort();
     table->addNatSort( prefix + "name" );
