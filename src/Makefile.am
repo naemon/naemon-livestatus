@@ -56,7 +56,7 @@ livestatus_la_SOURCES = \
 	HostlistDependencyColumn.cc HostlistDependencyColumnFilter.cc \
 	ServicelistDependencyColumn.cc ServicelistDependencyColumnFilter.cc \
 	ContactgroupsColumn.cc RowSortedSet.cc HostServiceState.cc opids.cc auth.cc \
-	ContactgroupsObjectlistColumn.cc
+	ContactgroupsObjectlistColumn.cc CommandsMemberColumn.cc
 
 if HAVE_DIET
 	diet -v $(CC) -x c -Wno-deprecated-declarations $(CFLAGS) $(LDFLAGS) -I.. -s -o $@ $^
