@@ -24,6 +24,7 @@
 
 #include <dirent.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdlib.h>
