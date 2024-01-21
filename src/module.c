@@ -22,7 +22,9 @@
 // to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
 // Boston, MA 02110-1301 USA.
 
+#ifdef __GLIBC__
 #define _GNU_SOURCE /* for pthread_tryjoin_np */
+#endif
 
 #include <time.h>
 #include <stdio.h>
@@ -101,6 +103,7 @@ int g_eventloopstarted = false;
 
 void *client_thread(void *data __attribute__ ((__unused__)));
 
+#ifdef __GLIBC__
 static void reap_client_threads()
 {
     size_t i = 0;
@@ -125,18 +128,25 @@ static void reap_client_threads()
         }
     }
 }
+#endif
 
 static int accept_connection(int sd, int events, void *discard)
 {
     int cc = accept(sd, NULL, NULL);
     int ret = 0;
+#ifdef __GLIBC__
     pthread_t *thr;
+#else
+    pthread_t thr;
+#endif
     pthread_attr_t attr;
     do_statistics();
     pthread_attr_init(&attr);
     size_t defsize;
 
+#ifdef __GLIBC__
     reap_client_threads(); /* try to join any finished client threads */
+#endif
 
     if (g_debug_level >= 2 && 0 == pthread_attr_getstacksize(&attr, &defsize))
       logger(LG_INFO, "Default stack size is %lu", defsize);
@@ -150,6 +160,7 @@ static int accept_connection(int sd, int events, void *discard)
     int *arg = malloc(sizeof(int));
     *arg = cc;
 
+#ifdef __GLIBC__
     thr = malloc(sizeof(pthread_t));
     if (thr == NULL) {
         /* Just log, and do nothing else, since the pthread_create will abort
@@ -178,6 +189,14 @@ static int accept_connection(int sd, int events, void *discard)
         ++g_num_client_threads;
         g_client_threads[g_num_client_threads-1] = thr;
     }
+#else
+    if ((ret = pthread_create(&thr, &attr, client_thread, arg)) != 0) {
+		logger(LG_ERR, "Failed to create client thread: %s", strerror(ret));
+		free(arg);
+		close(cc);
+    }
+    pthread_attr_destroy(&attr);
+#endif
 
     g_counters[COUNTER_CONNECTIONS]++;
     return 0;
@@ -789,10 +808,11 @@ void omd_advertize()
 int nebmodule_init(int flags __attribute__ ((__unused__)), char *args, void *handle)
 {
     g_nagios_handle = handle;
+#if __GLIBC__
     g_num_client_threads = 0;
-    g_should_terminate = false;
     g_client_threads = NULL;
-    g_num_client_threads = 0;
+#endif
+    g_should_terminate = false;
     if(g_thread_stack_size < PTHREAD_STACK_MIN)
         g_thread_stack_size = PTHREAD_STACK_MIN;
     g_eventloopstarted = false;
@@ -824,16 +844,17 @@ int nebmodule_init(int flags __attribute__ ((__unused__)), char *args, void *han
 
 int nebmodule_deinit(int flags __attribute__ ((__unused__)), int reason __attribute__ ((__unused__)))
 {
-    size_t i;
     logger(LG_INFO, "deinitializing");
     g_should_terminate = true;
     close_socket();
 
+#ifdef __GLIBC__
     /*
      * Make sure all client connections are terminated before
      * returning control. Since we touch global naemon state everywhere,
      * this is strictly mandatory.
      */
+    size_t i;
     for (i = 0; i < g_num_client_threads; ++i) {
         if (pthread_join(*(g_client_threads[i]), NULL) != 0) {
             logger(LG_ERR, "Failed to join with client thread");
@@ -841,6 +862,7 @@ int nebmodule_deinit(int flags __attribute__ ((__unused__)), int reason __attrib
         free(g_client_threads[i]);
     }
     free(g_client_threads);
+#endif
 
     store_deinit();
     deregister_callbacks();
