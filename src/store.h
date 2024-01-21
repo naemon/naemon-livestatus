@@ -36,7 +36,7 @@ extern "C"
     void store_deinit();
     void store_register_comment(nebstruct_comment_data *);
     void store_register_downtime(nebstruct_downtime_data *);
-    int  store_answer_request(void *input_buffer, void *output_buffer);
+    int  store_answer_request(void *input_buffer, void *output_buffer, int fd);
     void *create_outputbuffer(int *termination_flag);
     void flush_output_buffer(void *ob, int fd);
     void delete_outputbuffer(void *);
