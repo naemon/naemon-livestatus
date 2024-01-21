@@ -107,7 +107,7 @@ int ends_with(const char *a, const char *b)
 
 /* unescapes newlines in a string */
 char *unescape_newlines(char *rawbuf) {
-  register int x, y;
+  int x, y;
 
   for(x = 0, y = 0; rawbuf[x] != (char)'\x0'; x++) {
 
