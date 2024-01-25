@@ -27,7 +27,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-#include <time.h>
+#include <sys/time.h>
 #include <pthread.h>
 #include <syslog.h>
 
@@ -121,9 +121,12 @@ void logger(int priority, const char *loginfo, ...)
         if (g_logfile) {
             /* write date/time */
             char timestring[64];
-            time_t now_t = time(0);
-            struct tm now; localtime_r(&now_t, &now);
-            strftime(timestring, 64, "%F %T ", &now);
+            struct timeval tv;
+            gettimeofday(&tv, NULL);
+            struct tm now; localtime_r(&tv.tv_sec, &now);
+            strftime(timestring, 64, "[%F %T", &now);
+            fputs(timestring, g_logfile);
+            snprintf(timestring, 64, ".%03ld] ", tv.tv_usec/1000);
             fputs(timestring, g_logfile);
 
             /* write log message */
