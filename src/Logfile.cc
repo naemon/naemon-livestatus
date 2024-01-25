@@ -40,6 +40,7 @@ extern unsigned long g_max_lines_per_logfile;
 Logfile::Logfile(const char *path, bool watch)
   : _path(strdup(path))
   , _since(0)
+  , _end(0)
   , _watch(watch)
   , _inode(0)
   , _lineno(0)
@@ -290,4 +291,55 @@ char *Logfile::readIntoBuffer(int *size)
 
     close(fd);
     return buffer;
+}
+
+time_t Logfile::end()
+{
+    if(_end > 0)
+        return _end;
+
+    int fd = open(_path, O_RDONLY);
+    if (fd < 0) {
+        logger(LG_WARN, "Cannot open %s for reading: %s", _path, strerror(errno));
+        return 0;
+    }
+
+    int BUFFER_SIZE = 50;
+    char buffer[BUFFER_SIZE];
+
+    off_t o = lseek(fd, -BUFFER_SIZE, SEEK_END);
+    if (o == -1) {
+        logger(LG_WARN, "Cannot seek to end of %s: %s", _path, strerror(errno));
+        close(fd);
+        return 0;
+    }
+
+    // search last newline which is followed by [
+    for(int i = 1; i <= 100 ;i++) {
+        off_t pos = (-BUFFER_SIZE*i)+i;
+        off_t o = lseek(fd, pos, SEEK_END);
+        if (o == -1) {
+            logger(LG_WARN, "Cannot seek to end of %s: %s", _path, strerror(errno));
+            close(fd);
+            return 0;
+        }
+        if(read(fd, buffer, BUFFER_SIZE) <= 0) {
+            close(fd);
+            return 0;
+        }
+        for (int j = BUFFER_SIZE - 2; j >= 0; j--) {
+            if(buffer[j] == '\n' && buffer[j+1] == '[') {
+                lseek(fd, pos+j+2, SEEK_END);
+                read(fd, buffer, 10);
+                buffer[10] = '\x0';
+                _end = atoi(buffer);
+                break;
+            }
+        }
+        if(_end > 0)
+            break;
+    }
+
+    close(fd);
+    return _end;
 }

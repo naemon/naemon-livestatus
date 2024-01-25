@@ -119,6 +119,7 @@ void TableLog::answerQuery(Query *query)
     // to limit the number of logfiles we need to scan and
     // to find the optimal entry point into the logfile
     query->findIntLimits("time", &since, &until);
+    logger(LG_DEBUG, "TableLog: query time limits: from %u / until %u", since, until);
 
     // The second optimization is for log message types.
     // We want to load only those log type that are queried.
@@ -141,16 +142,22 @@ void TableLog::answerQuery(Query *query)
     // Now find newest log where 'until' is contained. The problem
     // here: For each logfile we only know the time of the *first* entry,
     // not that of the last.
-    while (it != g_store->logCache()->logfiles()->begin() && it->first > until) // while logfiles are too new...
+    while (it != g_store->logCache()->logfiles()->begin() && it->first >= until) // while logfiles are too new...
         --it; // go back in history
-    if (it->first > until) { // all logfiles are too new
+    if (it->first >= until) { // all logfiles are too new
         g_store->logCache()->unlockLogCache();
         return;
     }
 
     while (true) {
         Logfile *log = it->second;
-        if (!log->answerQueryReverse(query, g_store->logCache(), since, until, classmask))
+        logger(LG_DEBUG, "TableLog: considering logfile: %s (from %u / until %u)", log->path(), log->since(), log->end());
+        if(!log->watch() && log->end() > 0 && log->end() < since) {
+            logger(LG_DEBUG, "TableLog: skipped, end of logfile older than start of query");
+            // since all other logfiles are even older, we can end here
+            break;
+        }
+        else if (!log->answerQueryReverse(query, g_store->logCache(), since, until, classmask))
             break; // end of time range found
         if (it == g_store->logCache()->logfiles()->begin())
             break; // this was the oldest one
