@@ -93,7 +93,7 @@ bool LogCache::logCachePreChecks()
         logger(LG_INFO, "Warning: no logfile found, not even %s", log_file);
         return false;
     }
-    // Has Nagios rotated logfiles? => Update
+    // Has Naemon rotated logfiles? => Update
     // our file index. And delete all memorized
     // log messages.
     if (last_log_rotation > _last_index_update) {
@@ -119,6 +119,7 @@ void LogCache::forgetLogfiles()
 
 void LogCache::updateLogfileIndex()
 {
+    logger(LG_DEBUG, "LogCache::updateLogfileIndex()");
     _last_index_update = time(0);
     // We need to find all relevant logfiles. This includes
     // directory.
@@ -151,6 +152,7 @@ void LogCache::updateLogfileIndex()
 
 void LogCache::scanLogfile(char *path, bool watch)
 {
+    logger(LG_DEBUG, "LogCache::scanLogfile: %s", path);
     Logfile *logfile = new Logfile(path, watch);
     time_t since = logfile->since();
     if (since) {

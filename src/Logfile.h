@@ -45,6 +45,7 @@ class Logfile
 private:
     char      *_path;
     time_t     _since;         // time of first entry
+    time_t     _end;           // time of last entry
     bool       _watch;         // true only for current logfile
     ino_t      _inode;         // needed to detect switching
     fpos_t     _read_pos;      // read until this position
@@ -63,6 +64,8 @@ public:
     void load(LogCache *LogCache, time_t since, time_t until, unsigned logclasses);
     void flush();
     time_t since() { return _since; }
+    time_t end();
+    bool watch() { return _watch; }
     unsigned classesRead() { return _logclasses_read; }
     long numEntries() { return _entries.size(); }
     logfile_entries_t* getEntriesFromQuery(Query *query, LogCache *lc, time_t since, time_t until, unsigned);
@@ -83,4 +86,3 @@ private:
 
 
 #endif // Logfile_h
-
