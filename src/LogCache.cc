@@ -44,7 +44,7 @@
 extern time_t last_log_rotation;
 extern int g_debug_level;
 
-#define CHECK_MEM_CYCLE 1000 /* Check memory every N'th new message */
+#define CHECK_MEM_CYCLE 10000 /* Check memory every N'th new message */
 
 // watch naemon' logfile rotation
 extern char *log_archive_path;

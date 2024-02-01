@@ -169,8 +169,10 @@ long Logfile::freeMessages(unsigned logclasses)
         if ((1 << entry->_logclass) & logclasses)
         {
             delete it->second;
-            it = _entries.erase(it);
-            freed ++;
+            logfile_entries_t::iterator entry = it;
+            it++;
+            _entries.erase(entry);
+            freed++;
         } else {
             it++;
         }
