@@ -63,7 +63,6 @@ public:
 private:
     void scanLogfile(char *path, bool watch);
     _logfiles_t::iterator findLogfileStartingBefore(time_t);
-    void dumpLogfiles();
 };
 
 #endif // LogCache_h

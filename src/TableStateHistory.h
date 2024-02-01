@@ -67,12 +67,12 @@ public:
     const char *name() { return "statehist"; }
     const char *prefixname() { return "statehist_"; }
     bool isAuthorized(contact *ctc, void *data);
-    void handleNewMessage(Logfile *logfile, time_t since, time_t until, unsigned logclasses);
     void answerQuery(Query *query);
     void cleanupQuery(Query *query);
     Column *column(const char *colname); // override in order to handle current_
     int updateHostServiceState(Query *query, const LogEntry *entry, HostServiceState *state, const bool only_update);
     static void addColumns(Table *);
+    bool hasLogcache() { return true; };
 
 private:
     LogEntry* getPreviousLogentry();

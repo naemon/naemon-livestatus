@@ -42,7 +42,7 @@
 #include "LogCache.h"
 
 extern time_t last_log_rotation;
-
+extern int g_debug_level;
 
 #define CHECK_MEM_CYCLE 1000 /* Check memory every N'th new message */
 
@@ -77,12 +77,18 @@ LogCache::~LogCache()
 
 void LogCache::lockLogCache()
 {
+    if (g_debug_level > 0)
+        logger(LG_INFO, "LogCache: waiting for logcache lock");
     pthread_mutex_lock(&_lock);
+    if (g_debug_level > 0)
+        logger(LG_INFO, "LogCache: got logcache lock");
 }
 
 void LogCache::unlockLogCache()
 {
     pthread_mutex_unlock(&_lock);
+    if (g_debug_level > 0)
+        logger(LG_INFO, "LogCache: released logcache lock");
 }
 
 bool LogCache::logCachePreChecks()
@@ -93,7 +99,7 @@ bool LogCache::logCachePreChecks()
         logger(LG_INFO, "Warning: no logfile found, not even %s", log_file);
         return false;
     }
-    // Has Naemon rotated logfiles? => Update
+    // Has Nagios rotated logfiles? => Update
     // our file index. And delete all memorized
     // log messages.
     if (last_log_rotation > _last_index_update) {
@@ -119,7 +125,8 @@ void LogCache::forgetLogfiles()
 
 void LogCache::updateLogfileIndex()
 {
-    logger(LG_DEBUG, "LogCache::updateLogfileIndex()");
+    if (g_debug_level > 0)
+        logger(LG_INFO, "LogCache::updateLogfileIndex()");
     _last_index_update = time(0);
     // We need to find all relevant logfiles. This includes
     // directory.
@@ -152,7 +159,8 @@ void LogCache::updateLogfileIndex()
 
 void LogCache::scanLogfile(char *path, bool watch)
 {
-    logger(LG_DEBUG, "LogCache::scanLogfile: %s", path);
+    if (g_debug_level > 0)
+        logger(LG_INFO, "LogCache::scanLogfile: %s", path);
     Logfile *logfile = new Logfile(path, watch);
     time_t since = logfile->since();
     if (since) {
@@ -168,16 +176,6 @@ void LogCache::scanLogfile(char *path, bool watch)
     }
     else
         delete logfile;
-}
-
-void LogCache::dumpLogfiles()
-{
-    for (_logfiles_t::iterator it = _logfiles.begin();
-            it != _logfiles.end();
-            ++it)
-    {
-        Logfile *log = it->second;
-    }
 }
 
 /* This method is called each time a log message is loaded

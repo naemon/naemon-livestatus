@@ -35,6 +35,7 @@
 #include "LogCache.h"
 
 extern unsigned long g_max_lines_per_logfile;
+extern int g_debug_level;
 
 
 Logfile::Logfile(const char *path, bool watch)
@@ -143,6 +144,8 @@ void Logfile::load(LogCache *logcache, time_t since, time_t until, unsigned logc
 void Logfile::loadRange(FILE *file, unsigned missing_types,
         LogCache *logcache, time_t since, time_t until, unsigned logclasses)
 {
+    if (g_debug_level > 0)
+        logger(LG_INFO, "Logfile::loadRange: %s", this->path());
     while (fgets(_linebuffer, MAX_LOGLINE, file))
     {
         if (_lineno >= g_max_lines_per_logfile) {
@@ -154,19 +157,22 @@ void Logfile::loadRange(FILE *file, unsigned missing_types,
             logcache->handleNewMessage(this, since, until, logclasses); // memory management
         }
     }
+    if (g_debug_level > 0)
+        logger(LG_INFO, "Logfile::loadRange done: %s", this->path());
 }
 
 long Logfile::freeMessages(unsigned logclasses)
 {
     long freed = 0;
-    for (logfile_entries_t::iterator it = _entries.begin(); it != _entries.end(); ++it)
-    {
+    for (logfile_entries_t::iterator it = _entries.begin(); it != _entries.end();) {
         LogEntry *entry = it->second;
         if ((1 << entry->_logclass) & logclasses)
         {
             delete it->second;
-            _entries.erase(it);
+            it = _entries.erase(it);
             freed ++;
+        } else {
+            it++;
         }
     }
     _logclasses_read &= ~logclasses;
