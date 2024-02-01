@@ -41,6 +41,7 @@
 extern int g_debug_level;
 extern unsigned long g_max_cached_messages;
 extern char *qh_socket_path;
+extern Store *g_store;
 
 Store::Store()
   : _log_cache(g_max_cached_messages)
@@ -187,6 +188,11 @@ void Store::answerGetRequest(InputBuffer *input, OutputBuffer *output, const cha
     }
     Query query(input, output, table);
 
+    if(table->hasLogcache()) {
+        g_store->logCache()->lockLogCache();
+        g_store->logCache()->logCachePreChecks();
+    }
+
     if (table && !output->hasError()) {
         if (query.hasNoColumns()) {
             table->addAllColumnsToQuery(&query);
@@ -203,4 +209,7 @@ void Store::answerGetRequest(InputBuffer *input, OutputBuffer *output, const cha
         if (g_debug_level > 0)
             logger(LG_INFO, "Time to process request: %lu us. Size of answer: %d bytes", ustime, output->size());
     }
+
+    if(table->hasLogcache())
+        g_store->logCache()->unlockLogCache();
 }

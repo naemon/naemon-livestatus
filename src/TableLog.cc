@@ -48,6 +48,7 @@
 #define CHECK_MEM_CYCLE 1000 /* Check memory every N'th new message */
 
 extern Store *g_store;
+extern int g_debug_level;
 
 TableLog::TableLog()
 {
@@ -108,9 +109,6 @@ TableLog::~TableLog()
 
 void TableLog::answerQuery(Query *query)
 {
-    g_store->logCache()->lockLogCache();
-    g_store->logCache()->logCachePreChecks();
-
     int since = 0;
     int until = time(0) + 1;
     // Optimize time interval for the query. In log querys
@@ -119,14 +117,14 @@ void TableLog::answerQuery(Query *query)
     // to limit the number of logfiles we need to scan and
     // to find the optimal entry point into the logfile
     query->findIntLimits("time", &since, &until);
-    logger(LG_DEBUG, "TableLog: query time limits: from %u / until %u", since, until);
+    if (g_debug_level > 0)
+        logger(LG_INFO, "TableLog: query time limits: from %u / until %u", since, until);
 
     // The second optimization is for log message types.
     // We want to load only those log type that are queried.
     uint32_t classmask = LOGCLASS_ALL;
     query->optimizeBitmask("class", &classmask);
     if (classmask == 0) {
-        g_store->logCache()->unlockLogCache();
         return;
     }
 
@@ -145,15 +143,16 @@ void TableLog::answerQuery(Query *query)
     while (it != g_store->logCache()->logfiles()->begin() && it->first >= until) // while logfiles are too new...
         --it; // go back in history
     if (it->first >= until) { // all logfiles are too new
-        g_store->logCache()->unlockLogCache();
         return;
     }
 
     while (true) {
         Logfile *log = it->second;
-        logger(LG_DEBUG, "TableLog: considering logfile: %s (from %u / until %u)", log->path(), log->since(), log->end());
+        if (g_debug_level > 0)
+            logger(LG_INFO, "TableLog: considering logfile: %s (from %u / until %u)", log->path(), log->since(), log->end());
         if(!log->watch() && log->end() > 0 && log->end() < since) {
-            logger(LG_DEBUG, "TableLog: skipped, end of logfile older than start of query");
+            if (g_debug_level > 0)
+                logger(LG_INFO, "TableLog: skipped, end of logfile older than start of query");
             // since all other logfiles are even older, we can end here
             break;
         }
@@ -163,7 +162,6 @@ void TableLog::answerQuery(Query *query)
             break; // this was the oldest one
         --it;
     }
-    g_store->logCache()->unlockLogCache();
 }
 
 

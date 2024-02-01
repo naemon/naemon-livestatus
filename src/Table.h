@@ -57,6 +57,7 @@ public:
     virtual const char *prefixname() { return name(); }
     virtual bool isAuthorized(contact *, void *) { return true; }
     virtual void *findObject(char *objectspec __attribute__ ((__unused__))) { return 0; } // objectspec may be modified while parsing
+    virtual bool hasLogcache() { return false; };
     void clearNatSort();
     void addNatSort(string);
     void addColumn(Column *);
@@ -68,4 +69,3 @@ public:
 
 
 #endif // Table_h
-
