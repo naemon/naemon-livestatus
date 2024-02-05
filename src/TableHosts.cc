@@ -378,7 +378,7 @@ static gboolean by_one_group(gpointer _name, gpointer _hst, gpointer user_data)
 
 void TableHosts::answerQuery(Query *query)
 {
-    struct hostbygroup **_hg_tmp_storage = (struct hostbygroup **)&(query->table_tmp_storage);
+    // struct hostbygroup **_hg_tmp_storage = (struct hostbygroup **)&(query->table_tmp_storage); // satisfy -Wunused-variable
     // Table hostsbygroup iterates over host groups
     if (_by_group) {
         struct by_group_parameters params;
