@@ -211,7 +211,8 @@ void Store::answerGetRequest(InputBuffer *input, OutputBuffer *output, const cha
         gettimeofday(&before, 0);
         query.start();
         table->answerQuery(&query);
-        query.finish();
+        if (!output->hasError()) // crashes on stats queries which result in errors before
+            query.finish();
         table->cleanupQuery(&query);
         gettimeofday(&after, 0);
         unsigned long ustime = (after.tv_sec - before.tv_sec) * 1000000 + (after.tv_usec - before.tv_usec);
