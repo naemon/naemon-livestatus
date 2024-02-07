@@ -966,6 +966,17 @@ bool Query::processDataset(void *data)
                 if( is_new ) {
                     _current_line++;
                     _sorter.insert( data, _limit+_offset );
+
+                    // make sure we don't create too many aggregation entries. The size is only a rough estimation
+                    // from the last entry mulitplies with the number of entries.
+                    size_t rowsize = 0;
+                    for (_stats_group_spec_t::iterator iit = groupspec.begin(); iit != groupspec.end(); ++iit)
+                        rowsize += sizeof(char*) * strlen((*iit).c_str());
+                    if (_sorter.size() * rowsize > g_max_response_size) {
+                        logger(LG_INFO, "Maximum response size of %d bytes exceeded!", g_max_response_size);
+                        _output->setError(RESPONSE_CODE_LIMIT_EXCEEDED, "Maximum response size of %d reached", g_max_response_size);
+                        return false;
+                    }
                 }
             }
             else
