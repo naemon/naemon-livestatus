@@ -70,6 +70,7 @@ public:
     bool doKeepalive() { return _do_keepalive; }
     void setError(unsigned code, const char *format, ...);
     bool hasError() { return _error_message != ""; }
+    bool isAlive(int fd);
 
 private:
     void needSpace(unsigned);

@@ -75,9 +75,9 @@ void store_register_downtime(nebstruct_downtime_data *d)
     g_store->registerDowntime(d);
 }
 
-int store_answer_request(void *ib, void *ob)
+int store_answer_request(void *ib, void *ob, int fd)
 {
-    return g_store->answerRequest((InputBuffer *)ib, (OutputBuffer *)ob);
+    return g_store->answerRequest((InputBuffer *)ib, (OutputBuffer *)ob, fd);
 }
 
 void *create_outputbuffer(int *termination_flag)
