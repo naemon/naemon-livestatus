@@ -116,7 +116,7 @@ void Store::registerDowntime(nebstruct_downtime_data *d)
     _table_downtimes.addDowntime(d);
 }
 
-bool Store::answerRequest(InputBuffer *input, OutputBuffer *output)
+bool Store::answerRequest(InputBuffer *input, OutputBuffer *output, int fd)
 {
     output->reset();
     int r = input->readRequest();
@@ -131,9 +131,9 @@ bool Store::answerRequest(InputBuffer *input, OutputBuffer *output)
     if (g_debug_level > 0)
         logger(LG_INFO, "Query: %s", line);
     if (!strncmp(line, "GET ", 4))
-        answerGetRequest(input, output, lstrip((char *)line + 4));
+        answerGetRequest(input, output, lstrip((char *)line + 4), fd);
     else if (!strcmp(line, "GET"))
-        answerGetRequest(input, output, ""); // only to get error message
+        answerGetRequest(input, output, "", fd); // only to get error message
     else if (!strncmp(line, "COMMAND ", 8)) {
         answerCommandRequest(unescape_newlines(lstrip((char *)line + 8)), output);
         output->setDoKeepalive(true);
@@ -175,8 +175,9 @@ void Store::answerCommandRequest(const char *command, OutputBuffer *output)
 }
 
 
-void Store::answerGetRequest(InputBuffer *input, OutputBuffer *output, const char *tablename)
+void Store::answerGetRequest(InputBuffer *input, OutputBuffer *output, const char *tablename, int fd)
 {
+    bool logcacheLocked = false;
     output->reset();
 
     if (!tablename[0]) {
@@ -190,7 +191,15 @@ void Store::answerGetRequest(InputBuffer *input, OutputBuffer *output, const cha
 
     if(table->hasLogcache()) {
         g_store->logCache()->lockLogCache();
+        // check if client is still connected, we might have waited too long for the lock
+        if(!output->isAlive(fd)) {
+            output->setError(RESPONSE_CODE_INCOMPLETE_REQUEST, "Client already disconnected");
+            g_store->logCache()->unlockLogCache();
+            return;
+        }
+
         g_store->logCache()->logCachePreChecks();
+        logcacheLocked = true;
     }
 
     if (table && !output->hasError()) {
@@ -210,6 +219,6 @@ void Store::answerGetRequest(InputBuffer *input, OutputBuffer *output, const cha
             logger(LG_INFO, "Time to process request: %lu us. Size of answer: %d bytes", ustime, output->size());
     }
 
-    if(table->hasLogcache())
+    if(logcacheLocked)
         g_store->logCache()->unlockLogCache();
 }

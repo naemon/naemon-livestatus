@@ -74,14 +74,12 @@ public:
     void registerHostgroup(hostgroup *);
     void registerComment(nebstruct_comment_data *);
     void registerDowntime(nebstruct_downtime_data *);
-    bool answerRequest(InputBuffer *, OutputBuffer *);
+    bool answerRequest(InputBuffer *, OutputBuffer *, int);
 
 private:
     Table *findTable(string name);
-    void answerGetRequest(InputBuffer *, OutputBuffer *, const char *);
+    void answerGetRequest(InputBuffer *, OutputBuffer *, const char *, int fd);
     void answerCommandRequest(const char *, OutputBuffer *);
 };
 
 #endif // Store_h
-
-
