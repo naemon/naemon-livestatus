@@ -32,6 +32,7 @@
 #include <syslog.h>
 
 extern char g_logfile_path[];
+extern int g_debug_level;
 pthread_t g_mainthread_id;
 
 /* This protects the log file variable g_logfile to avoid concurrent writes as
@@ -107,9 +108,10 @@ void logger(int priority, const char *loginfo, ...)
 {
     va_list ap;
     va_start(ap, loginfo);
+    pthread_t tid = pthread_self();
 
     /* Only the main process may use the Nagios log methods */
-    if (g_mainthread_id == pthread_self()) {
+    if (g_mainthread_id == tid) {
         char buffer[8192];
         snprintf(buffer, 20, "livestatus: ");
         vsnprintf(buffer + strlen(buffer),
@@ -126,7 +128,10 @@ void logger(int priority, const char *loginfo, ...)
             struct tm now; localtime_r(&tv.tv_sec, &now);
             strftime(timestring, 64, "[%F %T", &now);
             fputs(timestring, g_logfile);
-            snprintf(timestring, 64, ".%03ld] ", tv.tv_usec/1000);
+            if (g_debug_level > 0)
+                snprintf(timestring, 64, ".%03ld][thr-%ld] ", tv.tv_usec/1000, tid);
+            else
+                snprintf(timestring, 64, ".%03ld] ", tv.tv_usec/1000);
             fputs(timestring, g_logfile);
 
             /* write log message */
