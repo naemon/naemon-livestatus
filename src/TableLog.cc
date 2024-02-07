@@ -100,6 +100,9 @@ void TableLog::addColumns(Table *table, string prefix, int indirect_offset, bool
         g_table_services->addColumns(table, "current_service_", (char *)&(ref->_service) - (char *)ref, false /* no hosts table */);
     g_table_contacts->addColumns(table, "current_contact_", (char *)&(ref->_contact) - (char *)ref);
     g_table_commands->addColumns(table, "current_command_", (char *)&(ref->_command) - (char *)ref);
+
+    table->clearNatSort();
+    table->addNatSort( "time" );
 }
 
 
