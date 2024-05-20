@@ -335,6 +335,8 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
                 "Whether processing of performance data is enabled for the service (0/1)", (char *)(&svc.process_performance_data) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "is_executing",
                 "is there a service check currently running... (0/1)", (char *)(&svc.is_executing) - ref, indirect_offset));
+    table->addColumn(new OffsetIntColumn(prefix + "display_status",
+                "service display priority status... (0/8)", (char *)(&svc.display_status) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "active_checks_enabled",
                 "Whether active checks are enabled for the service (0/1)", (char *)(&svc.checks_enabled) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "check_options",

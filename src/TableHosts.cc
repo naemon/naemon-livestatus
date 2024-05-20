@@ -209,6 +209,8 @@ void TableHosts::addColumns(Table *table, string prefix, int indirect_offset)
                 "The number of downtimes this host is currently in", (char *)(&hst.scheduled_downtime_depth) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "is_executing",
                 "is there a host check currently running... (0/1)", (char *)(&hst.is_executing) - ref, indirect_offset));
+    table->addColumn(new OffsetIntColumn(prefix + "display_status",
+                "host display priority status... (0/8)", (char *)(&hst.display_status) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "active_checks_enabled",
                 "Whether active checks are enabled for the host (0/1)", (char *)(&hst.checks_enabled) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "check_options",
