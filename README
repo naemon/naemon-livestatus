@@ -1,10 +1,8 @@
 This is a fork of Mattias Kettner's mk_livestatus. It has been ported to
-Naemon by OP5 and contains some extra features such as sorting and page offsets.
-This branch is being maintained by the Naemon team until such a time
-comes when everything we need has been merged back upstream.
+Naemon and contains some extra features such as sorting and page offsets.
 
 To find out more about mk_livestatus, see
- http://mathias-kettner.de/checkmk_livestatus.html
+ http://www.naemon.io/documentation/usersguide/livestatus.html
 
 === Differences between mk_livestatus and naemons fork of livestatus ===
 
