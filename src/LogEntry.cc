@@ -71,7 +71,8 @@ LogEntry::LogEntry(unsigned lineno, char *line)
     if (handleStatusEntry() ||
         handleNotificationEntry() ||
         handlePassiveCheckEntry() ||
-        handleExternalCommandEntry()
+        handleExternalCommandEntry() ||
+        handleNotes()
         )
     {
         updateReferences();
@@ -345,6 +346,26 @@ inline bool LogEntry::handlePassiveCheckEntry()
             _svc_desc     = next_token(&scan, ';');
         _state        = atoi(save_next_token(&scan, ';'));
         _check_output = next_token(&scan, ';');
+        return true;
+    }
+
+    return false;
+}
+
+inline bool LogEntry::handleNotes()
+{
+    if (!strncmp(_text, "SERVICE NOTE: ", 14)
+        || !strncmp(_text, "HOST NOTE: ", 11))
+    {
+        _logclass = LOGCLASS_INFO;
+        bool svc = _text[0] == 'S';
+        char *scan = _text;
+        _text = next_token(&scan, ':');
+        scan++;
+
+        _host_name    = next_token(&scan, ';');
+        if (svc)
+            _svc_desc     = next_token(&scan, ';');
         return true;
     }
 
