@@ -96,6 +96,7 @@ private:
     bool handleStatusEntryBetter();
     bool handleNotificationEntry();
     bool handlePassiveCheckEntry();
+    bool handleNotes();
     bool handleExternalCommandEntry();
     bool handleProgrammEntry();
     bool handleLogversionEntry();
@@ -104,4 +105,3 @@ private:
 };
 
 #endif // LogEntry_h
-
