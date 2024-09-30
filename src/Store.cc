@@ -41,16 +41,17 @@
 extern int g_debug_level;
 extern unsigned long g_max_cached_messages;
 extern char *qh_socket_path;
+extern Store *g_store;
 
 Store::Store()
-  :_table_hosts(false)
+  : _log_cache(g_max_cached_messages)
+  , _table_hosts(false)
   , _table_hostsbygroup(true)
   , _table_services(false, false)
   , _table_servicesbygroup(true, false)
   , _table_servicesbyhostgroup(false, true)
   , _table_downtimes(true)
   , _table_comments(false)
-  , _table_log(g_max_cached_messages)
 {
     _tables.insert(make_pair("hosts", &_table_hosts));
     _tables.insert(make_pair("hostsbygroup", &_table_hostsbygroup));
@@ -65,6 +66,7 @@ Store::Store()
     _tables.insert(make_pair("comments", &_table_comments));
     _tables.insert(make_pair("status", &_table_status));
     _tables.insert(make_pair("log", &_table_log));
+    _tables.insert(make_pair("statehist", &_table_statehistory));
     _tables.insert(make_pair("timeperiods", &_table_timeperiods));
     _tables.insert(make_pair("contactgroups", &_table_contactgroups));
     _tables.insert(make_pair("columns", &_table_columns));
@@ -83,6 +85,7 @@ Store::Store()
     g_table_timeperiods = &_table_timeperiods;
     g_table_contactgroups = &_table_contactgroups;
     g_table_log = &_table_log;
+    g_table_statehistory = &_table_statehistory;
     g_table_columns = &_table_columns;
 
     for (_tables_t::iterator it = _tables.begin();
@@ -118,7 +121,7 @@ bool Store::answerRequest(InputBuffer *input, OutputBuffer *output, int fd)
     output->reset();
     int r = input->readRequest();
     if (r != IB_REQUEST_READ) {
-        if (r != IB_END_OF_FILE)
+        if (r != IB_END_OF_FILE && r != IB_EMPTY_REQUEST)
             output->setError(RESPONSE_CODE_INCOMPLETE_REQUEST,
                 "Client connection terminated while request still incomplete");
         return false;
@@ -128,11 +131,11 @@ bool Store::answerRequest(InputBuffer *input, OutputBuffer *output, int fd)
     if (g_debug_level > 0)
         logger(LG_INFO, "Query: %s", line);
     if (!strncmp(line, "GET ", 4))
-        answerGetRequest(input, output, lstrip((char *)line + 4));
+        answerGetRequest(input, output, lstrip((char *)line + 4), fd);
     else if (!strcmp(line, "GET"))
-        answerGetRequest(input, output, ""); // only to get error message
+        answerGetRequest(input, output, "", fd); // only to get error message
     else if (!strncmp(line, "COMMAND ", 8)) {
-        answerCommandRequest(lstrip((char *)line + 8), output);
+        answerCommandRequest(unescape_newlines(lstrip((char *)line + 8)), output);
         output->setDoKeepalive(true);
     }
     else if (!strncmp(line, "QH ", 3)) {
@@ -203,8 +206,9 @@ void Store::answerQueryHandlerRequest(const char *command, OutputBuffer *output,
 
 
 
-void Store::answerGetRequest(InputBuffer *input, OutputBuffer *output, const char *tablename)
+void Store::answerGetRequest(InputBuffer *input, OutputBuffer *output, const char *tablename, int fd)
 {
+    bool logcacheLocked = false;
     output->reset();
 
     if (!tablename[0]) {
@@ -216,6 +220,19 @@ void Store::answerGetRequest(InputBuffer *input, OutputBuffer *output, const cha
     }
     Query query(input, output, table);
 
+    if(table->hasLogcache()) {
+        g_store->logCache()->lockLogCache();
+        // check if client is still connected, we might have waited too long for the lock
+        if(!output->isAlive(fd)) {
+            output->setError(RESPONSE_CODE_INCOMPLETE_REQUEST, "Client already disconnected");
+            g_store->logCache()->unlockLogCache();
+            return;
+        }
+
+        g_store->logCache()->logCachePreChecks();
+        logcacheLocked = true;
+    }
+
     if (table && !output->hasError()) {
         if (query.hasNoColumns()) {
             table->addAllColumnsToQuery(&query);
@@ -225,11 +242,15 @@ void Store::answerGetRequest(InputBuffer *input, OutputBuffer *output, const cha
         gettimeofday(&before, 0);
         query.start();
         table->answerQuery(&query);
-        query.finish();
+        if (!output->hasError()) // crashes on stats queries which result in errors before
+            query.finish();
         table->cleanupQuery(&query);
         gettimeofday(&after, 0);
         unsigned long ustime = (after.tv_sec - before.tv_sec) * 1000000 + (after.tv_usec - before.tv_usec);
         if (g_debug_level > 0)
             logger(LG_INFO, "Time to process request: %lu us. Size of answer: %d bytes", ustime, output->size());
     }
+
+    if(logcacheLocked)
+        g_store->logCache()->unlockLogCache();
 }

@@ -22,23 +22,26 @@
 // to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
 // Boston, MA 02110-1301 USA.
 
+#include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <syslog.h>
 #include <string.h>
+
 #include "Logfile.h"
 #include "logger.h"
 #include "LogEntry.h"
 #include "Query.h"
-#include "TableLog.h"
+#include "LogCache.h"
 
-extern int num_cached_log_messages;
+extern unsigned long g_max_lines_per_logfile;
 extern int g_debug_level;
+
 
 Logfile::Logfile(const char *path, bool watch)
   : _path(strdup(path))
   , _since(0)
+  , _end(0)
   , _watch(watch)
   , _inode(0)
   , _lineno(0)
@@ -67,33 +70,27 @@ Logfile::Logfile(const char *path, bool watch)
     close(fd);
 }
 
-extern unsigned long g_max_lines_per_logfile;
-
 
 Logfile::~Logfile()
 {
-    free(_path);
     flush();
+    free(_path);
 }
 
 
 void Logfile::flush()
 {
-    for (_entries_t::iterator it = _entries.begin();
-            it != _entries.end();
-            ++it)
-    {
+    for (logfile_entries_t::iterator it = _entries.begin(); it != _entries.end(); ++it)
         delete it->second;
-    }
+
     _entries.clear();
     _logclasses_read = 0;
 }
 
 
-void Logfile::load(TableLog *tablelog, time_t since, time_t until, unsigned logclasses)
+void Logfile::load(LogCache *logcache, time_t since, time_t until, unsigned logclasses)
 {
     unsigned missing_types = logclasses & ~_logclasses_read;
-
     FILE *file = 0;
     // The current logfile has the _watch flag set to true.
     // In that case, if the logfile has grown, we need to
@@ -114,13 +111,13 @@ void Logfile::load(TableLog *tablelog, time_t since, time_t until, unsigned logc
         // have read to the end of the file
         if (_logclasses_read) {
             fsetpos(file, &_read_pos); // continue at previous end
-            loadRange(file, _logclasses_read, tablelog, since, until, logclasses);
+            loadRange(file, _logclasses_read, logcache, since, until, logclasses);
             fgetpos(file, &_read_pos);
         }
         if (missing_types) {
             fseek(file, 0, SEEK_SET);
             _lineno = 0;
-            loadRange(file, missing_types, tablelog, since, until, logclasses);
+            loadRange(file, missing_types, logcache, since, until, logclasses);
             _logclasses_read |= missing_types;
             fgetpos(file, &_read_pos); // remember current end of file
         }
@@ -138,15 +135,17 @@ void Logfile::load(TableLog *tablelog, time_t since, time_t until, unsigned logc
         }
 
         _lineno = 0;
-        loadRange(file, missing_types, tablelog, since, until, logclasses);
+        loadRange(file, missing_types, logcache, since, until, logclasses);
         fclose(file);
         _logclasses_read |= missing_types;
     }
 }
 
 void Logfile::loadRange(FILE *file, unsigned missing_types,
-        TableLog *tablelog, time_t since, time_t until, unsigned logclasses)
+        LogCache *logcache, time_t since, time_t until, unsigned logclasses)
 {
+    if (g_debug_level > 0)
+        logger(LG_INFO, "Logfile::loadRange: %s", this->path());
     while (fgets(_linebuffer, MAX_LOGLINE, file))
     {
         if (_lineno >= g_max_lines_per_logfile) {
@@ -155,34 +154,34 @@ void Logfile::loadRange(FILE *file, unsigned missing_types,
         }
         _lineno++;
         if (processLogLine(_lineno, missing_types)) {
-            num_cached_log_messages ++;
-            tablelog->handleNewMessage(this, since, until, logclasses); // memory management
+            logcache->handleNewMessage(this, since, until, logclasses); // memory management
         }
     }
+    if (g_debug_level > 0)
+        logger(LG_INFO, "Logfile::loadRange done: %s", this->path());
 }
-
 
 long Logfile::freeMessages(unsigned logclasses)
 {
     long freed = 0;
-    for (_entries_t::iterator it = _entries.begin();
-            it != _entries.end();
-            ++it)
-    {
+    for (logfile_entries_t::iterator it = _entries.begin(); it != _entries.end();) {
         LogEntry *entry = it->second;
         if ((1 << entry->_logclass) & logclasses)
         {
             delete it->second;
-            _entries.erase(it);
-            freed ++;
+            logfile_entries_t::iterator entry = it;
+            it++;
+            _entries.erase(entry);
+            freed++;
+        } else {
+            it++;
         }
     }
     _logclasses_read &= ~logclasses;
     return freed;
 }
 
-
-bool Logfile::processLogLine(uint32_t lineno, unsigned logclasses)
+inline bool Logfile::processLogLine(uint32_t lineno, unsigned logclasses)
 {
     LogEntry *entry = new LogEntry(lineno, _linebuffer);
     // ignored invalid lines
@@ -207,12 +206,17 @@ bool Logfile::processLogLine(uint32_t lineno, unsigned logclasses)
     }
 }
 
-
-bool Logfile::answerQuery(Query *query, TableLog *tablelog, time_t since, time_t until, unsigned logclasses)
+logfile_entries_t* Logfile::getEntriesFromQuery(Query *query, LogCache *logcache, time_t since, time_t until, unsigned logclasses)
 {
-    load(tablelog, since, until, logclasses); // make sure all messages are present
+    load(logcache, since, until, logclasses); // make sure all messages are present
+    return &_entries;
+}
+
+bool Logfile::answerQuery(Query *query, LogCache *logcache, time_t since, time_t until, unsigned logclasses)
+{
+    load(logcache, since, until, logclasses); // make sure all messages are present
     uint64_t sincekey = makeKey(since, 0);
-    _entries_t::iterator it = _entries.lower_bound(sincekey);
+    logfile_entries_t::iterator it = _entries.lower_bound(sincekey);
     while (it != _entries.end())
     {
         LogEntry *entry = it->second;
@@ -225,11 +229,11 @@ bool Logfile::answerQuery(Query *query, TableLog *tablelog, time_t since, time_t
     return true;
 }
 
-bool Logfile::answerQueryReverse(Query *query, TableLog *tablelog, time_t since, time_t until, unsigned logclasses)
+bool Logfile::answerQueryReverse(Query *query, LogCache *logcache, time_t since, time_t until, unsigned logclasses)
 {
-    load(tablelog, since, until, logclasses); // make sure all messages are present
+    load(logcache, since, until, logclasses); // make sure all messages are present
     uint64_t untilkey = makeKey(until, 999999999);
-    _entries_t::iterator it = _entries.upper_bound(untilkey);
+    logfile_entries_t::iterator it = _entries.upper_bound(untilkey);
     while (it != _entries.begin())
     {
         --it;
@@ -247,3 +251,103 @@ uint64_t Logfile::makeKey(time_t t, unsigned lineno)
     return (uint64_t)((uint64_t)t << 32) | (uint64_t)lineno;
 }
 
+
+// Read complete file into newly allocated buffer. Returns a pointer
+// to a malloced buffer, that the caller must free (or 0, in case of
+// an error). The buffer is 2 bytes larger then the file. One byte
+// at the beginning and at the end of the buffer are '\0'.
+char *Logfile::readIntoBuffer(int *size)
+{
+    int fd = open(_path, O_RDONLY);
+    if (fd < 0) {
+        logger(LG_WARN, "Cannot open %s for reading: %s", _path, strerror(errno));
+        return 0;
+    }
+
+    off_t o = lseek(fd, 0, SEEK_END);
+    if (o == -1) {
+        logger(LG_WARN, "Cannot seek to end of %s: %s", _path, strerror(errno));
+        close(fd);
+        return 0;
+    }
+
+    *size = o;
+    lseek(fd, 0, SEEK_SET);
+
+    char *buffer = (char *)malloc(*size + 2); // add space for binary 0 at beginning and end
+    if (!buffer) {
+        logger(LG_WARN, "Cannot malloc buffer for reading %s: %s", _path, strerror(errno));
+        close(fd);
+        return 0;
+    }
+
+    int r = read(fd, buffer + 1, *size);
+    if (r < 0) {
+        logger(LG_WARN, "Cannot read %d bytes from %s: %s", *size, _path, strerror(errno));
+        free(buffer);
+        close(fd);
+        return 0;
+    }
+    else if (r != *size) {
+        logger(LG_WARN, "Read only %d out of %d bytes from %s", r, *size, _path);
+        free(buffer);
+        close(fd);
+        return 0;
+    }
+    buffer[0]       = 0;
+    buffer[*size+1] = 0; // zero-terminate
+
+    close(fd);
+    return buffer;
+}
+
+time_t Logfile::end()
+{
+    if(_end > 0)
+        return _end;
+
+    int fd = open(_path, O_RDONLY);
+    if (fd < 0) {
+        logger(LG_WARN, "Cannot open %s for reading: %s", _path, strerror(errno));
+        return 0;
+    }
+
+    int BUFFER_SIZE = 50;
+    char buffer[BUFFER_SIZE];
+
+    off_t o = lseek(fd, -BUFFER_SIZE, SEEK_END);
+    if (o == -1) {
+        logger(LG_WARN, "Cannot seek to end of %s: %s", _path, strerror(errno));
+        close(fd);
+        return 0;
+    }
+
+    // search last newline which is followed by [
+    for(int i = 1; i <= 100 ;i++) {
+        off_t pos = (-BUFFER_SIZE*i)+i;
+        off_t o = lseek(fd, pos, SEEK_END);
+        if (o == -1) {
+            logger(LG_WARN, "Cannot seek to end of %s: %s", _path, strerror(errno));
+            close(fd);
+            return 0;
+        }
+        if(read(fd, buffer, BUFFER_SIZE) <= 0) {
+            close(fd);
+            return 0;
+        }
+        for (int j = BUFFER_SIZE - 2; j >= 0; j--) {
+            if(buffer[j] == '\n' && buffer[j+1] == '[') {
+                lseek(fd, pos+j+2, SEEK_END);
+                read(fd, buffer, 10);
+                buffer[10] = '\x0';
+                _end = atoi(buffer);
+                break;
+            }
+        }
+        if(_end > 0)
+            break;
+    }
+
+    close(fd);
+    return _end;
+}

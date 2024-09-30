@@ -224,11 +224,11 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
     table->addColumn(new OffsetStringColumn(prefix + "description",
                 "Description of the service (also used as key)", (char *)(&svc.description) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "display_name",
-                "An optional display name (not used by Nagios standard web pages)", (char *)(&svc.display_name) - ref, indirect_offset));
+                "An optional display name", (char *)(&svc.display_name) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "check_command",
-                "Nagios command used for active checks", (char *)(&svc.check_command) - ref, indirect_offset));
+                "Naemon command used for active checks", (char *)(&svc.check_command) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "event_handler",
-                "Nagios command used as event handler", (char *)(&svc.event_handler) - ref, indirect_offset));
+                "Naemon command used as event handler", (char *)(&svc.event_handler) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "plugin_output",
                 "Output of the last check plugin", (char *)(&svc.plugin_output) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "long_plugin_output",
@@ -281,7 +281,7 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
     table->addColumn(new OffsetIntColumn(prefix + "acknowledged",
                 "Whether the current service problem has been acknowledged (0/1)", (char *)&svc.problem_has_been_acknowledged - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "acknowledgement_type",
-                "The type of the acknownledgement (0: none, 1: normal, 2: sticky)", (char *)&svc.acknowledgement_type - ref, indirect_offset));
+                "The type of the acknowledgement (0: none, 1: normal, 2: sticky)", (char *)&svc.acknowledgement_type - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "no_more_notifications",
                 "Whether to stop sending notifications (0/1)", (char *)(&svc.no_more_notifications) - ref, indirect_offset));
     table->addColumn(new OffsetTimeColumn(prefix + "last_state_change",
@@ -298,7 +298,7 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
     table->addColumn(new OffsetIntColumn(prefix + "hourly_value",
                 "Hourly Value", (char *)(&svc.hourly_value) - ref, indirect_offset));
     table->addColumn(new ServiceSpecialIntColumn(prefix + "should_be_scheduled",
-                "Whether nagios still tries to run checks on this service (0/1)", SSIC_SHOULD_BE_SCHEDULED, indirect_offset));
+                "Whether naemon still tries to run checks on this service (0/1)", SSIC_SHOULD_BE_SCHEDULED, indirect_offset));
 
 
     table->addColumn(new OffsetTimeColumn(prefix + "last_check",
@@ -391,7 +391,7 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
     table->addColumn(new ServicelistDependencyColumn(prefix + "depends_notify_with_info",
                 "A list of all services this service depends on to notify including information: host_name, service_description, failure_options, dependency_period and inherits_parent", (char *)(&svc.notify_deps) - ref, indirect_offset, true));
     table->addColumn(new ServicelistColumn(prefix + "parents",
-                "A list of all parent services (descriptions only, because they are all same-host)", (char *)(&svc.parents) - ref, indirect_offset, false, 0));
+                "A list of all parent services", (char *)(&svc.parents) - ref, indirect_offset, true, 0));
 
 
     table->addColumn(new ServiceContactsColumn(prefix + "contacts",
@@ -413,7 +413,7 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
     table->addColumn(new CustomVarsColumn(prefix + "custom_variable_values",
                 "A list of the values of all custom variable of the service", (char *)(&svc.custom_variables) - ref, indirect_offset, CVT_VALUES));
     table->addColumn(new CustomVarsColumn(prefix + "custom_variables",
-                "A dictorionary of the custom variables", (char *)(&svc.custom_variables) - ref, indirect_offset, CVT_DICT));
+                "A dictionary of the custom variables", (char *)(&svc.custom_variables) - ref, indirect_offset, CVT_DICT));
 
     table->addColumn(new ServicegroupsColumn(prefix + "groups",
                 "A list of all service groups the service is in", (char *)(&svc.servicegroups_ptr) - ref, indirect_offset));

@@ -105,3 +105,31 @@ int ends_with(const char *a, const char *b)
 }
 
 
+/* unescapes newlines in a string */
+char *unescape_newlines(char *rawbuf) {
+  int x, y;
+
+  for(x = 0, y = 0; rawbuf[x] != (char)'\x0'; x++) {
+
+    if(rawbuf[x] == '\\') {
+
+      /* unescape newlines */
+      if(rawbuf[x + 1] == 'n') {
+        rawbuf[y++] = '\n';
+        x++;
+        }
+
+      /* unescape backslashes and other stuff */
+      else if(rawbuf[x + 1] != '\x0') {
+        rawbuf[y++] = rawbuf[x + 1];
+        x++;
+        }
+
+      }
+    else
+      rawbuf[y++] = rawbuf[x];
+    }
+  rawbuf[y] = '\x0';
+
+  return rawbuf;
+  }

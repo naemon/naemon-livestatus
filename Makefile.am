@@ -29,6 +29,7 @@ EXTRA_DIST = naemon-livestatus.spec \
              naemon-livestatus.rpmlintrc \
              api \
              debian \
+             version.sh \
              livestatus.cfg.in
 
 naemonconf_DATA = livestatus.cfg
@@ -43,3 +44,16 @@ rpm: dist
 
 deb:
 	debuild -i -us -uc -b
+
+version:
+	[ -e .git ] || { echo "changing versions only works in git clones!"; exit 1; }
+	[ `git status | grep -cP 'working (directory|tree) clean'` -eq 1 ] || { echo "git project is not clean, cannot tag version"; exit 1; }
+	OLDVERSION=$(shell grep ^VERSION version.sh | awk -F = '{ print $$2}'); \
+	NEWVERSION=$$(dialog --stdout --inputbox "New Version:" 0 0 "$$OLDVERSION"); \
+		if [ -n "$$NEWVERSION" ] && [ "$$NEWVERSION" != "$$OLDVERSION" ]; then \
+			sed -ri "s/$$OLDVERSION/$$NEWVERSION/" version.sh naemon-livestatus.spec; \
+			sed -e 's/UNRELEASED/unstable/g' -i debian/changelog; \
+			DEBFULLNAME="Naemon Development Team" DEBEMAIL="Naemon Development <naemon-dev@monitoring-lists.org>" dch --newversion "$$NEWVERSION" --package "naemon-livestatus" -D "UNRELEASED" --urgency "low" "new upstream release"; \
+			sed -e 's/unstable/UNRELEASED/g' -i debian/changelog; \
+		fi
+

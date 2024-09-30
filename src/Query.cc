@@ -213,6 +213,10 @@ void Query::addColumn(Column *column)
     _columns.push_back(column);
 }
 
+void Query::setError(int error_code, const char* msg)
+{
+	_output->setError(error_code, msg);
+}
 
 bool Query::hasNoColumns()
 {
@@ -429,7 +433,7 @@ void Query::parseStatsLine(char *line)
     Column *column = _table->column(column_name);
     if (!column) {
         column = createDummyColumn(column_name);
-        logger(LOG_DEBUG, "Replacing non-existing column '%s' with null column", column_name);
+        logger(LOG_DEBUG, "%s: Replacing non-existing column '%s' with null column", _table->name(), column_name);
     }
 
     StatsColumn *stats_col;
@@ -479,7 +483,7 @@ void Query::parseFilterLine(char *line, bool is_filter)
 
     Column *column = _table->column(column_name);
     if (!column) {
-        logger(LOG_DEBUG, "Replacing non-existing column '%s' with null column", column_name);
+        logger(LOG_DEBUG, "%s: Replacing non-existing column '%s' with null column", _table->name(), column_name);
         column = createDummyColumn(column_name);
     }
 
@@ -530,7 +534,7 @@ void Query::parseSortLine(char *line)
     if( column_name != 0 ) {
         Column *column = _table->column(column_name);
         if (column == 0) {
-            logger(LOG_DEBUG, "Replacing non-existing column '%s' with null column", column_name);
+            logger(LOG_DEBUG, "%s: Replacing non-existing column '%s' with null column", _table->name(), column_name);
             column = createDummyColumn(column_name);
         }
 
@@ -572,7 +576,7 @@ void Query::parseColumnsLine(char *line)
         if (column)
             _columns.push_back(column);
         else {
-            logger(LOG_DEBUG, "Replacing non-existing column '%s' with null column", column_name);
+            logger(LOG_DEBUG, "%s: Replacing non-existing column '%s' with null column", _table->name(), column_name);
             Column *col = createDummyColumn(column_name);
             _columns.push_back(col);
         }
@@ -910,6 +914,17 @@ void Query::start()
 }
 
 
+bool Query::timelimitReached()
+{
+    if (_time_limit >= 0 && time(0) >= _time_limit_timeout) {
+        logger(LG_INFO, "Maximum query time of %d seconds exceeded!", _time_limit);
+        _output->setError(RESPONSE_CODE_LIMIT_EXCEEDED, "Maximum query time of %d seconds exceeded!", _time_limit);
+        return true;
+    }
+    else
+        return false;
+}
+
 bool Query::processDataset(void *data)
 {
     if (_output->size() > g_max_response_size) {
@@ -951,6 +966,17 @@ bool Query::processDataset(void *data)
                 if( is_new ) {
                     _current_line++;
                     _sorter.insert( data, _limit+_offset );
+
+                    // make sure we don't create too many aggregation entries. The size is only a rough estimation
+                    // from the last entry mulitplies with the number of entries.
+                    size_t rowsize = 0;
+                    for (_stats_group_spec_t::iterator iit = groupspec.begin(); iit != groupspec.end(); ++iit)
+                        rowsize += sizeof(char*) * strlen((*iit).c_str());
+                    if (_sorter.size() * rowsize > g_max_response_size) {
+                        logger(LG_INFO, "Maximum response size of %d bytes exceeded!", g_max_response_size);
+                        _output->setError(RESPONSE_CODE_LIMIT_EXCEEDED, "Maximum response size of %d reached", g_max_response_size);
+                        return false;
+                    }
                 }
             }
             else
@@ -1108,7 +1134,6 @@ void Query::finish()
     }
 }
 
-
 void *Query::findIndexFilter(const char *columnname)
 {
     return _filter.findIndexFilter(columnname);
@@ -1194,6 +1219,24 @@ void Query::outputDouble(double value)
     _output->addBuffer(buf, l);
 }
 
+void Query::outputNull()
+{
+    if (_output_format == OUTPUT_FORMAT_CSV) {
+        // output empty cell
+    }
+    else if (_output_format == OUTPUT_FORMAT_PYTHON)
+        _output->addBuffer("None", 4);
+    else
+        _output->addBuffer("null", 4); // JSON
+}
+
+void Query::outputAsciiEscape(char value)
+{
+    char buf[8];
+    snprintf(buf, sizeof(buf), "\\%03o", value);
+    _output->addBuffer(buf, 4);
+}
+
 void Query::outputUnicodeEscape(unsigned value)
 {
     char buf[8];
@@ -1216,6 +1259,15 @@ void Query::outputHostService(const char *host_name, const char *service_descrip
         _output->addChar(']');
     }
 }
+
+void Query::outputBlob(const char *buffer, int size)
+{
+    if (_output_format != OUTPUT_FORMAT_CSV)
+        outputString(buffer);
+    else
+        _output->addBuffer(buffer, size);
+}
+
 
 void Query::outputString(const char *value)
 {

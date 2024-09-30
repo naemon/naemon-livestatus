@@ -27,11 +27,12 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-#include <time.h>
+#include <sys/time.h>
 #include <pthread.h>
 #include <syslog.h>
 
 extern char g_logfile_path[];
+extern int g_debug_level;
 pthread_t g_mainthread_id;
 
 /* This protects the log file variable g_logfile to avoid concurrent writes as
@@ -58,6 +59,11 @@ static void unlock_mutex_or_die(pthread_mutex_t *mutex) {
     }
 }
 
+void initialize_logger()
+{
+    /* Needed to determine main thread in logger() calls. */
+    g_mainthread_id = pthread_self();
+}
 
 void open_logfile()
 {
@@ -65,7 +71,6 @@ void open_logfile()
     if (g_logfile)
         return;
 
-    g_mainthread_id = pthread_self(); /* needed to determine main thread later */
     if ((status = pthread_mutex_init(&g_log_file_mutex, NULL)) != 0){
         /* Logging here is okay, under the assumption that we never try to open_logfile() from anywhere but the
          * main thread - meaning that the log message will go to the naemon log */
@@ -76,6 +81,17 @@ void open_logfile()
     g_logfile = fopen(g_logfile_path, "a");
     if (!g_logfile)
         logger(LG_WARN, "Cannot open logfile %s: %s", g_logfile_path, strerror(errno));
+}
+
+void reopen_logfile()
+{
+    lock_mutex_or_die(&g_log_file_mutex);
+    if(g_logfile)
+        fclose(g_logfile);
+    g_logfile = fopen(g_logfile_path, "a");
+    if (!g_logfile)
+        logger(LG_WARN, "Cannot open logfile %s: %s", g_logfile_path, strerror(errno));
+    unlock_mutex_or_die(&g_log_file_mutex);
 }
 
 void close_logfile()
@@ -92,9 +108,10 @@ void logger(int priority, const char *loginfo, ...)
 {
     va_list ap;
     va_start(ap, loginfo);
+    pthread_t tid = pthread_self();
 
     /* Only the main process may use the Nagios log methods */
-    if (g_mainthread_id == pthread_self()) {
+    if (g_mainthread_id == tid) {
         char buffer[8192];
         snprintf(buffer, 20, "livestatus: ");
         vsnprintf(buffer + strlen(buffer),
@@ -106,9 +123,15 @@ void logger(int priority, const char *loginfo, ...)
         if (g_logfile) {
             /* write date/time */
             char timestring[64];
-            time_t now_t = time(0);
-            struct tm now; localtime_r(&now_t, &now);
-            strftime(timestring, 64, "%F %T ", &now); 
+            struct timeval tv;
+            gettimeofday(&tv, NULL);
+            struct tm now; localtime_r(&tv.tv_sec, &now);
+            strftime(timestring, 64, "[%F %T", &now);
+            fputs(timestring, g_logfile);
+            if (g_debug_level > 0)
+                snprintf(timestring, 64, ".%03ld][thr-%ld] ", tv.tv_usec/1000, tid);
+            else
+                snprintf(timestring, 64, ".%03ld] ", tv.tv_usec/1000);
             fputs(timestring, g_logfile);
 
             /* write log message */
@@ -120,4 +143,3 @@ void logger(int priority, const char *loginfo, ...)
         unlock_mutex_or_die(&g_log_file_mutex);
     }
 }
-

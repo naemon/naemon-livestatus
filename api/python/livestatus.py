@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- encoding: utf-8; py-indent-offset: 4 -*-
 # +------------------------------------------------------------------+
 # |             ____ _               _        __  __ _  __           |
@@ -23,15 +22,18 @@
 # License along with GNU Make; see the file  COPYING.  If  not,  write
 # to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
 # Boston, MA 02110-1301 USA.
+#
+#
+# CHANGES:
+# * 2021-12-01 OP5/ITRS Group
+#   Make the module compatible with Python 2.7 and 3.4+
+#
 
-import socket, time
-
-# Python 2.3 does not have 'set' in normal namespace.
-# But it can be imported from 'sets'
-try:
-    set()
-except NameError:
-    from sets import Set as set
+from __future__ import absolute_import, unicode_literals
+import itertools
+import socket
+import sys
+import time
 
 """MK Livestatus Python API
 
@@ -47,7 +49,24 @@ For persistent connections create and keep an object:
 conn = connection("/var/lib/nagios/rw/live")
 r1 = conn.query_table_assoc("GET hosts")
 r2 = conn.query_row("GET status")
+
+This library should be compatible with Python 3 and 2.7.
+Response data from Livestatus is in bytes (`bytes` on Python 3 or `str` on Python 2).
 """
+
+# Python 2/3 compatibility:
+# _unicode() normalizes input to unicode() on py2 or str() on py3, to work
+# together with literal strings which are 'unicode_literals'.
+# Queries are encoded to bytes when sent to Livestatus.
+if sys.version_info.major == 2:
+    def _unicode(arg):
+        return unicode(arg)
+else:
+    def _unicode(arg):
+        try:
+            return arg.decode("ascii")
+        except AttributeError:
+            return arg
 
 # Keep a global array of persistant connections
 persistent_connections = {}
@@ -66,22 +85,24 @@ class MKLivestatusException(Exception):
     def __str__(self):
         return str(self.parameter)
 
+
 class MKLivestatusSocketError(MKLivestatusException):
-    def __init__(self, reason):
-        MKLivestatusException.__init__(self, reason)
+    pass
+
 
 class MKLivestatusSocketClosed(MKLivestatusSocketError):
-    def __init__(self, reason):
-        MKLivestatusSocketError.__init__(self, reason)
+    pass
+
 
 class MKLivestatusConfigError(MKLivestatusException):
-    def __init__(self, reason):
-        MKLivestatusException.__init__(self, reason)
+    pass
+
 
 class MKLivestatusQueryError(MKLivestatusException):
     def __init__(self, code, reason):
         MKLivestatusException.__init__(self, "%s: %s" % (code, reason))
         self.code = code
+
 
 class MKLivestatusNotFoundError(MKLivestatusException):
     def __init__(self, query):
@@ -91,7 +112,7 @@ class MKLivestatusNotFoundError(MKLivestatusException):
 # We need some unique value here
 NO_DEFAULT = lambda: None
 class Helpers:
-    def query_value(self, query, deflt = NO_DEFAULT):
+    def query_value(self, query, deflt=NO_DEFAULT):
         """Issues a query that returns exactly one line and one columns and returns
            the response as a single value"""
         result = self.query(query, "ColumnHeaders: off\n")
@@ -162,7 +183,7 @@ class Helpers:
 class BaseConnection:
     def __init__(self, socketurl, persist = False):
         """Create a new connection to a MK Livestatus socket"""
-        self.add_headers = ""
+        self._add_headers = []
         self.persist = persist
         self.socketurl = socketurl
         self.socket = None
@@ -173,7 +194,7 @@ class BaseConnection:
         return self.successful_persistence
 
     def add_header(self, header):
-        self.add_headers += header + "\n"
+        self._add_headers.append(_unicode(header.rstrip()))
 
     def set_timeout(self, timeout):
         self.timeout = timeout
@@ -185,7 +206,7 @@ class BaseConnection:
             self.socket = persistent_connections[self.socketurl]
             self.successful_persistence = True
             return
-        
+
         self.successful_persistence = False
 
         # Create new socket
@@ -203,7 +224,7 @@ class BaseConnection:
             try:
                 host = parts[1]
                 port = int(parts[2])
-            except:
+            except IndexError:
                 raise MKLivestatusConfigError("Invalid livestatus tcp url '%s'. "
                         "Correct example is 'tcp:somehost:6557'" % url)
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -216,7 +237,7 @@ class BaseConnection:
             if self.timeout:
                 self.socket.settimeout(float(self.timeout))
             self.socket.connect(target)
-        except Exception, e:
+        except Exception as e:
             self.socket = None
             raise MKLivestatusSocketError("Cannot connect to '%s': %s" % (self.socketurl, e))
 
@@ -229,34 +250,36 @@ class BaseConnection:
             del persistent_connections[self.socketurl]
 
     def receive_data(self, size):
-        result = ""
+        result = []
         while size > 0:
             packet = self.socket.recv(size)
             if len(packet) == 0:
                 raise MKLivestatusSocketClosed("Read zero data from socket, nagios server closed connection")
             size -= len(packet)
-            result += packet
-        return result
+            result.append(packet)
+        return b"".join(result)
 
-    def do_query(self, query, add_headers = ""):
+    def do_query(self, query, add_headers=""):
         self.send_query(query, add_headers)
         return self.recv_response(query, add_headers)
 
-    def send_query(self, query, add_headers = ""):
-        if self.socket == None:
+    def send_query(self, query, add_headers=""):
+        if not self.socket:
             self.connect()
-        if not query.endswith("\n"):
-            query += "\n"
-        query += self.auth_header + self.add_headers
+        query = _unicode(query).rstrip() + "\n"
+        add_headers = _unicode(add_headers)
+        if self.auth_header:
+            query += self.auth_header
+        for header in self._add_headers:
+            query += header + "\n"
         query += "Localtime: %d\nOutputFormat: python\nKeepAlive: on\nResponseHeader: fixed16\n" % int(time.time())
         query += add_headers
-        if not query.endswith("\n"):
-            query += "\n"
-        query += "\n"
+        query = query.rstrip() + "\n\n"
+        query_bytes = query.encode("ascii")
 
         try:
-            self.socket.send(query)
-        except IOError, e:
+            self.socket.send(query_bytes)
+        except IOError as e:
             if self.persist:
                 del persistent_connections[self.socketurl]
                 self.successful_persistence = False
@@ -275,7 +298,7 @@ class BaseConnection:
             except:
                 raise MKLivestatusSocketError("Malformed output. Livestatus TCP socket might be unreachable.")
             data = self.receive_data(length)
-            if code == "200":
+            if code == b"200":
                 try:
                     return eval(data)
                 except:
@@ -291,20 +314,21 @@ class BaseConnection:
             else:
                 raise
 
-        except IOError, e:
+        except IOError as e:
             self.socket = None
             if self.persist:
                 del persistent_connections[self.socketurl]
             raise MKLivestatusSocketError(str(e))
 
     def do_command(self, command):
-        if self.socket == None:
+        if not self.socket:
             self.connect()
-        if not command.endswith("\n"):
-            command += "\n"
+        command = _unicode(command).rstrip() + "\n"
+        command = "COMMAND %s\n" % command
+        cmd_bytes = command.encode("ascii")
         try:
-            self.socket.send("COMMAND " + command + "\n")
-        except IOError, e:
+            self.socket.send(cmd_bytes)
+        except IOError as e:
             self.socket = None
             if self.persist:
                 del persistent_connections[self.socketurl]
@@ -330,11 +354,12 @@ class SingleSiteConnection(BaseConnection, Helpers):
         self.limit = limit
 
     def query(self, query, add_headers = ""):
-        if self.limit != None:
+        query = _unicode(query)
+        if self.limit is not None:
             query += "Limit: %d\n" % self.limit
         data = self.do_query(query, add_headers)
         if self.prepend_site:
-            return [ [''] + line for line in data ]
+            return [ [b''] + line for line in data ]
         else:
             return data
 
@@ -352,7 +377,7 @@ class SingleSiteConnection(BaseConnection, Helpers):
     def set_auth_domain(self, domain):
         auth_user = self.auth_users.get(domain)
         if auth_user:
-            self.auth_header = "AuthUser: %s\n" % auth_user
+            self.auth_header = "AuthUser: %s\n" % _unicode(auth_user)
         else:
             self.auth_header = ""
 
@@ -363,7 +388,7 @@ class SingleSiteConnection(BaseConnection, Helpers):
 # timeout:  timeout for tcp/unix in seconds
 
 class MultiSiteConnection(Helpers):
-    def __init__(self, sites, disabled_sites = []):
+    def __init__(self, sites, disabled_sites=None):
         self.sites = sites
         self.connections = []
         self.deadsites = {}
@@ -383,7 +408,7 @@ class MultiSiteConnection(Helpers):
                 connection.connect()
                 self.connections.append((sitename, site, connection))
 
-            except Exception, e:
+            except Exception as e:
                 self.deadsites[sitename] = {
                     "exception" : e,
                     "site"      : site,
@@ -413,7 +438,7 @@ class MultiSiteConnection(Helpers):
         # would not work. For that cases we make a temporary connection just
         # to fetch the status information
         extra_status_sites = {}
-        if len(disabled_sites) > 0:
+        if disabled_sites is not None:
             status_sitenames = set([])
             for sitename, site in sites.items():
                 try:
@@ -431,7 +456,7 @@ class MultiSiteConnection(Helpers):
         # hosts at the same time.
 
         status_hosts = {} # dict from site to list of status_hosts
-        for sitename, site in sites.items() + extra_status_sites.items():
+        for sitename, site in itertools.chain(sites.items(), extra_status_sites.items()):
             status_host = site.get("status_host")
             if status_host:
                 if type(status_host) != tuple or len(status_host) != 2:
@@ -449,7 +474,7 @@ class MultiSiteConnection(Helpers):
             # Fetch all the states of status hosts of this local site in one query
             query = "GET hosts\nColumns: name state has_been_checked last_time_up\n"
             for host in hosts:
-                query += "Filter: name = %s\n" % host
+                query += "Filter: name = %s\n" % _unicode(host)
             query += "Or: %d\n" % len(hosts)
             self.set_only_sites([sitename]) # only connect one site
             try:
@@ -459,7 +484,7 @@ class MultiSiteConnection(Helpers):
                     if has_been_checked == 0:
                         state = 3
                     status_host_states[(sitename, host)] = (state, lastup)
-            except Exception, e:
+            except Exception as e:
                 raise MKLivestatusConfigError(e)
                 status_host_states[(sitename, host)] = (str(e), None)
         self.set_only_sites() # clear site filter
@@ -504,18 +529,18 @@ class MultiSiteConnection(Helpers):
     def set_prepend_site(self, p):
         self.prepend_site = p
 
-    def set_only_sites(self, os = None):
+    def set_only_sites(self, os=None):
         self.only_sites = os
 
     # Impose Limit on number of returned datasets (distributed amoung sites)
-    def set_limit(self, limit = None):
+    def set_limit(self, limit=None):
         self.limit = limit
 
     def dead_sites(self):
         return self.deadsites
 
     def alive_sites(self):
-        return self.connections.keys()
+        return self.connections
 
     def successfully_persisted(self):
         for sitename, site, connection in self.connections:
@@ -557,7 +582,7 @@ class MultiSiteConnection(Helpers):
                     limit -= len(r) # Account for portion of limit used by this site
                 result += r
                 stillalive.append( (sitename, site, connection) )
-            except Exception, e:
+            except Exception as e:
                 self.deadsites[sitename] = {
                     "exception" : e,
                     "site" : site,
@@ -574,7 +599,6 @@ class MultiSiteConnection(Helpers):
         else:
             active_sites = self.connections
 
-        start_time = time.time()
         stillalive = []
         limit = self.limit
         if limit != None:
@@ -586,7 +610,7 @@ class MultiSiteConnection(Helpers):
         for sitename, site, connection in active_sites:
             try:
                 connection.send_query(query, add_headers + limit_header)
-            except Exception, e:
+            except Exception as e:
                 self.deadsites[sitename] = {
                     "exception" : e,
                     "site" : site,
@@ -606,7 +630,7 @@ class MultiSiteConnection(Helpers):
                 if self.prepend_site:
                     r = [ [sitename] + l for l in r ]
                 result += r
-            except Exception, e:
+            except Exception as e:
                 self.deadsites[sitename] = {
                     "exception" : e,
                     "site" : site,
@@ -616,7 +640,7 @@ class MultiSiteConnection(Helpers):
         self.connections = stillalive
         return result
 
-    def command(self, command, sitename = "local"):
+    def command(self, command, sitename="local"):
         if sitename in self.deadsites:
             raise MKLivestatusSocketError("Connection to site %s is dead: %s" % \
                     (sitename, self.deadsites[sitename]["exception"]))

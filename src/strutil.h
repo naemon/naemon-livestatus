@@ -41,6 +41,7 @@ extern "C" {
     char *save_next_token(char **c, char delim);
 #endif
     char *next_field(char **line);
+    char *unescape_newlines(char *);
 #ifdef __cplusplus
 }
 #endif

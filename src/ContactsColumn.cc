@@ -28,6 +28,17 @@
 #include "logger.h"
 #include "Query.h"
 #include "tables.h"
+#include "nagios.h"
+
+bool compare_contactsmember(const contactsmember *m1, const contactsmember *m2)
+{
+    return(m1->contact_name < m2->contact_name);
+}
+
+bool equals_contactsmember(const contactsmember *m1, const contactsmember *m2)
+{
+    return(m1->contact_ptr == m2->contact_ptr);
+}
 
 void *ContactsColumn::getNagiosObject(char *name)
 {
@@ -68,4 +79,3 @@ bool ContactsColumn::isEmpty(void *svc)
     }
     return true;
 }
-

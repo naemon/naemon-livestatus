@@ -81,6 +81,13 @@ void *RowSortedSet::extract()
         return 0;
 
     data = _heap[0];
+
+    /* return early if there is just one item */
+    if (_heap.size() == 1) {
+        _heap.pop_back();
+        return data;
+    };
+
     last = _heap.back();
     _heap.pop_back();
 

@@ -46,3 +46,31 @@ Feature: Queries work as expected
 			|host1|
 			|host2|
 			|host3|
+
+	Scenario: Get comments
+		Given I submit the following external command "ADD_HOST_COMMENT;host1;1;admin;Comment"
+		And I submit the following livestatus query
+			|GET comments|
+			|Columns: host_comments|
+		Then I should see the following livestatus response
+			|1|
+
+	Scenario: Livestatus host lists contacts
+		Given I submit the following livestatus query
+			|GET hosts|
+			|Columns: host_name|
+			|Columns: contacts|
+		Then I should see the following livestatus response
+			|host1;default-contact|
+			|host2;default-contact|
+			|host3;default-contact|
+
+	Scenario: Submit multiline plugin output
+		Given I submit the following livestatus external command "PROCESS_SERVICE_CHECK_RESULT;host1;service1;0;A short output\\\nFirst line of long output\\\nSecond line of long output"
+		And I submit the following livestatus query
+			|GET services|
+			|Filter: host_name = host1|
+			|Filter: description = service1|
+			|Columns: plugin_output long_plugin_output|
+		Then I should see the following raw livestatus response
+			|A short output;First line of long output\\u005cnSecond line of long output|

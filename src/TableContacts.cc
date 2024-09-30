@@ -30,6 +30,8 @@
 #include "OffsetTimeperiodColumn.h"
 #include "AttributelistColumn.h"
 #include "CustomVarsColumn.h"
+#include "ContactgroupsObjectlistColumn.h"
+#include "CommandsMemberColumn.h"
 
 TableContacts::TableContacts()
 {
@@ -62,16 +64,16 @@ void TableContacts::addColumns(Table *table, string prefix, int indirect_offset)
     }
 
     table->addColumn(new OffsetIntColumn(prefix + "can_submit_commands",
-                "Wether the contact is allowed to submit commands (0/1)", (char *)&ctc.can_submit_commands - ref, indirect_offset));
+                "Whether the contact is allowed to submit commands (0/1)", (char *)&ctc.can_submit_commands - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "host_notifications_enabled",
-                "Wether the contact will be notified about host problems in general (0/1)", (char *)&ctc.host_notifications_enabled - ref, indirect_offset));
+                "Whether the contact will be notified about host problems in general (0/1)", (char *)&ctc.host_notifications_enabled - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "service_notifications_enabled",
-                "Wether the contact will be notified about service problems in general (0/1)", (char *)&ctc.service_notifications_enabled - ref, indirect_offset));
+                "Whether the contact will be notified about service problems in general (0/1)", (char *)&ctc.service_notifications_enabled - ref, indirect_offset));
 
     table->addColumn(new OffsetTimeperiodColumn(prefix + "in_host_notification_period",
-                "Wether the contact is currently in his/her host notification period (0/1)", (char *)&ctc.host_notification_period_ptr - ref, indirect_offset));
+                "Whether the contact is currently in his/her host notification period (0/1)", (char *)&ctc.host_notification_period_ptr - ref, indirect_offset));
     table->addColumn(new OffsetTimeperiodColumn(prefix + "in_service_notification_period",
-                "Wether the contact is currently in his/her service notification period (0/1)", (char *)&ctc.service_notification_period_ptr - ref, indirect_offset));
+                "Whether the contact is currently in his/her service notification period (0/1)", (char *)&ctc.service_notification_period_ptr - ref, indirect_offset));
 
     table->addColumn(new CustomVarsColumn(prefix + "custom_variable_names",
                 "A list of all custom variables of the contact", (char *)(&ctc.custom_variables) - ref, indirect_offset, CVT_VARNAMES));
@@ -83,6 +85,12 @@ void TableContacts::addColumns(Table *table, string prefix, int indirect_offset)
                 "A bitmask specifying which attributes have been modified", (char *)(&ctc.modified_attributes) - ref, indirect_offset, false));
     table->addColumn(new AttributelistColumn(prefix + "modified_attributes_list",
                 "A list of all modified attributes", (char *)(&ctc.modified_attributes) - ref, indirect_offset, true));
+    table->addColumn(new ContactgroupsObjectlistColumn(prefix + "groups",
+                "A list of all contact groups this contact is in", (char *)(&ctc.contactgroups_ptr) - ref, indirect_offset));
+    table->addColumn(new CommandsMemberColumn(prefix + "host_notification_commands",
+                "A list of all host notifications commands for this contact", (char *)(&ctc.host_notification_commands) - ref, indirect_offset));
+    table->addColumn(new CommandsMemberColumn(prefix + "service_notification_commands",
+                "A list of all service notifications commands for this contact", (char *)(&ctc.service_notification_commands) - ref, indirect_offset));
 
     table->clearNatSort();
     table->addNatSort( prefix + "name" );

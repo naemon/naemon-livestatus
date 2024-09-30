@@ -144,6 +144,28 @@ void OutputBuffer::writeData(int fd, const char *write_from, int to_write)
     }
 }
 
+bool OutputBuffer::isAlive(int fd)
+{
+    struct timeval tv = {0};
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(fd, &fds);
+
+    int retval = select(fd + 1, NULL, &fds, NULL, &tv);
+    if (retval > 0 && FD_ISSET(fd, &fds)) {
+        ssize_t w = write(fd, "", 0);
+        if (w < 0) {
+            // select returned file handle, but write failed -> client is gone
+            return false;
+        }
+        // select returned file handle and write succeeded -> client is alive
+        return true;
+    }
+
+    // select returned no file handle -> client is gone
+    return false;
+}
+
 void OutputBuffer::setError(unsigned code, const char *format, ...)
 {
     // only the first error is being returned
