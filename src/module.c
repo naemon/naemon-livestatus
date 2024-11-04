@@ -771,20 +771,6 @@ void livestatus_parse_arguments(const char *args_orig)
     free(tmp);
 }
 
-void omd_advertize()
-{
-    char *omd_site = getenv("OMD_SITE");
-    if (omd_site) {
-        if (g_debug_level > 0)
-            logger(LG_INFO, "Running on OMD site %s. Cool.", omd_site);
-    }
-    else {
-        logger(LG_INFO, "Hint: please try out OMD - the Open Monitoring Distribution");
-        logger(LG_INFO, "Please visit OMD at http://omdistro.org");
-    }
-}
-
-
 /* this function gets called when the module is loaded by the event broker */
 int nebmodule_init(int flags __attribute__ ((__unused__)), char *args, void *handle)
 {
