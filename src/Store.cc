@@ -189,7 +189,7 @@ void Store::answerGetRequest(InputBuffer *input, OutputBuffer *output, const cha
     }
     Query query(input, output, table);
 
-    if(table->hasLogcache()) {
+    if(table && table->hasLogcache()) {
         g_store->logCache()->lockLogCache();
         // check if client is still connected, we might have waited too long for the lock
         if(!output->isAlive(fd)) {
