@@ -1,6 +1,6 @@
 Summary: Naemon Livestatus Eventbroker Module
 Name: naemon-livestatus
-Version: 1.4.2
+Version: 1.4.3
 Release: 0
 License: GPL-2.0-only
 Group: Applications/System
