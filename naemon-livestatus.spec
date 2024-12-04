@@ -56,7 +56,7 @@ case "$*" in
     # Upgrading so try and restart if already running
     if [ -e /etc/naemon/naemon.cfg ]; then
       # livestatus configuration has been moved to single drop dir file
-      sed -i /etc/naemon/naemon.cfg -e 's~^\s*\(broker_module=/usr/lib[0-9]*/naemon/naemon-livestatus/livestatus.so.*\)~#\1~'
+      sed -i /etc/naemon/naemon.cfg --follow-symlinks -e 's~^\s*\(broker_module=/usr/lib[0-9]*/naemon/naemon-livestatus/livestatus.so.*\)~#\1~'
     fi
   ;;
   1)
@@ -90,7 +90,7 @@ case "$*" in
   0)
     # POSTUN
     if [ -e /etc/naemon/naemon.cfg ]; then
-      sed -i /etc/naemon/naemon.cfg -e 's~^\s*\(broker_module=/usr/lib[0-9]*/naemon/naemon-livestatus/livestatus.so.*\)~#\1~'
+      sed -i /etc/naemon/naemon.cfg --follow-symlinks -e 's~^\s*\(broker_module=/usr/lib[0-9]*/naemon/naemon-livestatus/livestatus.so.*\)~#\1~'
     fi
     rm -f /var/cache/naemon/live
     ;;
