@@ -12,10 +12,10 @@
 # |                                                                  |
 # | Copyright Mathias Kettner 2009             mk@mathias-kettner.de |
 # +------------------------------------------------------------------+
-# 
+#
 # This file is part of check_mk 1.1.0beta17.
 # The official homepage is at http://mathias-kettner.de/check_mk.
-# 
+#
 # check_mk is free software;  you can redistribute it and/or modify it
 # under the  terms of the  GNU General Public License  as published by
 # the Free Software Foundation in version 2.  check_mk is  distributed
@@ -34,7 +34,7 @@ CFLAGS = -O2 -fPIC -I..
 #endif
 CXXFLAGS = $(CFLAGS)
 
-   
+
 OBJECTS      = TableServices.o TableHosts.o Table.o Query.o StringColumn.o \
 	       OffsetStringColumn.o Store.o store.o logger.o strutil.o \
 	       Filter.o IntColumn.o OffsetIntColumn.o \
@@ -51,7 +51,7 @@ OBJECTS      = TableServices.o TableHosts.o Table.o Query.o StringColumn.o \
 	       ServicegroupsColumn.o HostgroupsColumn.o EmptyColumn.o \
 	       OutputBuffer.o DoubleColumn.o DoubleColumnFilter.o \
 	       OffsetDoubleColumn.o ClientQueue.o InputBuffer.o \
-	       HostSpecialIntColumn.o
+	       HostSpecialIntColumn.o EmptyFilter.o
 
 
 
@@ -75,5 +75,3 @@ deps:
 	gcc -MM *.cc > .deps
 
 -include .deps
-
-

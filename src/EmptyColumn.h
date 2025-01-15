@@ -36,6 +36,7 @@ public:
         Column(name, description, -1) {}
     int type() { return COLTYPE_STRING; }
     void output(void *data, Query *);
+    Filter *createFilter(int operator_id, char *value);
 };
 
 #endif // EmptyColumn_h

@@ -23,9 +23,15 @@
 // Boston, MA 02110-1301 USA.
 
 #include "EmptyColumn.h"
+#include "EmptyFilter.h"
 #include "Query.h"
 
 void EmptyColumn::output(void *data __attribute__ ((__unused__)), Query *query)
 {
     query->outputString("");
+}
+
+Filter *EmptyColumn::createFilter(int operator_id, char *value)
+{
+    return new EmptyFilter(this, operator_id, value);
 }
