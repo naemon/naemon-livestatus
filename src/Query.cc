@@ -290,10 +290,17 @@ void Query::parseAndOrLine(char *line, int andor, bool filter)
                 andor == ANDOR_OR ? "Or" : "And");
         return;
     }
-    if (filter)
+    if (filter) {
         _filter.combineFilters(number, andor);
-    else
+        if (_filter.hasError()) {
+            _output->setError(_filter.errorCode(), "error in %s header: %s", andor == ANDOR_OR ? "Or" : "And", _filter.errorMessage().c_str());
+        }
+    } else {
         _wait_condition.combineFilters(number, andor);
+        if (_wait_condition.hasError()) {
+            _output->setError(_wait_condition.errorCode(), "error in WaitCondition%s header: %s", andor == ANDOR_OR ? "Or" : "And", _filter.errorMessage().c_str());
+        }
+    }
 }
 
 void Query::parseNegateLine(char *line, bool filter)
