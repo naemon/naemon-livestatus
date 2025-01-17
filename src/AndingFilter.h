@@ -46,7 +46,7 @@ public:
     _subfilters_t::iterator begin() { return _subfilters.begin(); }
     _subfilters_t::iterator end() { return _subfilters.end(); }
     void *findIndexFilter(const char *columnname);
-    void findIntLimits(const char *columnname, int *lower, int *upper);
+    void findTimeLimits(const char *columnname, time_t *lower, time_t *upper);
     bool optimizeBitmask(const char *columnname, uint32_t *mask);
 };
 

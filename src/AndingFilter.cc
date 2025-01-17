@@ -82,14 +82,14 @@ void *AndingFilter::findIndexFilter(const char *columnname)
     return 0;
 }
 
-void AndingFilter::findIntLimits(const char *columnname, int *lower, int *upper)
+void AndingFilter::findTimeLimits(const char *columnname, time_t *lower, time_t *upper)
 {
     for (_subfilters_t::iterator it = _subfilters.begin();
             it != _subfilters.end();
             ++it)
     {
         Filter *filter = *it;
-        filter->findIntLimits(columnname, lower, upper);
+        filter->findTimeLimits(columnname, lower, upper);
     }
 }
 

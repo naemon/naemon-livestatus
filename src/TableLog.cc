@@ -112,14 +112,14 @@ TableLog::~TableLog()
 
 void TableLog::answerQuery(Query *query)
 {
-    int since = 0;
-    int until = time(0) + 1;
+    time_t since = 0;
+    time_t until = time(0) + 1;
     // Optimize time interval for the query. In log querys
     // there should always be a time range in form of one
     // or two filter expressions over time. We use that
     // to limit the number of logfiles we need to scan and
     // to find the optimal entry point into the logfile
-    query->findIntLimits("time", &since, &until);
+    query->findTimeLimits("time", &since, &until);
     if (g_debug_level > 0)
         logger(LG_INFO, "TableLog: query time limits: from %u / until %u", since, until);
 

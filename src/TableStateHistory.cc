@@ -220,7 +220,7 @@ void TableStateHistory::answerQuery(Query *query)
     // or two filter expressions over time. We use that
     // to limit the number of logfiles we need to scan and
     // to find the optimal entry point into the logfile
-    _query->findIntLimits("time", &_since, &_until);
+    _query->findTimeLimits("time", &_since, &_until);
     if (_since == 0) {
         query->setError(RESPONSE_CODE_INVALID_REQUEST, "Start of timeframe required. e.g. Filter: time > 1234567890");
         return;

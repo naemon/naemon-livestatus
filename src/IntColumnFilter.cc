@@ -37,8 +37,6 @@
 {
 }
 
-// overridden by TimeColumnFilter in order to apply timezone
-// offset from Localtime: header
 int32_t IntColumnFilter::convertRefValue()
 {
     return atoi(_ref_string.c_str());
@@ -62,63 +60,6 @@ bool IntColumnFilter::accepts(void *data)
     }
     return pass != _negate;
 }
-
-void IntColumnFilter::findIntLimits(const char *columnname, int *lower, int *upper)
-{
-    if (strcmp(columnname, _column->name())) {
-        return; // wrong column
-    }
-    if (*lower >= *upper) {
-        return; // already empty interval
-    }
-
-    int32_t ref_value = convertRefValue(); // TimeColumnFilter applies timezone offset here
-
-    /* [lower, upper[ is some interval. This filter might restrict
-       that interval to a smaller interval.
-     */
-    int opref = _opid * (_negate != false ? -1 : 1);
-    switch (opref) {
-        case OP_EQUAL:
-            if (ref_value >= *lower && ref_value < *upper) {
-                *lower = ref_value;
-                *upper = ref_value + 1;
-            }
-            else
-                *lower = *upper;
-            return;
-
-        case -OP_EQUAL:
-            if (ref_value == *lower)
-                *lower = *lower + 1;
-            else if (ref_value == *upper - 1)
-                *upper = *upper - 1;
-            return;
-
-        case OP_GREATER:
-            if (ref_value >= *lower) {
-                *lower = ref_value + 1;
-            }
-
-            return;
-
-        case OP_LESS:
-            if (ref_value < *upper)
-                *upper = ref_value;
-            return;
-
-        case -OP_GREATER: // LESS OR EQUAL
-            if (ref_value < *upper - 1)
-                *upper = ref_value + 1;
-            return;
-
-        case -OP_LESS: // GREATER OR EQUAL
-            if (ref_value > *lower)
-                *lower = ref_value;
-            return;
-    }
-}
-
 
 bool IntColumnFilter::optimizeBitmask(const char *columnname, uint32_t *mask)
 {
@@ -169,4 +110,3 @@ bool IntColumnFilter::optimizeBitmask(const char *columnname, uint32_t *mask)
     }
     return false; // should not be reached
 }
-
