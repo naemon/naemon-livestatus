@@ -1,26 +1,6 @@
-# +------------------------------------------------------------------+
-# |             ____ _               _        __  __ _  __           |
-# |            / ___| |__   ___  ___| | __   |  \/  | |/ /           |
-# |           | |   | '_ \ / _ \/ __| |/ /   | |\/| | ' /            |
-# |           | |___| | | |  __/ (__|   <    | |  | | . \            |
-# |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
-# |                                                                  |
-# | Copyright Mathias Kettner 2012             mk@mathias-kettner.de |
-# +------------------------------------------------------------------+
-#
-# This file is part of Check_MK.
-# The official homepage is at http://mathias-kettner.de/check_mk.
-#
-# check_mk is free software;  you can redistribute it and/or modify it
-# under the  terms of the  GNU General Public License  as published by
-# the Free Software Foundation in version 2.  check_mk is  distributed
-# in the hope that it will be useful, but WITHOUT ANY WARRANTY;  with-
-# out even the implied warranty of  MERCHANTABILITY  or  FITNESS FOR A
-# PARTICULAR PURPOSE. See the  GNU General Public License for more de-
-# ails.  You should have  received  a copy of the  GNU  General Public
-# License along with GNU Make; see the file  COPYING.  If  not,  write
-# to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
-# Boston, MA 02110-1301 USA.
+# Copyright (c) 2025 Naemon team - license: GPL-2.0
+# This file is part of the naemon project: https://www.naemon.io
+# See LICENSE file in the project root for details.
 
 ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = src tests
@@ -57,3 +37,12 @@ version:
 			sed -e 's/unstable/UNRELEASED/g' -i debian/changelog; \
 		fi
 
+LICENSE_HEADER = "// Copyright (c) 2025 Naemon team - license: GPL-2.0\n// This file is part of the naemon project: https://www.naemon.io\n// See LICENSE file in the project root for details.\n"
+licenseheader:
+	@for file in src/*.c src/*.h src/*.cc api/c++/*.cc api/c++/*.h; do \
+		( \
+			echo -e $(LICENSE_HEADER); \
+			perl -ne 'if (/^\s*$$/ || /^\/\//) { next unless $$seen; } else { $$seen++; print; next; } print if $$seen;' $$file; \
+		) \
+		> $$file.tmp && mv $$file.tmp $$file; \
+	done

@@ -6,6 +6,10 @@ Naemon and contains some extra features such as sorting and page offsets.
 To find out more about livestatus, see:
  [www.naemon.io](http://www.naemon.io/documentation/usersguide/livestatus.html)
 
+## License
+
+Naemon Livestatus is published under the GPL-2.0 license, see [LICENSE](https://github.com/naemon/naemon-livestatus/blob/master/LICENSE)
+
 ## Differences between mk_livestatus and naemons fork of livestatus
 
 Three additions to Livestatus Query Language were added:
