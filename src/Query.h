@@ -80,7 +80,7 @@ class Query
     time_t        _time_limit_timeout;
     int           _offset;
     unsigned      _current_line;
-    int           _timezone_offset;
+    time_t        _timezone_offset;
 
     // normal queries
     typedef vector<Column *> _columns_t;
@@ -117,9 +117,8 @@ public:
     void outputDatasetBegin();
     void outputDatasetEnd();
     void outputFieldSeparator();
-    void outputInteger(int32_t);
     void outputInteger64(int64_t);
-    void outputTime(int32_t);
+    void outputTime(int64_t);
     void outputUnsignedLong(unsigned long);
     void outputCounter(counter_t);
     void outputDouble(double);
@@ -142,8 +141,8 @@ public:
     void *findIndexFilter(const char *columnname);
     void *findTimerangeFilter(const char *columnname, time_t *, time_t *);
     void findIntLimits(const char *columnname, int *lower, int *upper);
-    void optimizeBitmask(const char *columnname, uint32_t *bitmask);
-    int timezoneOffset() { return _timezone_offset; }
+    void optimizeBitmask(const char *columnname, uint64_t *bitmask);
+    time_t timezoneOffset() { return _timezone_offset; }
     AndingFilter *filter() { return &_filter; }
 
 private:

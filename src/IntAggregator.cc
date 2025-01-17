@@ -31,7 +31,7 @@
 void IntAggregator::consume(void *data, Query *query)
 {
     _count++;
-    int32_t value = _column->getValue(data, query);
+    int64_t value = _column->getValue(data, query);
     switch (_operation) {
         case STATS_OP_SUM:
         case STATS_OP_AVG:
@@ -108,4 +108,3 @@ void IntAggregator::output(Query *q)
    return ((sumq - sum*sum/n)/(n-1)) ** 0.5
 
  */
-

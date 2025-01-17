@@ -61,10 +61,9 @@ class HostlistStateColumn : public IntColumn
 public:
     HostlistStateColumn(string name, string description, int logictype, int offset, int indirect_offset)
         : IntColumn(name, description, indirect_offset), _offset(offset), _logictype(logictype) {}
-    int32_t getValue(void *data, Query *);
+    int64_t getValue(void *data, Query *);
     GTree *getMembers(gpointer data);
 };
 
 
 #endif // HostlistStateColumn_h
-

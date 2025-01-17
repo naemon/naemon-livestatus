@@ -50,7 +50,7 @@ public:
     Filter *createFilter(int opid, char *value);
 
     /* API of IntColumn */
-    virtual int32_t getValue(void *data, Query *) { return getValue(data); }
+    virtual int64_t getValue(void *data, Query *) { return getValue(data); }
 
     unsigned long getValue(void *data);
 };
@@ -58,4 +58,3 @@ public:
 
 
 #endif // AttributelistColumn_h
-

@@ -30,7 +30,7 @@
 #define OUTPUT_DICT_ENTRY(_Q, _O, _F) do { \
         (_Q)->outputString(#_F); \
         (_Q)->outputDictValueSeparator(); \
-        (_Q)->outputInteger((_O)->_F); \
+        (_Q)->outputInteger64((_O)->_F); \
         (_Q)->outputDictSeparator(); \
     } while(0)
 
@@ -104,9 +104,9 @@ void TimeperiodExceptionsColumn::output(void *data, Query *query) {
                 query->outputSublistSeparator();
             first_tr = false;
 
-            query->outputInteger(tr->range_start);
+            query->outputInteger64(tr->range_start);
             query->outputSublistSeparator();
-            query->outputInteger(tr->range_end);
+            query->outputInteger64(tr->range_end);
         }
         query->outputEndSublist();
 
@@ -121,4 +121,3 @@ Filter *TimeperiodExceptionsColumn::createFilter(int opid, char *value) {
         return new AndingFilter();
     return new OringFilter();
 }
-

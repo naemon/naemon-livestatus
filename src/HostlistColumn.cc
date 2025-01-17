@@ -62,9 +62,9 @@ static gboolean output_host(gpointer _name, gpointer _hst, gpointer user_data)
             params->query->outputBeginSublist();
             params->query->outputString(hst->name);
             params->query->outputSublistSeparator();
-            params->query->outputInteger(hst->current_state);
+            params->query->outputInteger64(hst->current_state);
             params->query->outputSublistSeparator();
-            params->query->outputInteger(hst->has_been_checked);
+            params->query->outputInteger64(hst->has_been_checked);
             params->query->outputEndSublist();
         }
     }

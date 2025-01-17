@@ -38,7 +38,7 @@ extern TimeperiodsCache *g_timeperiods_cache;
 }
 
 
-int32_t OffsetTimeperiodColumn::getValue(void *data, Query *)
+int64_t OffsetTimeperiodColumn::getValue(void *data, Query *)
 {
     data = shiftPointer(data);
     if (!data)
@@ -58,4 +58,3 @@ int32_t OffsetTimeperiodColumn::getValue(void *data, Query *)
     else
         return 0;
 }
-

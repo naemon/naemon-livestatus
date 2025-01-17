@@ -35,5 +35,5 @@ void CountAggregator::consume(void *data, Query *)
 
 void CountAggregator::output(Query *q)
 {
-    q->outputInteger(_count);
+    q->outputInteger64(_count);
 }

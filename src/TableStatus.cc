@@ -51,7 +51,7 @@ extern int check_host_freshness;
 extern int enable_flap_detection;
 extern int process_performance_data;
 extern int check_external_commands;
-extern int num_cached_log_messages;
+extern int64_t num_cached_log_messages;
 extern int interval_length;
 int last_command_check = 0;
 
@@ -138,18 +138,18 @@ TableStatus::TableStatus()
     addColumn(new IntPointerColumn("check_external_commands",
                 "Whether Naemon checks for external commands at its command pipe (0/1)", &check_external_commands));
     addColumn(new TimePointerColumn("program_start",
-                "The time of the last program start as UNIX timestamp", (int*)&program_start));
+                "The time of the last program start as UNIX timestamp", (time_t*)&program_start));
     addColumn(new TimePointerColumn("last_command_check",
-                "The time of the last check for a command as UNIX timestamp (deprecated)", (int*)(&last_command_check)));
+                "The time of the last check for a command as UNIX timestamp (deprecated)", (time_t*)(&last_command_check)));
     addColumn(new TimePointerColumn("last_log_rotation",
-                "Time time of the last log file rotation", (int*)&last_log_rotation));
+                "Time time of the last log file rotation", (time_t*)&last_log_rotation));
     addColumn(new IntPointerColumn("interval_length",
-                "The default interval length from naemon.cfg", (int*)&interval_length));
+                "The default interval length from naemon.cfg", (int64_t*)&interval_length));
 
     addColumn(new IntPointerColumn("num_hosts",
-                "The total number of hosts", (int*)&num_objects.hosts));
+                "The total number of hosts", (int64_t*)&num_objects.hosts));
     addColumn(new IntPointerColumn("num_services",
-                "The total number of services", (int*)&num_objects.services));
+                "The total number of services", (int64_t*)&num_objects.services));
 
     addColumn(new StringPointerColumn("program_version",
                 "The version of the monitoring daemon", (char *)get_program_version()));

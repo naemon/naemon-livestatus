@@ -125,7 +125,7 @@ void TableLog::answerQuery(Query *query)
 
     // The second optimization is for log message types.
     // We want to load only those log type that are queried.
-    uint32_t classmask = LOGCLASS_ALL;
+    uint64_t classmask = LOGCLASS_ALL;
     query->optimizeBitmask("class", &classmask);
     if (classmask == 0) {
         return;

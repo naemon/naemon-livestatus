@@ -26,7 +26,7 @@
 #include "nagios.h"
 #include "pnp4nagios.h"
 
-int32_t ServiceSpecialIntColumn::getValue(void *data, Query *)
+int64_t ServiceSpecialIntColumn::getValue(void *data, Query *)
 {
     data = shiftPointer(data);
     if (!data) return 0;

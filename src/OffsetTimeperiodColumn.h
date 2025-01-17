@@ -37,9 +37,8 @@ class OffsetTimeperiodColumn : public OffsetIntColumn
 {
 public:
     OffsetTimeperiodColumn(string, string, int, int indirect_offset = -1);
-    int32_t getValue(void *data, Query *);
+    int64_t getValue(void *data, Query *);
 };
 
 
 #endif // OffsetTimeperiodColumn_h
-

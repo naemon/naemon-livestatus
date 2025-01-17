@@ -30,7 +30,7 @@
 extern TableServices *g_table_services;
 
 // return true if state1 is worse than state2
-bool ServicelistStateColumn::svcStateIsWorse(int32_t state1, int32_t state2)
+bool ServicelistStateColumn::svcStateIsWorse(int64_t state1, int64_t state2)
 {
     if (state1 == 0) return false;        // OK is worse than nothing
     else if (state2 == 0) return true;    // everything else is worse then OK
@@ -47,10 +47,10 @@ servicesmember *ServicelistStateColumn::getMembers(void *data)
     return *(servicesmember **)((char *)data + _offset);
 }
 
-int32_t ServicelistStateColumn::getValue(int logictype, servicesmember *mem, Query *query)
+int64_t ServicelistStateColumn::getValue(int logictype, servicesmember *mem, Query *query)
 {
     contact *auth_user = query->authUser();
-    int32_t result = 0;
+    int64_t result = 0;
     int lt;
 
     while (mem) {
@@ -92,9 +92,8 @@ int32_t ServicelistStateColumn::getValue(int logictype, servicesmember *mem, Que
 }
 
 
-int32_t ServicelistStateColumn::getValue(void *data, Query *query)
+int64_t ServicelistStateColumn::getValue(void *data, Query *query)
 {
     servicesmember *mem = getMembers(data);
     return getValue(_logictype, mem, query);
 }
-

@@ -38,18 +38,18 @@ bool OringFilter::accepts(void *data)
     return false;
 }
 
-bool OringFilter::optimizeBitmask(const char *columnname, uint32_t *mask)
+bool OringFilter::optimizeBitmask(const char *columnname, uint64_t *mask)
 {
     // We can only optimize, if *all* subfilters are filters for the
     // same column.
-    uint32_t m = 0;
+    uint64_t m = 0;
 
     for (_subfilters_t::iterator it = _subfilters.begin();
             it != _subfilters.end();
             ++it)
     {
         Filter *filter = *it;
-        uint32_t mm = 0xffffffff;
+        uint64_t mm = 0xffffffff;
         if (!filter->optimizeBitmask(columnname, &mm))
             return false; // wrong column
         m |= mm;
@@ -57,4 +57,3 @@ bool OringFilter::optimizeBitmask(const char *columnname, uint32_t *mask)
     *mask &= m;
     return true;
 }
-

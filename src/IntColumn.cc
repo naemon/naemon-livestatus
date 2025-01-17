@@ -30,7 +30,7 @@
 
 void IntColumn::output(void *data, Query *query)
 {
-    query->outputInteger(getValue(data, query));
+    query->outputInteger64(getValue(data, query));
 }
 
 Filter *IntColumn::createFilter(int operator_id, char *value)
@@ -48,8 +48,8 @@ string IntColumn::valueAsString(void *data, Query *query)
 
 int IntColumn::compare(void *dataa, void*datab, Query *query) {
     /* return a-b; would work, but isn't overflow-safe */
-    int32_t a = getValue(dataa, query);
-    int32_t b = getValue(datab, query);
+    int64_t a = getValue(dataa, query);
+    int64_t b = getValue(datab, query);
     if( a==b ) return 0;
     return (a>b)?(1):(-1);
 }

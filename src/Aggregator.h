@@ -33,7 +33,7 @@ class Aggregator
 {
 protected:
     int      _operation;
-    uint32_t _count;
+    uint64_t _count;
 public:
     Aggregator(int o) : _operation(o), _count(0) {}
     virtual void consume(void *data, Query *) = 0;
@@ -42,4 +42,3 @@ public:
 
 
 #endif // Aggregator_h
-

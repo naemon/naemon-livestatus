@@ -65,9 +65,9 @@ void ServicelistColumn::output(void *data, Query *query)
                 query->outputString(svc->description);
                 if (_info_depth >= 1) {
                     query->outputSublistSeparator();
-                    query->outputInteger(svc->current_state);
+                    query->outputInteger64(svc->current_state);
                     query->outputSublistSeparator();
-                    query->outputInteger(svc->has_been_checked);
+                    query->outputInteger64(svc->has_been_checked);
                 }
                 if (_info_depth >= 2) {
                     query->outputSublistSeparator();
@@ -85,4 +85,3 @@ Filter *ServicelistColumn::createFilter(int opid, char *value)
 {
     return new ServicelistColumnFilter(this, opid, value, _show_host);
 }
-

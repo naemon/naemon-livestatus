@@ -84,12 +84,10 @@ AC_CHECK_HEADERS([arpa/inet.h fcntl.h limits.h netdb.h netinet/in.h stdint.h std
 AC_HEADER_STDBOOL
 AC_C_CONST
 AC_C_INLINE
-AC_TYPE_INT32_T
 AC_TYPE_INT64_T
 AC_TYPE_SIZE_T
 AC_TYPE_SSIZE_T
 AC_HEADER_TIME
-AC_TYPE_UINT32_T
 AC_TYPE_UINT64_T
 
 # Checks for library functions.

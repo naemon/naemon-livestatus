@@ -39,7 +39,7 @@
 
 // overridden by TimeColumnFilter in order to apply timezone
 // offset from Localtime: header
-int32_t IntColumnFilter::convertRefValue()
+int64_t IntColumnFilter::convertRefValue()
 {
     return atoi(_ref_string.c_str());
 }
@@ -47,8 +47,8 @@ int32_t IntColumnFilter::convertRefValue()
 bool IntColumnFilter::accepts(void *data)
 {
     bool pass = true;
-    int32_t act_value = _column->getValue(data, _query);
-    int32_t ref_value = convertRefValue();
+    int64_t act_value = _column->getValue(data, _query);
+    int64_t ref_value = convertRefValue();
     switch (_opid) {
         case OP_EQUAL:
             pass = act_value == ref_value; break;
@@ -72,7 +72,7 @@ void IntColumnFilter::findIntLimits(const char *columnname, int *lower, int *upp
         return; // already empty interval
     }
 
-    int32_t ref_value = convertRefValue(); // TimeColumnFilter applies timezone offset here
+    int64_t ref_value = convertRefValue(); // TimeColumnFilter applies timezone offset here
 
     /* [lower, upper[ is some interval. This filter might restrict
        that interval to a smaller interval.
@@ -120,9 +120,9 @@ void IntColumnFilter::findIntLimits(const char *columnname, int *lower, int *upp
 }
 
 
-bool IntColumnFilter::optimizeBitmask(const char *columnname, uint32_t *mask)
+bool IntColumnFilter::optimizeBitmask(const char *columnname, uint64_t *mask)
 {
-    int32_t ref_value = convertRefValue();
+    int64_t ref_value = convertRefValue();
 
     if (strcmp(columnname, _column->name())) {
         return false; // wrong column
@@ -133,7 +133,7 @@ bool IntColumnFilter::optimizeBitmask(const char *columnname, uint32_t *mask)
 
     // Our task is to remove those bits from mask that are deselected
     // by the filter.
-    uint32_t bit = 1 << ref_value;
+    uint64_t bit = 1 << ref_value;
 
     int opref = _opid * (_negate != false ? -1 : 1);
     switch (opref) {
@@ -169,4 +169,3 @@ bool IntColumnFilter::optimizeBitmask(const char *columnname, uint32_t *mask)
     }
     return false; // should not be reached
 }
-

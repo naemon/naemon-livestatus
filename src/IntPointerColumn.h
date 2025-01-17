@@ -29,11 +29,13 @@
 
 class IntPointerColumn : public IntColumn
 {
-    int *_number;
+    int64_t *_number;
 public:
     IntPointerColumn(string name, string description, int* number)
+        : IntColumn(name, description, -1), _number((int64_t*)number) {}
+    IntPointerColumn(string name, string description, int64_t* number)
         : IntColumn(name, description, -1), _number(number) {}
-    int32_t getValue(void *, Query *) { return *_number; }
+    int64_t getValue(void *, Query *) { return *_number; }
 };
 
 

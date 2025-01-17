@@ -54,12 +54,11 @@ class ServicelistStateColumn : public IntColumn
 public:
     ServicelistStateColumn(string name, string description, int logictype, int offset, int indirect_offset)
         : IntColumn(name, description, indirect_offset), _offset(offset), _logictype(logictype) {}
-    int32_t getValue(void *data, Query *);
+    int64_t getValue(void *data, Query *);
     servicesmember *getMembers(void *data);
-    static int32_t getValue(int logictype, servicesmember *services, Query *);
-    static bool svcStateIsWorse(int32_t state1, int32_t state2);
+    static int64_t getValue(int logictype, servicesmember *services, Query *);
+    static bool svcStateIsWorse(int64_t state1, int64_t state2);
 };
 
 
 #endif // ServicelistStateColumn_h
-

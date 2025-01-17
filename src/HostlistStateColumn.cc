@@ -32,7 +32,7 @@
 extern TableServices *g_table_hosts;
 
 
-inline bool hst_state_is_worse(int32_t state1, int32_t state2)
+inline bool hst_state_is_worse(int64_t state1, int64_t state2)
 {
     if (state1 == 0) return false;        // UP is worse than nothing
     else if (state2 == 0) return true;    // everything else is worse then UP
@@ -52,7 +52,7 @@ GTree *HostlistStateColumn::getMembers(gpointer data)
 struct output_parameters {
     Query *query;
     int logictype;
-    int32_t result;
+    int64_t result;
 };
 
 static gboolean get_subvalue(gpointer _name, gpointer _hst, gpointer user_data)
@@ -104,7 +104,7 @@ static gboolean get_subvalue(gpointer _name, gpointer _hst, gpointer user_data)
     return FALSE;
 }
 
-int32_t HostlistStateColumn::getValue(void *data, Query *query)
+int64_t HostlistStateColumn::getValue(void *data, Query *query)
 {
     GTree *mem = getMembers(data);
     output_parameters params;

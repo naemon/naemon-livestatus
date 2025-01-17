@@ -36,11 +36,10 @@ class OffsetIntColumn : public IntColumn
 public:
     OffsetIntColumn(string name, string description, int offset, int indirect_offset = -1)
         : IntColumn(name, description, indirect_offset), _offset(offset) {}
-    int32_t getValue(void *data, Query *);
+    int64_t getValue(void *data, Query *);
 protected:
     int offset() { return _offset; }
 };
 
 
 #endif // OffsetIntColumn_h
-

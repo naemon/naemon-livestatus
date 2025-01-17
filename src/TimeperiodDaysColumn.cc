@@ -48,9 +48,9 @@ void TimeperiodDaysColumn::output(void *data, Query *query) {
             if(!first)
                 query->outputSublistSeparator();
             first = false;
-            query->outputInteger(range->range_start);
+            query->outputInteger64(range->range_start);
             query->outputSublistSeparator();
-            query->outputInteger(range->range_end);
+            query->outputInteger64(range->range_end);
             range = range->next;
         }
         query->outputEndSublist();
@@ -64,4 +64,3 @@ Filter *TimeperiodDaysColumn::createFilter(int opid, char *value) {
         return new AndingFilter();
     return new OringFilter();
 }
-

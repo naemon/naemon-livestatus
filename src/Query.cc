@@ -1134,7 +1134,7 @@ void Query::finish()
         _output->addChar(']');
         if (_output_format == OUTPUT_FORMAT_WRAPPED_JSON) {
             _output->addString(",\"total_count\":");
-            outputInteger(_current_line);
+            outputInteger64(_current_line);
             _output->addString("}");
         }
         _output->addChar('\n');
@@ -1151,7 +1151,7 @@ void Query::findIntLimits(const char *columnname, int *lower, int *upper)
     return _filter.findIntLimits(columnname, lower, upper);
 }
 
-void Query::optimizeBitmask(const char *columnname, uint32_t *bitmask)
+void Query::optimizeBitmask(const char *columnname, uint64_t *bitmask)
 {
     _filter.optimizeBitmask(columnname, bitmask);
 }
@@ -1184,13 +1184,6 @@ void Query::outputFieldSeparator()
         _output->addChar(',');
 }
 
-void Query::outputInteger(int32_t value)
-{
-    char buf[32];
-    int l = snprintf(buf, 32, "%d", value);
-    _output->addBuffer(buf, l);
-}
-
 void Query::outputInteger64(int64_t value)
 {
     char buf[32];
@@ -1198,10 +1191,10 @@ void Query::outputInteger64(int64_t value)
     _output->addBuffer(buf, l);
 }
 
-void Query::outputTime(int32_t value)
+void Query::outputTime(time_t value)
 {
     value += _timezone_offset;
-    outputInteger(value);
+    outputUnsignedLong(value);
 }
 
 

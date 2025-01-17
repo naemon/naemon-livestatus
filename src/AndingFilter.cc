@@ -93,7 +93,7 @@ void AndingFilter::findIntLimits(const char *columnname, int *lower, int *upper)
     }
 }
 
-bool AndingFilter::optimizeBitmask(const char *columnname, uint32_t *mask)
+bool AndingFilter::optimizeBitmask(const char *columnname, uint64_t *mask)
 {
     bool optimized = false;
     for (_subfilters_t::iterator it = _subfilters.begin();
