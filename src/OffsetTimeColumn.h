@@ -28,23 +28,22 @@
 #include "config.h"
 
 #include <stdlib.h>
-#include "OffsetIntColumn.h"
+#include "TimeColumn.h"
 
 
-/* We are using IntColumn in order to implement a column
-   of type time. This does almost the same as the time column,
+/* This does almost the same as the time column,
    but applies a timezone offset stored in the Query. */
 
-class OffsetTimeColumn : public OffsetIntColumn
+class OffsetTimeColumn : public TimeColumn
 {
+    int _offset;
 public:
     OffsetTimeColumn(string name, string description, int offset, int indirect_offset = -1)
-        : OffsetIntColumn(name, description, offset, indirect_offset) {}
-    int type() { return COLTYPE_TIME; }
-    void output(void *data, Query *query);
-    Filter *createFilter(int operator_id, char *value);
+        : TimeColumn(name, description, indirect_offset), _offset(offset) {}
+    time_t getValue(void *data, Query *);
+protected:
+    int offset() { return _offset; }
 };
 
 
 #endif // OffsetTimeColumn_h
-

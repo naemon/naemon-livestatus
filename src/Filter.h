@@ -59,7 +59,7 @@ public:
     Column *column() { return _column; }
     virtual bool accepts(void *data) = 0;
     virtual void *indexFilter(const char *columnname __attribute__ ((__unused__))) { return 0; }
-    virtual void findIntLimits(const char *columnname __attribute__ ((__unused__)), int *lower __attribute__ ((__unused__)), int *upper __attribute__ ((__unused__))) {}
+    virtual void findTimeLimits(const char *columnname __attribute__ ((__unused__)), time_t *lower __attribute__ ((__unused__)), time_t *upper __attribute__ ((__unused__))) {}
     virtual bool optimizeBitmask(const char *columnname __attribute__ ((__unused__)), uint32_t *mask __attribute__ ((__unused__))) { return false; }
 };
 

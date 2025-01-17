@@ -1146,9 +1146,9 @@ void *Query::findIndexFilter(const char *columnname)
     return _filter.findIndexFilter(columnname);
 }
 
-void Query::findIntLimits(const char *columnname, int *lower, int *upper)
+void Query::findTimeLimits(const char *columnname, time_t *lower, time_t *upper)
 {
-    return _filter.findIntLimits(columnname, lower, upper);
+    return _filter.findTimeLimits(columnname, lower, upper);
 }
 
 void Query::optimizeBitmask(const char *columnname, uint32_t *bitmask)
@@ -1198,10 +1198,10 @@ void Query::outputInteger64(int64_t value)
     _output->addBuffer(buf, l);
 }
 
-void Query::outputTime(int32_t value)
+void Query::outputTime(time_t value)
 {
     value += _timezone_offset;
-    outputInteger(value);
+    outputInteger64((int64_t)value);
 }
 
 

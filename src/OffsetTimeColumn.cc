@@ -22,18 +22,18 @@
 // to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
 // Boston, MA 02110-1301 USA.
 
+#include "nagios.h"
+#include <stdint.h>
 #include "OffsetTimeColumn.h"
-#include "TimeColumnFilter.h"
-#include "Query.h"
 
-void OffsetTimeColumn::output(void *data, Query *query)
+time_t OffsetTimeColumn::getValue(void *data, Query *)
 {
-    query->outputTime(getValue(data, query));
-}
+    if (!data)
+        return 0;
 
-Filter *OffsetTimeColumn::createFilter(int operator_id, char *value)
-{
-    // The TimeColumnFilter applies the timezone offset
-    // from the Localtime: header
-    return new TimeColumnFilter(this, operator_id, value);
+    char *p = (char *)shiftPointer(data);
+    if (p)
+        return *(time_t *)(p + _offset);
+    else
+        return 0;
 }

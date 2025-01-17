@@ -119,7 +119,7 @@ public:
     void outputFieldSeparator();
     void outputInteger(int32_t);
     void outputInteger64(int64_t);
-    void outputTime(int32_t);
+    void outputTime(time_t);
     void outputUnsignedLong(unsigned long);
     void outputCounter(counter_t);
     void outputDouble(double);
@@ -141,7 +141,7 @@ public:
     void outputEndDict();
     void *findIndexFilter(const char *columnname);
     void *findTimerangeFilter(const char *columnname, time_t *, time_t *);
-    void findIntLimits(const char *columnname, int *lower, int *upper);
+    void findTimeLimits(const char *columnname, time_t *lower, time_t *upper);
     void optimizeBitmask(const char *columnname, uint32_t *bitmask);
     int timezoneOffset() { return _timezone_offset; }
     AndingFilter *filter() { return &_filter; }

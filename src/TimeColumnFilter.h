@@ -25,15 +25,20 @@
 #ifndef TimeColumnFilter_h
 #define TimeColumnFilter_h
 
-#include "IntColumnFilter.h"
+#include "TimeColumn.h"
+#include "Filter.h"
 
-class TimeColumnFilter : public IntColumnFilter
+class TimeColumnFilter : public Filter
 {
+    TimeColumn *_column;
+    int _opid;
+    bool _negate;
+    string _ref_string;
 public:
-    TimeColumnFilter(IntColumn *column, int opid, char *value) :
-        IntColumnFilter(column, opid, value) {}
-    virtual int32_t convertRefValue();
+    TimeColumnFilter(TimeColumn *column, int opid, char *value);
+    time_t convertRefValue();
+    bool accepts(void *data);
+    void findTimeLimits(const char *columnname, time_t *lower, time_t *upper);
 };
 
 #endif // TimeColumnFilter_h
-

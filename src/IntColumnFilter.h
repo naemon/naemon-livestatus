@@ -42,12 +42,10 @@ class IntColumnFilter : public Filter
 
 public:
     IntColumnFilter(IntColumn *column, int opid, char *value);
-    virtual int32_t convertRefValue(); // see TimeColumnFilter
+    virtual int32_t convertRefValue();
     bool accepts(void *data);
-    void findIntLimits(const char *columnname, int *lower, int *upper);
     bool optimizeBitmask(const char *columnname, uint32_t *mask);
 };
 
 
 #endif // IntColumnFilter_h
-

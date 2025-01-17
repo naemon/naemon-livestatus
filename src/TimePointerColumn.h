@@ -25,16 +25,15 @@
 #ifndef TimePointerColumn_h
 #define TimePointerColumn_h
 
-#include "IntPointerColumn.h"
+#include "TimeColumn.h"
 
-class TimePointerColumn : public IntPointerColumn
+class TimePointerColumn : public TimeColumn
 {
+    time_t *_number;
 public:
-    TimePointerColumn(string name, string description, int* number)
-        : IntPointerColumn(name, description, number) {}
-    void output(void *data, Query *query);
-    int type() { return COLTYPE_TIME; }
-    Filter *createFilter(int operator_id, char *value);
+    TimePointerColumn(string name, string description, time_t* number)
+        : TimeColumn(name, description, -1), _number(number) {}
+    time_t getValue(void *, Query *) { return *_number; }
 };
 
 
