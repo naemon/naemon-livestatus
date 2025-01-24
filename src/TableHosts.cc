@@ -238,11 +238,11 @@ void TableHosts::addColumns(Table *table, string prefix, int indirect_offset)
     table->addColumn(new DownCommColumn(prefix + "downtimes",
                 "A list of the ids of all scheduled downtimes of this host", indirect_offset, true, false));
     table->addColumn(new DownCommColumn(prefix + "downtimes_with_info",
-                "A list of the all scheduled downtimes of the host with id, author and comment", indirect_offset, true, true));
+                "A list of all downtimes of the host with id, author, comment, start_time, end_time, fixed, duration and triggered_by", indirect_offset, true, true));
     table->addColumn(new DownCommColumn(prefix + "comments",
                 "A list of the ids of all comments of this host", indirect_offset, false, false));
     table->addColumn(new DownCommColumn(prefix + "comments_with_info",
-                "A list of all comments of the host with id, author and comment", indirect_offset, false, true));
+                "A list of all comments of the host with id, author, comment, entry_type, expires and expire_time", indirect_offset, false, true));
 
     table->addColumn(new CustomVarsColumn(prefix + "custom_variable_names",
                 "A list of the names of all custom variables", (char *)(&hst.custom_variables) - ref, indirect_offset, CVT_VARNAMES));
