@@ -379,11 +379,11 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
     table->addColumn(new DownCommColumn(prefix + "downtimes",
                 "A list of all downtime ids of the service", indirect_offset, true, false));
     table->addColumn(new DownCommColumn(prefix + "downtimes_with_info",
-                "A list of all downtimes of the service with id, author and comment", indirect_offset, true, true));
+                "A list of all downtimes of the service with id, author, comment, start_time, end_time, fixed, duration and triggered_by", indirect_offset, true, true));
     table->addColumn(new DownCommColumn(prefix + "comments",
                 "A list of all comment ids of the service", indirect_offset, false, false));
     table->addColumn(new DownCommColumn(prefix + "comments_with_info",
-                "A list of all comments of the service with id, author and comment", indirect_offset, false, true));
+                "A list of all comments of the service with id, author, comment, entry_type, expires and expire_time", indirect_offset, false, true));
 
     if (add_hosts)
         g_table_hosts->addColumns(this, "host_", (char *)(&svc.host_ptr) - ref);
