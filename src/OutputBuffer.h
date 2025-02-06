@@ -10,7 +10,7 @@
 #include <string>
 using namespace std;
 
-#define INITIAL_OUTPUT_BUFFER_SIZE 1
+#define INITIAL_OUTPUT_BUFFER_SIZE 1024
 
 #define RESPONSE_CODE_OK                 200
 #define RESPONSE_CODE_INVALID_HEADER     400

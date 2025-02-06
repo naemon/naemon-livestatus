@@ -63,8 +63,16 @@ void OutputBuffer::needSpace(unsigned len)
     {
         unsigned s = size();
         unsigned needed = s + len;
-        while (_max_size < needed) // double, until enough space
-            _max_size *= 2;
+        while (_max_size < needed) {
+            // increase until enough space
+            // double untill 500MB
+            if(_max_size < 500 * 1024 * 1024) {
+                _max_size *= 2;
+            } else {
+                // increase by 25% afterwards
+                _max_size += (_max_size / 4);
+            }
+        }
 
         _buffer = (char *)realloc(_buffer, _max_size);
         _writepos = _buffer + s;
