@@ -178,6 +178,12 @@ void Store::answerGetRequest(InputBuffer *input, OutputBuffer *output, const cha
             return;
         }
 
+        if(output->shouldTerminate()) {
+            output->setError(RESPONSE_CODE_LIMIT_EXCEEDED, "Query canceled, core is shutting down.");
+            g_store->logCache()->unlockLogCache();
+            return;
+        }
+
         g_store->logCache()->logCachePreChecks();
         logcacheLocked = true;
     }
