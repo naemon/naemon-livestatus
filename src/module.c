@@ -651,7 +651,7 @@ void livestatus_parse_arguments(const char *args_orig)
         char *right = next_token(&part, 0);
         if (!right) {
             char *sock_path;
-            sock_path = nspath_absolute(left, config_file_dir);
+            sock_path = nspath_absolute(left, config_rel_path);
             strncpy(g_socket_addr, sock_path, sizeof(g_socket_addr));
             free(sock_path);
         }
