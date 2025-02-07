@@ -203,7 +203,7 @@ void Store::answerGetRequest(InputBuffer *input, OutputBuffer *output, const cha
         gettimeofday(&after, 0);
         unsigned long ustime = (after.tv_sec - before.tv_sec) * 1000000 + (after.tv_usec - before.tv_usec);
         if (g_debug_level > 0)
-            logger(LG_INFO, "Time to process request: %lu us. Size of answer: %d bytes", ustime, output->size());
+            logger(LG_INFO, "Time to process %s request: %lu us. Size of answer: %d bytes", tablename, ustime, output->size());
     }
 
     if(logcacheLocked)
