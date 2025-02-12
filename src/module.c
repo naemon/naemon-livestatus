@@ -71,7 +71,7 @@ int g_should_terminate = false;
 unsigned long g_max_cached_messages = 500000;
 unsigned long g_max_lines_per_logfile = 1000000; // do never read more than that number of lines from a logfile
 unsigned long g_max_response_size = 500 * 1024 * 1024; // limit answer to 500 MiB
-unsigned int g_max_backlog = 3; // backlog used in listen(<socket>, <backlog>)
+unsigned int g_max_backlog = 256; // backlog used in listen(<socket>, <backlog>)
 char g_hidden_custom_var_prefix[256];
 int g_service_authorization = AUTH_LOOSE;
 int g_group_authorization = AUTH_STRICT;
