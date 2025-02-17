@@ -16,6 +16,7 @@
 
 extern unsigned long g_max_lines_per_logfile;
 extern int g_debug_level;
+extern int g_should_terminate;
 
 
 Logfile::Logfile(const char *path, bool watch)
@@ -135,6 +136,10 @@ void Logfile::loadRange(FILE *file, unsigned missing_types,
         _lineno++;
         if (processLogLine(_lineno, missing_types)) {
             logcache->handleNewMessage(this, since, until, logclasses); // memory management
+        }
+        if(g_should_terminate) {
+            logger(LG_DEBUG, "termination flag set during parsing logfile: %s", this->_path);
+            return;
         }
     }
     if (g_debug_level > 0)
