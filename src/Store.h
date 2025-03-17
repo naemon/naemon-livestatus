@@ -60,6 +60,7 @@ private:
     Table *findTable(string name);
     void answerGetRequest(InputBuffer *, OutputBuffer *, const char *, int fd);
     void answerCommandRequest(const char *, OutputBuffer *);
+    void answerQueryHandlerRequest(const char *, OutputBuffer *, int);
 };
 
 #endif // Store_h
