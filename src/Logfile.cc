@@ -166,7 +166,7 @@ long Logfile::freeMessages(unsigned logclasses)
     return freed;
 }
 
-inline bool Logfile::processLogLine(uint32_t lineno, unsigned logclasses)
+inline bool Logfile::processLogLine(uint64_t lineno, unsigned logclasses)
 {
     LogEntry *entry = new LogEntry(lineno, _linebuffer);
     // ignored invalid lines
@@ -241,7 +241,7 @@ uint64_t Logfile::makeKey(time_t t, unsigned lineno)
 // to a malloced buffer, that the caller must free (or 0, in case of
 // an error). The buffer is 2 bytes larger then the file. One byte
 // at the beginning and at the end of the buffer are '\0'.
-char *Logfile::readIntoBuffer(int *size)
+char *Logfile::readIntoBuffer(size_t *size)
 {
     int fd = open(_path, O_RDONLY);
     if (fd < 0) {
@@ -266,15 +266,15 @@ char *Logfile::readIntoBuffer(int *size)
         return 0;
     }
 
-    int r = read(fd, buffer + 1, *size);
+    size_t r = read(fd, buffer + 1, *size);
     if (r < 0) {
-        logger(LG_WARN, "Cannot read %d bytes from %s: %s", *size, _path, strerror(errno));
+        logger(LG_WARN, "Cannot read %zu bytes from %s: %s", *size, _path, strerror(errno));
         free(buffer);
         close(fd);
         return 0;
     }
     else if (r != *size) {
-        logger(LG_WARN, "Read only %d out of %d bytes from %s", r, *size, _path);
+        logger(LG_WARN, "Read only %zu out of %zu bytes from %s", r, *size, _path);
         free(buffer);
         close(fd);
         return 0;

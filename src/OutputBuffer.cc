@@ -50,22 +50,22 @@ void OutputBuffer::addString(const char *s)
     addBuffer(s, l);
 }
 
-void OutputBuffer::addBuffer(const char *buf, unsigned len)
+void OutputBuffer::addBuffer(const char *buf, size_t len)
 {
     needSpace(len);
     memcpy(_writepos, buf, len);
     _writepos += len;
 }
 
-void OutputBuffer::needSpace(unsigned len)
+void OutputBuffer::needSpace(size_t len)
 {
     if (_writepos + len > _end)
     {
-        unsigned s = size();
-        unsigned needed = s + len;
+        size_t s = size();
+        size_t needed = s + len;
         while (_max_size < needed) {
             // increase until enough space
-            // double untill 500MB
+            // double until 500MB
             if(_max_size < 500 * 1024 * 1024) {
                 _max_size *= 2;
             } else {
@@ -83,7 +83,7 @@ void OutputBuffer::needSpace(unsigned len)
 void OutputBuffer::flush(int fd)
 {
     const char *buffer = _buffer;
-    int s = size();
+    size_t s = size();
     // if response code is not OK, output error
     // message instead of data
     if (_response_code != RESPONSE_CODE_OK)
@@ -94,7 +94,7 @@ void OutputBuffer::flush(int fd)
     if (_response_header == RESPONSE_HEADER_FIXED16)
     {
         char header[17];
-        snprintf(header, sizeof(header), "%03d %11d\n", _response_code, s);
+        snprintf(header, sizeof(header), "%03d %11zu\n", _response_code, s);
         writeData(fd, header, 16);
         writeData(fd, buffer, s);
     }
@@ -104,7 +104,7 @@ void OutputBuffer::flush(int fd)
 }
 
 
-void OutputBuffer::writeData(int fd, const char *write_from, int to_write)
+void OutputBuffer::writeData(int fd, const char *write_from, size_t to_write)
 {
     struct timeval tv;
     while (!*_termination_flag && to_write > 0)
@@ -120,11 +120,11 @@ void OutputBuffer::writeData(int fd, const char *write_from, int to_write)
         if (retval > 0 && FD_ISSET(fd, &fds)) {
             ssize_t w = write(fd, write_from, to_write);
             if (w < 0) {
-                logger(LG_INFO, "Couldn't write %d bytes to client socket: %s", to_write, strerror(errno));
+                logger(LG_INFO, "Couldn't write %zu bytes to client socket: %s", to_write, strerror(errno));
                 break;
             }
             else if (w == 0)
-                logger(LG_INFO, "Strange: wrote 0 bytes inspite of positive select()");
+                logger(LG_INFO, "Strange: wrote 0 bytes in spite of positive select()");
             else {
                 to_write -= w;
             }

@@ -23,7 +23,7 @@ void AndingFilter::addSubfilter(Filter *f)
 }
 
 
-Filter *AndingFilter::stealLastSubfiler()
+Filter *AndingFilter::stealLastSubfilter()
 {
     if (_subfilters.size() == 0)
         return 0;

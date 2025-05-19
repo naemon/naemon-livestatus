@@ -27,7 +27,7 @@ class OutputBuffer
     char *_buffer;
     char *_writepos;
     char *_end;
-    unsigned _max_size;
+    size_t _max_size;
     int _response_header;
     unsigned _response_code;
     string _error_message;
@@ -37,10 +37,10 @@ public:
     OutputBuffer(int *termination_flag);
     ~OutputBuffer();
     const char *buffer() { return _buffer; }
-    unsigned size() { return _writepos - _buffer; }
+    size_t size() { return _writepos - _buffer; }
     void addChar(char c);
     void addString(const char *);
-    void addBuffer(const char *, unsigned);
+    void addBuffer(const char *, size_t);
     void reset();
     void flush(int fd);
     bool shouldTerminate();
@@ -53,8 +53,8 @@ public:
     bool isAlive(int fd);
 
 private:
-    void needSpace(unsigned);
-    void writeData(int fd, const char *, int);
+    void needSpace(size_t);
+    void writeData(int fd, const char *, size_t);
 };
 
 

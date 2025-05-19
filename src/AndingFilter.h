@@ -19,7 +19,7 @@ public:
     AndingFilter() {}
     ~AndingFilter();
     void addSubfilter(Filter *);
-    Filter *stealLastSubfiler();
+    Filter *stealLastSubfilter();
     bool accepts(void *data);
     void combineFilters(int count, int andor);
     unsigned numFilters() { return _subfilters.size(); }
