@@ -5,6 +5,8 @@
 #ifndef LogEntry_h
 #define LogEntry_h
 
+#include <stdint.h>
+
 #define LOGCLASS_INFO              0 // all messages not in any other class
 #define LOGCLASS_ALERT             1 // alerts: the change service/host state
 #define LOGCLASS_PROGRAM           2 // important programm events (restart, ...)
@@ -41,7 +43,7 @@ enum LogEntryType {
 
 struct LogEntry
 {
-    unsigned     _lineno;      // line number in file
+    uint64_t     _lineno;      // line number in file
     time_t       _time;
     unsigned     _logclass;
     LogEntryType _type;
@@ -65,9 +67,9 @@ struct LogEntry
     contact     *_contact;
     command     *_command;
 
-    LogEntry(unsigned lineno, char *line);
+    LogEntry(uint64_t lineno, char *line);
     ~LogEntry();
-    unsigned updateReferences();
+    uint64_t updateReferences();
     static int serviceStateToInt(char *s);
     static int hostStateToInt(char *s);
 

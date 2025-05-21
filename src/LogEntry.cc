@@ -10,7 +10,7 @@
 #include "strutil.h"
 #include "logger.h"
 
-LogEntry::LogEntry(unsigned lineno, char *line)
+LogEntry::LogEntry(uint64_t lineno, char *line)
 {
     // zero all elements as fast as possible -> default values
     bzero(this, sizeof(LogEntry));
@@ -465,9 +465,9 @@ inline int LogEntry::hostStateToInt(char *s)
     }
 }
 
-unsigned LogEntry::updateReferences()
+uint64_t LogEntry::updateReferences()
 {
-    unsigned updated = 0;
+    uint64_t updated = 0;
     if (_host_name) {
         _host = find_host(_host_name);
         updated++;

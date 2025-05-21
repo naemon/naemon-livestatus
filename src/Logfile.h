@@ -29,7 +29,7 @@ private:
     bool       _watch;         // true only for current logfile
     ino_t      _inode;         // needed to detect switching
     fpos_t     _read_pos;      // read until this position
-    uint32_t   _lineno;        // read until this line
+    uint64_t   _lineno;        // read until this line
 
     logfile_entries_t  _entries;
     char       _linebuffer[MAX_LOGLINE];
@@ -40,7 +40,7 @@ public:
     ~Logfile();
 
     char *path() { return _path; }
-    char *readIntoBuffer(int *size);
+    char *readIntoBuffer(size_t *size);
     void load(LogCache *LogCache, time_t since, time_t until, unsigned logclasses);
     void flush();
     time_t since() { return _since; }
@@ -48,9 +48,9 @@ public:
     bool watch() { return _watch; }
     unsigned classesRead() { return _logclasses_read; }
     long numEntries() { return _entries.size(); }
-    logfile_entries_t* getEntriesFromQuery(Query *query, LogCache *lc, time_t since, time_t until, unsigned);
-    bool answerQuery(Query *query, LogCache *lc, time_t since, time_t until, unsigned);
-    bool answerQueryReverse(Query *query, LogCache *lc, time_t since, time_t until, unsigned);
+    logfile_entries_t* getEntriesFromQuery(Query *query, LogCache *lc, time_t since, time_t until, unsigned logclasses);
+    bool answerQuery(Query *query, LogCache *lc, time_t since, time_t until, unsigned logclasses);
+    bool answerQueryReverse(Query *query, LogCache *lc, time_t since, time_t until, unsigned logclasses);
 
     long freeMessages(unsigned logclasses);
 
@@ -60,7 +60,7 @@ public:
 private:
     void loadRange(FILE *file, unsigned missing_types, LogCache *,
                    time_t since, time_t until, unsigned logclasses);
-    bool processLogLine(uint32_t, unsigned);
+    bool processLogLine(uint64_t, unsigned);
     uint64_t makeKey(time_t, unsigned);
 };
 

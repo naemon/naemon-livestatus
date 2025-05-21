@@ -98,7 +98,7 @@ static void reap_client_threads()
 
         if ((g_client_threads = realloc(g_client_threads, g_num_client_threads * sizeof(pthread_t))) == NULL) {
             if (g_num_client_threads > 0) {
-                logger(LG_ERR, "Failed to shrink client thread array (Number of threads: %d)", g_num_client_threads);
+                logger(LG_ERR, "Failed to shrink client thread array (Number of threads: %zu)", g_num_client_threads);
             }
             else if (g_debug_level >= 2) {
                 logger(LG_DEBUG, "All client threads reaped.");
@@ -147,7 +147,7 @@ static int accept_connection(int sd, int events, void *discard)
     pthread_attr_destroy(&attr);
 
     if ((g_client_threads = realloc(g_client_threads, (g_num_client_threads + 1) * sizeof(pthread_t))) == NULL) {
-        logger(LG_ERR, "Failed to allocate space for client thread: %s (Number of threads: %d)", strerror(errno), g_num_client_threads + 1);
+        logger(LG_ERR, "Failed to allocate space for client thread: %s (Number of threads: %zu)", strerror(errno), g_num_client_threads + 1);
         close(cc);
         logger(LG_ERR, "Joining with client thread right away to avoid losing it.");
         if (0 != pthread_join(*thr, NULL)) {
@@ -213,7 +213,7 @@ int open_unix_socket()
         return false;
     }
 
-    // Imortant: close on exec -> check plugins must not inherit it!
+    // Important: close on exec -> check plugins must not inherit it!
     if (0 < fcntl(g_socket_fd, F_SETFD, FD_CLOEXEC))
         logger(LG_INFO, "Cannot set FD_CLOEXEC on socket: %s", strerror(errno));
 
@@ -223,7 +223,7 @@ int open_unix_socket()
     strncpy(sockaddr.sun_path, g_socket_addr, sizeof(sockaddr.sun_path));
     if (bind(g_socket_fd, (struct sockaddr *) &sockaddr, SUN_LEN(&sockaddr)) < 0)
     {
-        logger(LG_ERR , "Unable to bind adress %s to UNIX socket: %s",
+        logger(LG_ERR , "Unable to bind address %s to UNIX socket: %s",
                 g_socket_addr, strerror(errno));
         close(g_socket_fd);
         return false;

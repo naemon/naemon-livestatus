@@ -38,7 +38,7 @@ struct thread_info
 };
 
 
-int read_with_timeout(int from, char *buffer, int size, int us)
+size_t read_with_timeout(int from, char *buffer, size_t size, int us)
 {
     fd_set fds;
     FD_ZERO(&fds);
@@ -84,11 +84,11 @@ void *copy_thread(void *info)
         }
         char *write_pos = buffer;
         while (r) {
-            int w = write(to, write_pos, r);
+            size_t w = write(to, write_pos, r);
             if (w > 0)
                 r -= w;
             else if (w == 0 && r > 0) {
-                fprintf(stderr, "Error: Cannot write %d bytes to %d: %s\n", w, to, strerror(errno));
+                fprintf(stderr, "Error: Cannot write %zu bytes to %d: %s\n", w, to, strerror(errno));
                 break;
             }
         }

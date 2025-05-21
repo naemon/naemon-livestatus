@@ -292,14 +292,14 @@ void Query::parseNegateLine(char *line, bool filter)
 
     Filter *to_negate;
     if (filter) {
-        to_negate = _filter.stealLastSubfiler();
+        to_negate = _filter.stealLastSubfilter();
         if (!to_negate) {
             _output->setError(RESPONSE_CODE_INVALID_HEADER, "Negate: no Filter: header to negate");
             return;
         }
     }
     else {
-        to_negate = _wait_condition.stealLastSubfiler();
+        to_negate = _wait_condition.stealLastSubfilter();
         if (!to_negate) {
             _output->setError(RESPONSE_CODE_INVALID_HEADER, "Negate: no Wait:-condition negate");
             return;
@@ -784,7 +784,7 @@ void Query::parseLocaltimeLine(char *line)
     time_t our_time = time(0);
 
     // compute offset to be *added* each time we output our time and
-    // *substracted* from reference value by filter headers
+    // *subtracted* from reference value by filter headers
     int dif = their_time - our_time;
 
     // Round difference to half hour. We assume, that both clocks are more
@@ -913,8 +913,8 @@ bool Query::timelimitReached()
 bool Query::processDataset(void *data)
 {
     if (_output->size() > g_max_response_size) {
-        logger(LG_INFO, "Maximum response size of %d bytes exceeded!", g_max_response_size);
-        _output->setError(RESPONSE_CODE_LIMIT_EXCEEDED, "Maximum response size of %d reached", g_max_response_size);
+        logger(LG_INFO, "Maximum response size of %lu bytes exceeded!", g_max_response_size);
+        _output->setError(RESPONSE_CODE_LIMIT_EXCEEDED, "Maximum response size of %lu reached", g_max_response_size);
         return false;
     }
 
@@ -953,13 +953,13 @@ bool Query::processDataset(void *data)
                     _sorter.insert( data, _limit+_offset );
 
                     // make sure we don't create too many aggregation entries. The size is only a rough estimation
-                    // from the last entry mulitplies with the number of entries.
+                    // from the last entry multiplies with the number of entries.
                     size_t rowsize = 0;
                     for (_stats_group_spec_t::iterator iit = groupspec.begin(); iit != groupspec.end(); ++iit)
                         rowsize += sizeof(char*) * strlen((*iit).c_str());
                     if (_sorter.size() * rowsize > g_max_response_size) {
-                        logger(LG_INFO, "Maximum response size of %d bytes exceeded!", g_max_response_size);
-                        _output->setError(RESPONSE_CODE_LIMIT_EXCEEDED, "Maximum response size of %d reached", g_max_response_size);
+                        logger(LG_INFO, "Maximum response size of %lu bytes exceeded!", g_max_response_size);
+                        _output->setError(RESPONSE_CODE_LIMIT_EXCEEDED, "Maximum response size of %lu reached", g_max_response_size);
                         return false;
                     }
                 }
@@ -1063,7 +1063,7 @@ void Query::finish()
             }
             outputDatasetEnd();
         }
-        // output values of all stats groups (output has been post poned until now)
+        // output values of all stats groups (output has been postponed until now)
         for (_stats_groups_t::iterator it = _stats_groups.begin();
                 it != _stats_groups.end();
                 ++it)
@@ -1284,7 +1284,7 @@ void Query::outputString(const char *value)
                 _output->addChar(*r);
             }
 
-            // interprete two-Byte UTF-8 sequences in mode 'utf8' and 'mixed'
+            // interpret two-Byte UTF-8 sequences in mode 'utf8' and 'mixed'
             else if ((g_data_encoding == ENCODING_UTF8 || g_data_encoding == ENCODING_MIXED)
                     && ((*r & 0xE0) == 0xC0)) {
                 outputUnicodeEscape(((*r & 31) << 6) | (*(r+1) & 0x3F)); // 2 byte encoding
@@ -1292,7 +1292,7 @@ void Query::outputString(const char *value)
                 chars_left--;
             }
 
-            // interprete 3/4-Byte UTF-8 sequences only in mode 'utf8'
+            // interpret 3/4-Byte UTF-8 sequences only in mode 'utf8'
             else if (g_data_encoding == ENCODING_UTF8) {
                 // three-byte sequences (avoid buffer overflow!)
                 if ((*r & 0xF0) == 0xE0) {
@@ -1330,7 +1330,7 @@ void Query::outputString(const char *value)
                 }
             }
 
-            // in latin1 and mixed mode interprete all other non-ASCII characters as latin1
+            // in latin1 and mixed mode interpret all other non-ASCII characters as latin1
             else {
                 outputUnicodeEscape((unsigned)((int)*r + 256)); // assume latin1 encoding
             }
@@ -1452,7 +1452,7 @@ void Query::doWait()
             _wait_condition.accepts(_wait_object))
     {
         if (g_debug_level >= 2)
-            logger(LG_INFO, "Wait condition true, no waiting neccessary");
+            logger(LG_INFO, "Wait condition true, no waiting necessary");
         return;
     }
 
