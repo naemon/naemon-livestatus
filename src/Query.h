@@ -100,6 +100,7 @@ public:
     void outputInteger(int32_t);
     void outputInteger64(int64_t);
     void outputTime(time_t);
+    void outputTimeVal(timeval);
     void outputUnsignedLong(unsigned long);
     void outputCounter(counter_t);
     void outputDouble(double);

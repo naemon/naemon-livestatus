@@ -12,6 +12,7 @@
 #include "OffsetStringColumn.h"
 #include "OffsetIntColumn.h"
 #include "OffsetTimeColumn.h"
+#include "OffsetTimeValColumn.h"
 #include "OffsetDoubleColumn.h"
 #include "OffsetTimeperiodColumn.h"
 #include "OffsetStringHostMacroColumn.h"
@@ -140,8 +141,8 @@ void TableHosts::addColumns(Table *table, string prefix, int indirect_offset)
                 "Scheduled time for the next check (Unix timestamp)", (char *)(&hst.next_check) - ref, indirect_offset));
     table->addColumn(new OffsetTimeColumn(prefix + "last_hard_state_change",
                 "Time of the last hard state change (Unix timestamp)", (char *)(&hst.last_hard_state_change) - ref, indirect_offset));
-    table->addColumn(new OffsetTimeColumn(prefix + "last_update",
-                "Time of the last update of this host (Unix timestamp)", (char *)(&hst.last_update) - ref, indirect_offset));
+    table->addColumn(new OffsetTimeValColumn(prefix + "last_update",
+                "Time of the last update of this host (Unix timestamp Microsecond Precision)", (char *)(&hst.last_update) - ref, indirect_offset));
     table->addColumn(new OffsetIntColumn(prefix + "has_been_checked",
                 "Whether the host has already been checked (0/1)", (char *)(&hst.has_been_checked) - ref, indirect_offset));
     /* FIXME: hourly_value is an unsigned int... */
