@@ -1182,6 +1182,12 @@ void Query::outputTime(time_t value)
     outputInteger64((int64_t)value);
 }
 
+void Query::outputTimeVal(timeval value)
+{
+    char buf[64];
+    int l = snprintf(buf, sizeof(buf), "%lu.%06lu", value.tv_sec + _timezone_offset, value.tv_usec);
+    _output->addBuffer(buf, l);
+}
 
 void Query::outputUnsignedLong(unsigned long value)
 {
