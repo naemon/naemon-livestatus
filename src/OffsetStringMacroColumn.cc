@@ -7,7 +7,6 @@
 #include "OffsetStringMacroColumn.h"
 #include "AndingFilter.h"
 #include "Query.h"
-#include "logger.h"
 #include "nagios.h"
 extern char     *macro_user[MAX_USER_MACROS];
 
@@ -30,7 +29,7 @@ string OffsetStringMacroColumn::valueAsString(void *data, Query *)
         result += string(scan, dollar - scan);
         const char *otherdollar = strchr(dollar + 1, '$');
         if (!otherdollar) { // unterminated macro, do not expand
-            result += scan;
+            result += dollar; // add the remaining text, including the dollar sign
             break;
         }
         string macroname = string(dollar + 1, otherdollar - dollar - 1);
