@@ -208,6 +208,8 @@ void TableServices::addColumns(Table *table, string prefix, int indirect_offset,
                 "An optional display name", (char *)(&svc.display_name) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "check_command",
                 "Naemon command used for active checks", (char *)(&svc.check_command) - ref, indirect_offset));
+    table->addColumn(new OffsetIntColumn(prefix + "check_timeout",
+                "Service check timeout", (char *)(&svc.check_timeout) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "event_handler",
                 "Naemon command used as event handler", (char *)(&svc.event_handler) - ref, indirect_offset));
     table->addColumn(new OffsetStringColumn(prefix + "plugin_output",
