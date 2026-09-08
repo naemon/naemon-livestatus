@@ -33,6 +33,16 @@ Then /^I should see the following livestatus response, using regular expression$
   expect(processed_response).to match(output)
 end
 
+Given(/^I wait for (\d+) seconds$/) do |secs|
+  sleep(secs.to_i)
+end
+
+Then /^I should see at least (\d+) distinct rows in the livestatus response$/ do |min_rows|
+  response = @naemon.brokers[:livestatus].last_response()
+  distinct = response.uniq
+  expect(distinct.length).to be >= min_rows.to_i
+end
+
 Given /^I clobber livestatus with (\d+) queries with (\d+) seconds idle time$/ do |nqueries, idle_time|
   @naemon.brokers[:livestatus].clobber(nqueries, idle_time)
 end

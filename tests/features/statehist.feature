@@ -21,7 +21,7 @@ Feature: Statehist queries work as expected
 		Given I submit the following livestatus query
 			| GET statehist 							|
 			| Columns: host_name service_description 	|
-			| Filter: time >= 1500000000 				|
+			| Filter: time >= 1 						|
 			| Stats: sum duration_ok 					|
 			| Stats: sum duration_warning 				|
 			| Stats: sum duration_critical 				|
@@ -35,3 +35,15 @@ Feature: Statehist queries work as expected
 			host3;;\d+;0;0
 			host3;service3;\d+;0;0
 			"""
+
+	Scenario: statehist rows are distinct when sorting
+		Given I submit the following livestatus external command "PROCESS_SERVICE_CHECK_RESULT;host1;service1;1;CRITICAL - test"
+		And I wait for 2 seconds
+		And I submit the following livestatus query
+			| GET statehist 								|
+			| Columns: from duration state				|
+			| Filter: host_name = host1					|
+			| Filter: service_description = service1		|
+			| Filter: time >= 1 						|
+			| Sort: from asc								|
+		Then I should see at least 2 distinct rows in the livestatus response
