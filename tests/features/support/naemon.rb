@@ -138,7 +138,7 @@ class Livestatus < NaemonModule
     if @socket_type == "tcp"
       system("ls-query.py --test-connect 127.0.0.1 #{@socket_addr}")
     else
-      File.exists? @socket_addr
+      File.exist? @socket_addr
     end
   end
 
