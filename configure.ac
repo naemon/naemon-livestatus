@@ -7,12 +7,6 @@ AM_INIT_AUTOMAKE([-Wall foreign])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_MACRO_DIR([m4])
-m4_ifdef([AM_PATH_CPPUNIT], [AM_PATH_CPPUNIT([1.12])], [AC_MSG_WARN([CPPUnit is not installed, it is needed to be able to run unit tests <http://cppunit.sourceforge.net/>])])
-AS_IF([test "x$CPPUNIT_LIBS" = "x"],
-	  [has_cppunit="no"],
-	  [has_cppunit="yes"])
-
-AM_CONDITIONAL([HAVE_CPPUNIT], [test "x$has_cppunit" = "xyes"])
 
 AC_CHECK_PROG(has_cucumber, [cucumber], [yes])
 AM_CONDITIONAL([HAVE_CUCUMBER], [test "x$has_cucumber" = "xyes"])
@@ -30,6 +24,11 @@ AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(socket, connect)
 AC_CHECK_LIB(socket, shutdown)
 PKG_PROG_PKG_CONFIG([0.23])
+PKG_CHECK_MODULES([CPPUNIT], [cppunit >= 1.12],
+                  [has_cppunit=yes], [has_cppunit=no])
+AM_CONDITIONAL([HAVE_CPPUNIT], [test "x$has_cppunit" = "xyes"])
+CPPUNIT_FLAGS=$CPPUNIT_CFLAGS
+AC_SUBST([CPPUNIT_FLAGS])
 PKG_CHECK_MODULES(ICU,
                   [icu-uc, icu-i18n],
                   [have_icu=yes],
