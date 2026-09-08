@@ -84,7 +84,7 @@ void *copy_thread(void *info)
         }
         char *write_pos = buffer;
         while (r) {
-            size_t w = write(to, write_pos, r);
+            ssize_t w = write(to, write_pos, r);
             if (w > 0)
                 r -= w;
             else if (w == 0 && r > 0) {
