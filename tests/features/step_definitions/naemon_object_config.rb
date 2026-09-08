@@ -22,6 +22,7 @@ Given(/^I submit the following external command "(.*?)"$/) do |cmd|
   `#{shell}`
 end
 
-After do
+After do |scenario|
   @naemon.stop
+  @naemon.cleanup if scenario.passed?
 end
