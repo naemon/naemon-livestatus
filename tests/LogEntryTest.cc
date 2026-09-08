@@ -24,7 +24,7 @@ LogEntryTest::testParserHostState()
 {
 	char * line = strdup("[1570658402] CURRENT HOST STATE: testhost;UP;HARD;1;PING OK - Packet loss = 0%, RTA = 38.65 ms");
 	LogEntry * entry = new LogEntry(1, line);
-	CPPUNIT_ASSERT_EQUAL((unsigned int) 1, entry->_lineno);
+	CPPUNIT_ASSERT_EQUAL((uint64_t) 1, entry->_lineno);
 	CPPUNIT_ASSERT_EQUAL((unsigned int) LOGCLASS_STATE, entry->_logclass);
 	CPPUNIT_ASSERT_EQUAL(0, entry->_state);
 	free(line);
@@ -35,7 +35,7 @@ LogEntryTest::testParserIncompleteLine()
 {
 	char * line = strdup("[1570658402] CURRENT HOST STATE:");
 	LogEntry * entry = new LogEntry(1, line);
-	CPPUNIT_ASSERT_EQUAL((unsigned int) 1, entry->_lineno);
+	CPPUNIT_ASSERT_EQUAL((uint64_t) 1, entry->_lineno);
 	free(line);
 }
 
