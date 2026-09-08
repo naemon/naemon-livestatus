@@ -46,3 +46,12 @@ licenseheader:
 		) \
 		> $$file.tmp && mv $$file.tmp $$file; \
 	done
+
+tests-cucumber: src/unixcat src/.libs/livestatus.so
+	cd tests && \
+	    export PATH="$$PATH:$(shell pwd)/../naemon-core/src/naemon/.libs:$(shell pwd)/tests/tools" && \
+	    export LD_LIBRARY_PATH="$(shell pwd)/../naemon-core/.libs" && \
+	    export CUKE_UNIXCAT_PATH=$(shell pwd)/src/unixcat && \
+	    export CUKE_LIVESTATUS_PATH=$(shell pwd)/src/.libs/livestatus.so && \
+	    LIVESTATUS_TCP=1 /bin/cucumber -t ~@skip -t ~@unreliable --strict 2>&1
+
