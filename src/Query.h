@@ -126,6 +126,7 @@ public:
     void optimizeBitmask(const char *columnname, uint32_t *bitmask);
     int timezoneOffset() { return _timezone_offset; }
     AndingFilter *filter() { return &_filter; }
+    bool isSorting() { return _do_sorting; }
 
 private:
     bool doStats();
