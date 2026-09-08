@@ -1,6 +1,7 @@
 Makefile.in
 autom4te.cache/
 configure
+configure~
 aclocal.m4
 m4/
 /test-*

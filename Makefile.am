@@ -47,6 +47,8 @@ licenseheader:
 		> $$file.tmp && mv $$file.tmp $$file; \
 	done
 
+test: check
+
 tests-cucumber: src/unixcat src/.libs/livestatus.so
 	cd tests && \
 	    export PATH="$$PATH:$(shell pwd)/../naemon-core/src/naemon/.libs:$(shell pwd)/tests/tools" && \
