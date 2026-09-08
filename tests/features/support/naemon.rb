@@ -1,4 +1,5 @@
 require 'fileutils'
+require 'json'
 
 class Naemon
   attr_accessor :brokers
@@ -154,6 +155,6 @@ class Livestatus < NaemonModule
     else
       clobber_output = `ls-clobber.py --unix-socket #{@socket_addr} #{n_queries} #{idle_time}`
     end
-    @clobber_data = JSON.load(clobber_output)
+    @clobber_data = JSON.parse(clobber_output)
   end
 end
