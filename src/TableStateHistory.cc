@@ -527,6 +527,12 @@ void TableStateHistory::cleanupQuery(Query *query) {
         it_hst++;
     }
     _state_info.clear();
+    sort_copies_t::iterator it_copy = _sort_copies.begin();
+    while (it_copy != _sort_copies.end()) {
+        delete *it_copy;
+        it_copy++;
+    }
+    _sort_copies.clear();
 }
 
 bool TableStateHistory::objectFilteredOut(Query *query, void *entry)
@@ -743,8 +749,17 @@ inline void TableStateHistory::process(Query *query, HostServiceState *hs_state)
         break;
     }
 
+    void *row = (void *)hs_state;
+    if (query->isSorting()) {
+        HostServiceState *copy = new HostServiceState(*hs_state);
+        if (hs_state->_log_output)
+            copy->_log_output = strdup(hs_state->_log_output);
+        _sort_copies.push_back(copy);
+        row = (void *)copy;
+    }
+
     // if (hs_state->_duration > 0)
-    _abort_query = !query->processDataset(hs_state);
+    _abort_query = !query->processDataset(row);
 
     hs_state->_from = hs_state->_until;
 };

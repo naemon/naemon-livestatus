@@ -59,6 +59,9 @@ private:
     LogEntry* getNextLogentry();
     void      process(Query *query, HostServiceState *hs_state);
     bool      objectFilteredOut(Query *, void *entry);
+
+    typedef vector<HostServiceState*> sort_copies_t;
+    sort_copies_t _sort_copies;
 };
 
 
