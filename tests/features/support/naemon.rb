@@ -1,3 +1,5 @@
+require 'fileutils'
+
 class Naemon
   attr_accessor :brokers
   attr_accessor :config_dir
@@ -86,6 +88,10 @@ class Naemon
   def stop()
     `kill #{self.pid}`
     wait_for_stop
+  end
+
+  def cleanup()
+    FileUtils.rm_rf(@config_dir)
   end
 end
 
