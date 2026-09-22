@@ -53,6 +53,10 @@ Query::Query(InputBuffer *input, OutputBuffer *output, Table *table) :
     _do_sorting(0),
     _current_line(0),
     _timezone_offset(0),
+    _output_cache_bytes(0),
+    _capture(0),
+    _capture_saved(0),
+    _capture_termination(0),
     table_tmp_storage(0)
 {
     _sorter.setQuery( this );
@@ -161,6 +165,9 @@ Query::Query(InputBuffer *input, OutputBuffer *output, Table *table) :
 
 Query::~Query()
 {
+    // delete the scratch output buffer used by the rendered-output cache
+    delete _capture;
+
     // delete dummy-columns
     for (_columns_t::iterator it = _dummy_columns.begin();
             it != _dummy_columns.end();
@@ -1117,6 +1124,82 @@ void Query::finish()
         }
         _output->addChar('\n');
     }
+}
+
+/*
+ * All the ServicelistStateColumn values for one service list, computed once.
+ *
+ * A query typically asks for several of these columns (num_services,
+ * num_services_ok, worst_service_state, ...). Each one used to walk the list
+ * on its own. They are pure functions of the list and of the query's
+ * authorization user, so one ServiceAggregates per list is enough. The key is
+ * the list head, which works for a host (host->services) and for a service
+ * group (servicegroup->members) alike.
+ */
+const ServiceAggregates &Query::serviceAggregates(servicesmember *services)
+{
+    _service_aggregates_t::iterator it = _service_aggregates.find(services);
+    if (it != _service_aggregates.end())
+        return it->second;
+
+    ServiceAggregates aggregates =
+        ServicelistStateColumn::computeAggregates(services, this);
+    return _service_aggregates.insert(make_pair(services, aggregates)).first->second;
+}
+
+/* Rendered-output cache; see Query.h and ServicelistColumn::output(). */
+const string *Query::cachedOutput(Column *column, void *object)
+{
+    _output_cache_t::iterator it = _output_cache.find(make_pair(column, object));
+    if (it == _output_cache.end())
+        return 0;
+    return &it->second;
+}
+
+/*
+ * Bound the rendered-output cache. A joined list column that is repeated for
+ * every row (host_services_with_info on the services table) can otherwise
+ * cache a copy of a large part of the answer. Past this budget caching stops,
+ * which only means the column goes back to rendering every row.
+ */
+static const size_t MAX_OUTPUT_CACHE_BYTES = 32 * 1024 * 1024;
+
+void Query::storeCachedOutput(Column *column, void *object, const string &bytes)
+{
+    if (_output_cache_bytes + bytes.size() > MAX_OUTPUT_CACHE_BYTES)
+        return;
+    pair<_output_cache_t::iterator, bool> result =
+        _output_cache.insert(make_pair(make_pair(column, object), bytes));
+    if (result.second)
+        _output_cache_bytes += bytes.size();
+}
+
+/*
+ * Render one column's output for one row into a string instead of the client
+ * buffer. ServicelistColumn uses this to fill the cache: it redirects _output
+ * to the scratch buffer, calls its own render() helper, and takes the bytes.
+ * Nothing else runs while the redirect is active, so this is not re-entrant.
+ */
+void Query::beginOutputCapture()
+{
+    if (!_capture)
+        _capture = new OutputBuffer(&_capture_termination);
+    _capture_saved = _output;
+    _capture->reset();
+    _output = _capture;
+}
+
+string Query::endOutputCapture()
+{
+    string result(_capture->buffer(), _capture->size());
+    _output = _capture_saved;
+    _capture_saved = 0;
+    return result;
+}
+
+void Query::outputRaw(const char *bytes, size_t len)
+{
+    _output->addBuffer(bytes, len);
 }
 
 void *Query::findIndexFilter(const char *columnname)

@@ -20,6 +20,38 @@ servicesmember *ServicelistColumn::getMembers(void *data)
 
 void ServicelistColumn::output(void *data, Query *query)
 {
+    /*
+     * A joined list column (for example host_services_with_info on the
+     * services table) is asked to render the same object's list once for every
+     * row belonging to that object. The rendering is a pure function of the
+     * object and of this query, so cache it for the life of the query.
+     *
+     * _indirect_offset >= 0 means the column reaches its object through a
+     * pointer stored in the row rather than the row being the object. That is
+     * exactly the case where the same object repeats; on a plain table every
+     * row is a different object and caching would only cost memory.
+     */
+    if (_indirect_offset >= 0) {
+        void *object = shiftPointer(data);
+        if (object) {
+            const string *cached = query->cachedOutput(this, object);
+            if (cached) {
+                query->outputRaw(cached->data(), cached->size());
+                return;
+            }
+            query->beginOutputCapture();
+            render(data, query);
+            string rendered = query->endOutputCapture();
+            query->storeCachedOutput(this, object, rendered);
+            query->outputRaw(rendered.data(), rendered.size());
+            return;
+        }
+    }
+    render(data, query);
+}
+
+void ServicelistColumn::render(void *data, Query *query)
+{
     query->outputBeginList();
     contact *auth_user = query->authUser();
     servicesmember *mem = getMembers(data);

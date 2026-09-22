@@ -26,6 +26,61 @@
 #define SLSC_NUM               -1
 
 
+/*
+ * Everything a ServicelistStateColumn can be asked about one list of services,
+ * computed in a single traversal. Query keeps one of these per service list
+ * for the duration of a query, so a query that asks for several aggregate
+ * columns (num_services, num_services_ok, worst_service_state, ...) only walks
+ * the list once instead of once per column.
+ *
+ * The numbers intentionally mirror the old ServicelistStateColumn::getValue()
+ * loop; see the "soft"/"hard" split below.
+ */
+struct ServiceAggregates {
+    int32_t num;          /* all services the auth user may see (SLSC_NUM) */
+    int32_t num_pending;  /* of those, not checked yet (SLSC_NUM_PENDING) */
+    int32_t soft[4];      /* checked services by current_state (SLSC_NUM_*)  */
+    int32_t hard[4];      /* checked services by last_hard_state (SLSC_NUM_HARD_*) */
+    int32_t worst_soft;   /* worst current_state (SLSC_WORST_STATE) */
+    int32_t worst_hard;   /* worst last_hard_state (SLSC_WORST_HARD_STATE) */
+
+    ServiceAggregates()
+        : num(0), num_pending(0), worst_soft(0), worst_hard(0)
+    {
+        for (int i = 0; i < 4; i++) {
+            soft[i] = 0;
+            hard[i] = 0;
+        }
+    }
+
+    /*
+     * The logictype encoding is the one the SLSC_* constants define: a state
+     * number 0..3 is a count, -1 is the total, 4 is pending, -2 is the worst
+     * state, and +64 selects the hard instead of the soft variant.
+     */
+    int32_t get(int logictype) const {
+        int lt = logictype;
+        bool use_hard = false;
+        if (logictype >= 60) {
+            lt = logictype - 64;
+            use_hard = true;
+        }
+        switch (lt) {
+        case SLSC_NUM:
+            return num;
+        case SLSC_NUM_PENDING:
+            return num_pending;
+        case SLSC_WORST_STATE:
+            return use_hard ? worst_hard : worst_soft;
+        default:
+            if (lt >= 0 && lt <= 3)
+                return use_hard ? hard[lt] : soft[lt];
+            return 0;
+        }
+    }
+};
+
+
 class ServicelistStateColumn : public IntColumn
 {
     int _offset;
@@ -38,6 +93,9 @@ public:
     servicesmember *getMembers(void *data);
     static int32_t getValue(int logictype, servicesmember *services, Query *);
     static bool svcStateIsWorse(int32_t state1, int32_t state2);
+
+    /* Single pass over a service list producing all aggregate values. */
+    static ServiceAggregates computeAggregates(servicesmember *services, Query *query);
 };
 
 
