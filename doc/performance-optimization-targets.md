@@ -1,6 +1,8 @@
 # Naemon-Livestatus Performance Optimization Targets
 
-**Status:** investigation / backlog. No code has been changed by this document.
+**Status:** investigation / backlog. **LS-PERF-03 and LS-PERF-04 are implemented** (commit
+`40b5140`); the rest are open. See the implementation notes at the end of those two sections.
+No other code has been changed by this document.
 **Base commit:** `f58f73af52395a4664d91f3a89ffa742e1bc0cd9` (`origin/master`, `inqrphl/master` at the time of writing).
 All `file:line` references are relative to that commit. Re-check them before editing if the
 branch has moved.
@@ -177,8 +179,8 @@ structures.
 |----|-------|------|-----------|-----------------|
 | LS-PERF-01 | `DownCommColumn` scans all comments/downtimes per row under a global mutex | 1 | O(rows × entries) | not measurable on dev (0 entries); code-proven |
 | LS-PERF-02 | `pnpgraph_present` does `access(2)` per row | 1 | O(rows) syscalls | 1.4 µs/row, top cost with tiny output |
-| LS-PERF-03 | `*_services_with_info` / `*_services_with_state` re-walk the service list per row | 1 | O(services²) per host | 2.1 / 1.4 µs/row |
-| LS-PERF-04 | `num_services_*` aggregates re-iterate the service list per column | 1 | O(columns × services) | ~0.1 µs/row/column × 13 |
+| LS-PERF-03 | **DONE 40b5140** — `*_services_with_info` / `*_services_with_state` re-walk the service list per row | 1 | O(services²) per host | 2.1 / 1.4 µs/row |
+| LS-PERF-04 | **DONE 40b5140** — `num_services_*` aggregates re-iterate the service list per column | 1 | O(columns × services) | ~0.1 µs/row/column × 13 |
 | LS-PERF-05 | `GET columns` `tableNameOf` is O(tables × columns) per row | 1 | O(columns²) | 9.0–9.5 ms / 180 KB |
 | LS-PERF-06 | Missing single-object index for `Filter: name = X` on hosts (and contacts/commands/groups) | 1 | O(n) instead of O(1) | code-proven |
 | LS-PERF-07 | Double output via `snprintf("%.10e")` per value | 2 | O(values) | 0.25–0.33 µs/value |
@@ -390,6 +392,27 @@ The `host_services_with_info` answer is 1 MB for 1279 services — roughly a thi
 
 **Effort:** medium.
 
+**Implementation (commit 40b5140)**
+
+`ServicelistColumn::output` was split into a cache wrapper and a `render()` helper. When the
+column is joined (`_indirect_offset >= 0`, i.e. it reaches its object through a pointer stored in
+the row, which is exactly when the same object repeats) `output()` looks the rendered bytes up in
+a per-`Query` cache keyed by `(Column *, object)`. On a miss it redirects `Query`'s output to a
+scratch `OutputBuffer`, calls `render()`, stores the bytes and emits them. Plain tables (each row
+is a different object) render directly as before, so the hosts-table `services_with_info` case
+does not pay for a cache it would never hit. The cache is bounded to 32 MiB.
+
+Result (dev site, 132 hosts / 1283 services, keep-alive):
+
+| Query | before | after |
+|---|---|---|
+| `host_services_with_info` | 2.75 ms | 1.04 ms |
+| `host_services_with_state` | 1.75 ms | 0.30 ms |
+| full `GET services` | 23.80 ms | 20.40 ms |
+
+Correctness: for all 1283 service rows the cached `host_services_*` value is identical to the
+uncached `*_services_*` rendering on the hosts table (3 variants, 0 mismatches).
+
 ---
 
 ### LS-PERF-04 — `num_services_*` / `worst_service_*` aggregates re-iterate the service list per column
@@ -446,6 +469,29 @@ services and 13 columns this is ~1.3M service visits per query.
 - Timing: expect the column-set cost to fall to roughly one service-list pass.
 
 **Effort:** medium (shared with LS-PERF-03).
+
+**Implementation (commit 40b5140)**
+
+`ServiceAggregates` (in `ServicelistStateColumn.h`) holds every value the column can ask for.
+`ServicelistStateColumn::computeAggregates()` fills it in one pass and
+`Query::serviceAggregates(servicesmember *)` memoizes it, keyed by the service-list head so it
+works for hosts (`host->services`) and service groups (`servicegroup->members`) alike. Both
+`ServicelistStateColumn::getValue()` overloads — and therefore `HostlistStateColumn`
+(hostgroups) and `IntColumnFilter` (filters on these columns) — now read the cached struct.
+
+Result (dev site, `AuthUser: dev_contact_0` so the per-service authorization check is included):
+
+| Query | before | after |
+|---|---|---|
+| 12 host aggregates | 0.227 ms | 0.130 ms |
+| 7 joined host aggregates | 1.340 ms | 0.566 ms |
+
+Without `AuthUser` the remaining cost is dominated by integer output rather than the list walk,
+so the win is smaller at this scale — but the walk is now shared regardless.
+
+Correctness: every host's 12 values and every servicegroup's 11 values were recomputed from the
+raw `state` / `has_been_checked` / `last_hard_state` of the group's member services; 0
+mismatches.
 
 ---
 
@@ -1069,7 +1115,7 @@ and can be one).
 4. **LS-PERF-09** bulk JSON escaping. Local to `Query::outputString`.
 5. **LS-PERF-02** per-query `pnpgraph_present` memo. Local, removes syscalls.
 6. **LS-PERF-03 / LS-PERF-04** per-query per-host service-aggregate cache. Big win for the most
-   common Thruk host/service list queries.
+   common Thruk host/service list queries. **DONE — commit 40b5140.**
 7. **LS-PERF-01** `TableDownComm` per-object index. Removes the last superlinear scan and the
    global lock hold.
 8. **LS-PERF-14** key-based sorting.
