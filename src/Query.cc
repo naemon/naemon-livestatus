@@ -1126,16 +1126,10 @@ void Query::finish()
     }
 }
 
-/*
- * All the ServicelistStateColumn values for one service list, computed once.
- *
- * A query typically asks for several of these columns (num_services,
- * num_services_ok, worst_service_state, ...). Each one used to walk the list
- * on its own. They are pure functions of the list and of the query's
- * authorization user, so one ServiceAggregates per list is enough. The key is
- * the list head, which works for a host (host->services) and for a service
- * group (servicegroup->members) alike.
- */
+
+// All the ServicelistStateColumn values for one service list, computed once.
+// A query typically asks for several of these columns (num_services,num_services_ok, worst_service_state, ...).
+// The key is the list head pointer, which works for a host (host->services) and for a service group (servicegroup->members) alike.
 const ServiceAggregates &Query::serviceAggregates(servicesmember *services)
 {
     _service_aggregates_t::iterator it = _service_aggregates.find(services);
@@ -1156,13 +1150,10 @@ const string *Query::cachedOutput(Column *column, void *object)
     return &it->second;
 }
 
-/*
- * Bound the rendered-output cache. A joined list column that is repeated for
- * every row (host_services_with_info on the services table) can otherwise
- * cache a copy of a large part of the answer. Past this budget caching stops,
- * which only means the column goes back to rendering every row.
- */
-static const size_t MAX_OUTPUT_CACHE_BYTES = 32 * 1024 * 1024;
+// Bound the rendered-output cache.
+// A joined list column that is repeated for every row (host_services_with_info on the services table)
+// can otherwise cache a copy of a large part of the answer.
+static const size_t MAX_OUTPUT_CACHE_BYTES = 128 * 1024 * 1024;
 
 void Query::storeCachedOutput(Column *column, void *object, const string &bytes)
 {
@@ -1174,12 +1165,8 @@ void Query::storeCachedOutput(Column *column, void *object, const string &bytes)
         _output_cache_bytes += bytes.size();
 }
 
-/*
- * Render one column's output for one row into a string instead of the client
- * buffer. ServicelistColumn uses this to fill the cache: it redirects _output
- * to the scratch buffer, calls its own render() helper, and takes the bytes.
- * Nothing else runs while the redirect is active, so this is not re-entrant.
- */
+// Render one column's output for one row into a string instead of the client buffer.
+// ServicelistColumn uses this to fill the cache: it redirects _output to the scratch buffer, calls its own render() helper, and takes the bytes.
 void Query::beginOutputCapture()
 {
     if (!_capture)

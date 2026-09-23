@@ -26,6 +26,7 @@ class Column
     string _name;
     string _description;
 public:
+    // this offset is added to get to the column if it is not 0 or -1
     int _indirect_offset;
 
 public:

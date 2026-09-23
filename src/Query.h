@@ -80,29 +80,22 @@ class Query
     typedef map<_stats_group_spec_t, Aggregator **> _stats_groups_t;
     _stats_groups_t _stats_groups;
 
-    /*
-     * Per-query caches. Both hold values that are a pure function of one
-     * object plus this query (the authorization user is fixed for the whole
-     * query), and both are discarded when the query object is destroyed.
-     */
+    // Hold the cache and save a ServiceAggregate for this query.
+    // If the query requires a column that is in ServiceAggregate, e.g num_ok , num_hard_warn, worst_state etc.
+    // ServiceAggregate walks the services linked list once, and populates all available aggregates during that single walk
+    // No need to re-walk the services linked list for every column
     typedef map<servicesmember *, ServiceAggregates> _service_aggregates_t;
     _service_aggregates_t _service_aggregates;
 
-    /*
-     * Rendered output of columns whose output repeats across rows, for example
-     * host_services_with_info on the services table: every service row of a
-     * host asks for the same host's service list, and the rendered bytes are
-     * identical each time. Keyed by (column, object). Bounded in size so a
-     * pathological query cannot grow it without limit; see storeCachedOutput().
-     */
+    // Rendered output of columns whose output repeats across rows, for example host_services_with_info on the services table:
+    // every service row of a host asks for the same host's service list.
+    // Keyed by (column, object).
+    // Bounded in size so a pathological query cannot grow it without limit; see storeCachedOutput().
     typedef map<pair<Column *, void *>, string> _output_cache_t;
     _output_cache_t _output_cache;
     size_t _output_cache_bytes;
 
-    /*
-     * Scratch OutputBuffer used to render one column into a string before
-     * caching it. Lazily allocated, reused across captures, never flushed.
-     */
+    // Scratch OutputBuffer used to render one column into a string before caching it. Lazily allocated, reused across captures, never flushed.
     OutputBuffer *_capture;
     OutputBuffer *_capture_saved;
     int _capture_termination;
@@ -156,11 +149,8 @@ public:
     AndingFilter *filter() { return &_filter; }
     bool isSorting() { return _do_sorting; }
 
-    /*
-     * Aggregates of one host's (or service group's) service list, computed on
-     * first use and remembered for the rest of the query. Keyed by the list
-     * head, so it works for hosts and service groups alike.
-     */
+    // Aggregates of one hosts or service group's service list, computed on first use and remembered for the rest of the query.
+    // Keyed by the list head pointer, so it works for hosts and service groups alike.
     const ServiceAggregates &serviceAggregates(servicesmember *services);
 
     /* Rendered-output cache used by ServicelistColumn (see there). */

@@ -39,11 +39,8 @@ int32_t ServicelistStateColumn::getValue(void *data, Query *query)
 }
 
 
-/*
- * One traversal producing every value get() can return. The authorization
- * filter is the same the old per-logictype loop applied, so the numbers do not
- * change; only the number of times the list is walked does.
- */
+// Performs one traversal calculating every value of the ServiceAggregate
+// Getters then use saved of ServiceAggregate
 ServiceAggregates ServicelistStateColumn::computeAggregates(servicesmember *mem, Query *query)
 {
     ServiceAggregates aggregates;

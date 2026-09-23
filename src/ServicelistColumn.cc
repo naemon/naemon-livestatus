@@ -18,19 +18,11 @@ servicesmember *ServicelistColumn::getMembers(void *data)
     return *(servicesmember **)((char *)data + _offset);
 }
 
+// A joined list column (for example host_services_with_info on the services table) is asked to render the same objects list once for every row belonging to that object.
+// _indirect_offset >= 0 means the column reaches its object through a pointer stored in the row rather than the row being the object.
+// That is exactly the case where the same object repeats, and those repeating renderings can be cached.
 void ServicelistColumn::output(void *data, Query *query)
 {
-    /*
-     * A joined list column (for example host_services_with_info on the
-     * services table) is asked to render the same object's list once for every
-     * row belonging to that object. The rendering is a pure function of the
-     * object and of this query, so cache it for the life of the query.
-     *
-     * _indirect_offset >= 0 means the column reaches its object through a
-     * pointer stored in the row rather than the row being the object. That is
-     * exactly the case where the same object repeats; on a plain table every
-     * row is a different object and caching would only cost memory.
-     */
     if (_indirect_offset >= 0) {
         void *object = shiftPointer(data);
         if (object) {

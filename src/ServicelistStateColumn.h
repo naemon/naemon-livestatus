@@ -17,6 +17,8 @@
 #define SLSC_NUM_PENDING        4
 #define SLSC_WORST_STATE       -2
 
+// +64 for hard variants
+
 #define SLSC_NUM_HARD_OK       ( 0 + 64)
 #define SLSC_NUM_HARD_WARN     ( 1 + 64)
 #define SLSC_NUM_HARD_CRIT     ( 2 + 64)
@@ -32,17 +34,22 @@
  * for the duration of a query, so a query that asks for several aggregate
  * columns (num_services, num_services_ok, worst_service_state, ...) only walks
  * the list once instead of once per column.
- *
- * The numbers intentionally mirror the old ServicelistStateColumn::getValue()
- * loop; see the "soft"/"hard" split below.
  */
 struct ServiceAggregates {
-    int32_t num;          /* all services the auth user may see (SLSC_NUM) */
-    int32_t num_pending;  /* of those, not checked yet (SLSC_NUM_PENDING) */
-    int32_t soft[4];      /* checked services by current_state (SLSC_NUM_*)  */
-    int32_t hard[4];      /* checked services by last_hard_state (SLSC_NUM_HARD_*) */
-    int32_t worst_soft;   /* worst current_state (SLSC_WORST_STATE) */
-    int32_t worst_hard;   /* worst last_hard_state (SLSC_WORST_HARD_STATE) */
+    // all services that authenticated user sees
+    int32_t num;
+    // of those, that are not checked yet
+    int32_t num_pending;
+
+    //  checked services by current_state
+    int32_t soft[4];
+    // checked services by last_hard_state (SLSC_NUM_HARD_*)
+    int32_t hard[4];
+
+    // worst current_state (SLSC_WORST_STATE)
+    int32_t worst_soft;
+    // worst last_hard_state (SLSC_WORST_HARD_STATE)
+    int32_t worst_hard;
 
     ServiceAggregates()
         : num(0), num_pending(0), worst_soft(0), worst_hard(0)
@@ -53,11 +60,9 @@ struct ServiceAggregates {
         }
     }
 
-    /*
-     * The logictype encoding is the one the SLSC_* constants define: a state
-     * number 0..3 is a count, -1 is the total, 4 is pending, -2 is the worst
-     * state, and +64 selects the hard instead of the soft variant.
-     */
+    // a state number 0..3 is a count, -1 is the total, 4 is pending, -2 is the worst state,
+    // +64 selects the hard instead of the soft variant.
+
     int32_t get(int logictype) const {
         int lt = logictype;
         bool use_hard = false;
