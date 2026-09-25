@@ -27,6 +27,7 @@ re-doing the survey.
 6. [Tier 2 — per-row overheads](#6-tier-2--per-row-overheads)
 7. [Tier 3 — architecture](#7-tier-3--architecture)
 8. [Cross-cutting notes (thread safety, naemon compatibility)](#8-cross-cutting-notes)
+8.4 [Cross-translation-unit inlining and `-flto`](#84-cross-translation-unit-inlining-and--flto)
 9. [Suggested work order](#9-suggested-work-order)
 10. [Appendix A — benchmark harness](#appendix-a--benchmark-harness)
 11. [Appendix B — raw measurements](#appendix-b--raw-measurements)
@@ -105,9 +106,13 @@ perl /omd/sites/dev/recreate.pl
 omd reload dev          # or restart naemon
 ```
 
-`recreate.pl` currently uses `hostcount=100` (which produced 132 hosts) and
-`services_per_host=10`. The machine is documented to handle ~10000 hosts. For scaling work,
-`hostcount=5000` with 10 services is a good representative load; the quadratic targets
+`recreate.pl` originally used `hostcount=100` (which produced 132 hosts) and
+`services_per_host=10`. It has since been recreated at the top of the documented range, which
+yields **10 032 hosts / 120 079 services** — that is the dataset behind the LMD numbers in
+[section 3.5](#35-how-lmd-uses-this-module) and Appendix B.7. At that size a whole-table JSON
+answer crosses 80 MB, so per-byte and per-value costs (LS-PERF-07/08/09) become visible where
+they were noise at 132 hosts. The older per-column rankings in Appendix B.2–B.6 were measured at
+132 hosts / 1279 services and remain valid as *relative* rankings. The quadratic targets
 (`LS-PERF-01`, `LS-PERF-03`) will show up as a steep curve between 1000 and 5000 hosts.
 
 ### 2.5 Caveats
@@ -211,7 +216,9 @@ From `/src/omd_utils/.gitignored/lmd_connected_to_omd_dev/lmd_connected_to_omd_d
 ### 3.5.2 Initial sync (once, at startup)
 
 Every table is fetched once with `OutputFormat: json`, `Limit: 500000`, `KeepAlive: on` and a
-large fixed column set. Numbers below are LMD's own `initial table:` log lines:
+large fixed column set. Numbers below are LMD's own `initial table:` log lines on the current
+**10 032 hosts / 120 079 services** dev site with the `perf-json-bulk-append-2` build (LS-PERF-09),
+range over three runs:
 
 | Table | Rows | Time | Size | Columns |
 |---|---|---|---|---|
@@ -220,13 +227,21 @@ large fixed column set. Numbers below are LMD's own `initial table:` log lines:
 | `contacts` | 3 | 0 s | 0 kB | 25 |
 | `contactgroups` | 2 | 0 s | 0 kB | 3 |
 | `commands` | 40 | 0 s | 7 kB | 2 |
-| `hosts` | 132 | 3 ms | 114 kB | 89 |
-| `hostgroups` | 12 | 0 s | 4 kB | 17 |
-| `services` | 1279 | 17 ms | 913 kB | 82 |
-| `servicegroups` | 13 | 0 s | 61 kB | 17 |
-| `comments` | 0 | 0 s | 0 kB | 13 |
+| `hosts` | 10 032 | 157–179 ms | 8.7 MB | 89 |
+| `hostgroups` | 12 | 98–116 ms | 333 kB | 17 |
+| `services` | 120 079 | 1.17–1.31 s | 84.7 MB | 82 |
+| `servicegroups` | 13 | 96–128 ms | 6.5 MB | 17 |
+| `comments` | 0–3 | 0 s | 0 kB | 13 |
 | `downtimes` | 0 | 0 s | 0 kB | 13 |
-| `columns` | — | — | — | 2 (`table name`) |
+| `columns` | 2 006 | 15 ms | 77 kB | 2 (`table name`) |
+| **total** | | **1.79–2.06 s** | | |
+
+`Size` is LMD's own datastore figure: the 333 kB for 12 `hostgroups` and the 6.5 MB for 13
+`servicegroups` are the expanded `members` / `members_with_state` / aggregate columns at 120 k
+services, not row data. At the earlier 132-host site the same lines read 3 ms and 17 ms for
+`hosts` and `services`; the services pull is now the most expensive single thing LMD does at
+startup, and its cost is spread over the whole answer rather than concentrated in one place — the
+JSON escaping work that LS-PERF-09 removed was only ~16 % of it.
 
 Two column sets matter for this document:
 
@@ -255,18 +270,26 @@ Filter: last_update >= 1790275176.665651
 (free on the dev site because it has 0 comments/downtimes). `hostgroups` and `servicegroups`
 (with all their aggregate columns) are also re-fetched periodically.
 
-Observed rows and fetch times over a ~2.5 minute run (`delta table:` log lines):
+Observed rows and fetch times at 10 032 hosts / 120 079 services (`delta table:` lines, six runs,
+~14 loops):
 
-| Table | Rows per pull | Fetch time |
-|---|---|---|
-| `hosts` | 6–12 | ~0 ms (outliers 3 ms, 10 ms) |
-| `services` | 266–276 | 1–2 ms (outliers 21 ms, 46 ms) |
-| `comments` | all (0 here) | ~0 ms |
-| `downtimes` | all (0 here) | ~0 ms |
-| `status` | 1 | ~0 ms |
+| Table | Rows per pull | Response | Fetch time |
+|---|---|---|---|
+| `hosts` | 260–700 (≈1 500 on the first pull) | 100–270 kB | 2.4–9.3 ms |
+| `services` | 4 000–7 000 (up to 22 000 right after a restart) | 1.7–2.5 MB | 31–117 ms |
+| `comments` | all (3 here) | 0 kB | 0.02–0.07 ms |
+| `downtimes` | all (0 here) | 0 kB | 0.02–0.07 ms |
+| `status` | 1 | 0 kB | 0.08–0.25 ms |
 
-A steady-state sync therefore costs roughly **1–3 ms of livestatus query CPU every 7 s**
-(~0.02–0.04 % of one core) on this configuration, dominated by the services delta.
+A steady-state sync therefore costs roughly **35–50 ms of livestatus query CPU every 7 s**
+(~0.5–0.7 % of one core) on this configuration, dominated by the services delta. That is two
+orders of magnitude more than at 132 hosts, and it is worth optimising in its own right: the
+delta column set is 54 columns over 4–7 k rows, so the cost is per-row and per-value work
+(LS-PERF-07/08/10/12/13), not output volume. The unindexed `last_update` scan (LS-PERF-20) is
+≈1.0 ms of each services pull; LS-PERF-21 is negligible while the comment count is 3. Removing
+the per-byte JSON escaping (LS-PERF-09) changed the per-byte rate by less than the run-to-run
+spread (16.3 vs 16.6 ns/byte), which is the measurement that says "look at per-value formatting
+next, not at string output".
 
 Two facts drive the applicability ratings:
 
@@ -286,18 +309,18 @@ fix is in general. The same table is summarised as the `LMD sync benefit` column
 | LS-PERF-01 | none | LMD never asks for the `comments`/`downtimes` list columns on hosts/services; it fetches the `comments`/`downtimes` *tables*, which use `TableDownComm::answerQuery`, not `DownCommColumn::output`. |
 | LS-PERF-02 | **high** | `pnpgraph_present` is in both host and service column sets, initial and delta. One `access(2)` per returned row (~1.4 µs), and the host variant repeats it per service row on the services table. |
 | LS-PERF-03 | none | Only triggers on a joined `ServicelistColumn` (`_indirect_offset >= 0`). LMD's only ones are `parents` (services) and `members`/`members_with_state` (servicegroups), all on plain tables (`_indirect_offset = -1`). |
-| LS-PERF-04 | low–medium | The host delta asks for the 12 aggregates, but only 6–12 hosts pass the filter and there is no auth user, so the saved walks are a few µs. The periodic `hostgroups`/`servicegroups` pulls use `HostlistStateColumn`/`ServicelistStateColumn` over every member and benefit more at scale. |
-| LS-PERF-05 | low | LMD issues `GET columns Columns: table name` once at startup — exactly the O(N²) `tableNameOf` path (~9 ms once on the dev site, quadratic with the column count). |
+| LS-PERF-04 | low–medium (worth re-measuring at 10 k hosts) | The host delta asks for the 12 aggregates, but only a few hundred hosts pass the filter and there is no auth user, so the saved walks are small. The periodic `hostgroups`/`servicegroups` pulls are the interesting case at this size: 12 `hostgroups` cost 98–116 ms and 13 `servicegroups` 96–128 ms, and those renders use `HostlistStateColumn`/`ServicelistStateColumn` over every member. |
+| LS-PERF-05 | low | LMD issues `GET columns Columns: table name` once at startup — exactly the O(N²) `tableNameOf` path, now 2 006 rows in 15 ms. |
 | LS-PERF-06 | none | LMD sync filters on `last_update`, never on `name`. Proxied single-object client queries would benefit. |
-| LS-PERF-20 | medium | `Filter: last_update >= t` has no index, so every pull scans the full host/service list (~8.4 ns/row; ~0.8 ms per 100k services per pull). Small next to the output of the returned rows, but pure waste. |
-| LS-PERF-21 | medium | `comments`/`downtimes` are re-pulled in full every 7 s; `TableDownComm::answerQuery` iterates all entries under one global mutex and renders all of them. O(entries) per pull; a filterable `entry_time`/`id` would let LMD fetch only changes. |
-| LS-PERF-07 | medium | Host and service pulls return many doubles (`latency`, `execution_time`, `percent_state_change`, intervals, thresholds): one `snprintf("%.10e")` per value per returned row. |
-| LS-PERF-08 | medium | Same for the integer/time columns of every returned row. |
-| LS-PERF-09 | **medium–high** | Every LMD query uses `OutputFormat: json`, so every string goes through the per-byte escaping path; `plugin_output`, `long_plugin_output`, `perf_data` and custom variables are in the column sets. |
+| LS-PERF-20 | medium–high | `Filter: last_update >= t` has no index, so every pull scans the full 120 079-service + 10 032-host list: ~8.4 ns/row ≈ 1.0 ms + 0.08 ms per pull, a few percent of the 35–50 ms loop, and it grows with the object count. |
+| LS-PERF-21 | low here, medium in general | `comments`/`downtimes` are re-pulled in full every 7 s and cost 0.02–0.07 ms with 3 comments and 0 downtimes. The cost is O(entries) per pull under one global mutex, so it grows with the comment count (a flapping production site can carry thousands). |
+| LS-PERF-07 | **high** | Host and service pulls return many doubles (`latency`, `execution_time`, `percent_state_change`, intervals, thresholds): one `snprintf("%.10e")` per value per returned row. The 84.7 MB services initial pull is mostly numbers — removing the string escaping only took ~16 % off it — so this is the largest identified remaining lever for LMD startup. |
+| LS-PERF-08 | **high** | Same for the integer/time columns of every returned row: ~20 numeric columns × 120 079 rows on the initial services pull, and 54 columns × 4–7 k rows on every 7 s delta. |
+| LS-PERF-09 | **DONE 8f90314** (realised: medium–high) | Implemented on `perf-json-bulk-append-2`. Measured with LMD's own queries: initial services 1.411 → 1.185 s (median of three runs each), initial sync total 2.25 → 1.85 s; a string-heavy 12 MB answer 61 → 29 ms. The 7 s delta is within noise (§3.5.3). |
 | LS-PERF-10 | medium | `in_check_period`/`in_notification_period` are in both column sets; each row takes the `TimeperiodsCache` mutex. |
 | LS-PERF-11 | none | LMD uses `hosts`/`services`, not the by-group tables, so the wrapper nodes are not allocated for its sync. |
 | LS-PERF-12 | medium | `contacts` and `contact_groups` are in both column sets; each returned row builds and sorts a `std::list`. |
-| LS-PERF-13 | medium | `action_url_expanded`, `notes_url_expanded`, `notes_expanded`, `icon_image_expanded` and `staleness` are all in LMD's column sets — the per-row `strlen`/`std::string`/`time(0)` items. |
+| LS-PERF-13 | **medium–high** | `action_url_expanded`, `notes_url_expanded`, `notes_expanded`, `icon_image_expanded` and `staleness` are all in LMD's column sets, and the macro columns build `std::string`s per row — 120 079 rows on the initial services pull. |
 | LS-PERF-14 | none (sync) | LMD's sync uses no `Sort:`; proxied client queries often do. |
 | LS-PERF-15 | none (sync) | LMD's sync uses no `Stats:`/`StatsGroupBy:`; proxied client queries do. |
 | LS-PERF-16 | none (sync) | LMD's sync never touches `log`/`statehist`; only proxied clients do. |
@@ -306,6 +329,11 @@ fix is in general. The same table is summarised as the `LMD sync benefit` column
 | LS-PERF-19 | background | Applies to all query threads including LMD's; LS-PERF-03/04 sidestep it by being per-query. |
 
 ### 3.5.5 Measured: LS-PERF-03/04 with LMD's exact column sets
+
+*These measurements are from the earlier 132-host / 1279-service site and have **not** been
+repeated at the current 10 032 / 120 079. At that size the `hostgroups`/`servicegroups` pulls cost
+98–128 ms each and exercise the aggregate paths over every member, so the verdict may change for
+those two tables; the plain `hosts`/`services` sync column sets still do not use joined columns.*
 
 Column sets copied verbatim from the LMD log, JSON output, keep-alive client, `Limit` pinned to
 LMD's real delta/initial row counts (original = `f58f73a`, new = `f06b477`). Each cell is a range
@@ -320,7 +348,9 @@ over repeated runs:
 
 Why the aggregate cache does not show: with no `AuthUser`, the old per-column walk was only field
 reads. For the delta it is 10 hosts × 12 columns × ~10 services ≈ 1,200 pointer hops — a few µs
-inside a ~130 µs query.
+inside a ~130 µs query. At 10 k hosts the arithmetic is the same per returned row, so the cache
+still looks like a second-order effect for the plain host/service sync; the group tables are where
+a re-measurement at the larger size is worth doing.
 
 For contrast, the cases LS-PERF-03/04 *do* fix (measured with `AuthUser: dev_contact_0`, or a
 joined column which LMD never uses): 12 host aggregates 0.227→0.130 ms; 7 joined aggregates
@@ -329,14 +359,26 @@ joined column which LMD never uses): 12 host aggregates 0.227→0.130 ms; 7 join
 
 ### 3.5.6 What to do if LMD is the target
 
-To speed up **LMD's sync loop**, work LS-PERF-02, LS-PERF-09, LS-PERF-07, LS-PERF-08,
-LS-PERF-12, LS-PERF-13 and LS-PERF-10 first (all directly in its column sets), then LS-PERF-21
-and LS-PERF-20. **LS-PERF-03 is irrelevant to LMD**, and LS-PERF-04 only matters for the
-periodic `hostgroups`/`servicegroups` pulls. Both stay the right fix for direct or proxied client
-queries with `AuthUser` and joined list columns.
+To speed up **LMD's sync loop** at 10 k hosts:
 
-To reproduce: parse the LMD log into column sets (the `lmd-parse` snippet in
-[Appendix A](#appendix-a--benchmark-harness)) and feed them to the harness.
+1. **LS-PERF-07 / LS-PERF-08** — numeric columns dominate both the 84.7 MB initial services pull
+   and the 54-column delta; this is the largest remaining lever.
+2. **LS-PERF-02** — `pnpgraph_present` is one `access(2)` per returned row in both column sets.
+3. **LS-PERF-13** — per-row macro `std::string`s and `time(0)`, 120 079 rows deep on the initial
+   pull.
+4. **LS-PERF-10 / LS-PERF-12** — per-row mutex and `std::list`, both in the column sets.
+5. **LS-PERF-20** — the unindexed `last_update` scan, ~1 ms per services pull.
+6. **LS-PERF-04** — re-measure first; the group pulls (98–128 ms) are the plausible win.
+
+LS-PERF-09 is done (branch `perf-json-bulk-append-2`). **LS-PERF-03 stays irrelevant to LMD**, and
+LS-PERF-21 only matters once the comment/downtime count is large. LS-PERF-03/04 remain the right
+fix for direct or proxied client queries with `AuthUser` and joined list columns.
+
+To reproduce: run an LMD instance with `LogLevel = Trace` against the site
+(`/omd/sites/dev/bin/lmd -c <ini> -vvv`), lift the column sets out of the trace log
+(`lmd-parse.py` in [Appendix A](#appendix-a--benchmark-harness)) and feed them to the harness.
+The scripts, raw logs and summary tables behind the numbers above are in
+`src/omd_utils/.gitignored/lmd-bench/` (`RESULTS.md`, `lmd-micro2.py`, `lmd-hash3.py`).
 
 ---
 
@@ -350,11 +392,11 @@ To reproduce: parse the LMD log into column sets (the `lmd-parse` snippet in
 | LS-PERF-04 | **DONE 40b5140** — `num_services_*` aggregates re-iterate the service list per column | 1 | O(columns × services) | ~0.1 µs/row/column × 13 | low–medium |
 | LS-PERF-05 | `GET columns` `tableNameOf` is O(tables × columns) per row | 1 | O(columns²) | 9.0–9.5 ms / 180 KB | low |
 | LS-PERF-06 | Missing single-object index for `Filter: name = X` on hosts (and contacts/commands/groups) | 1 | O(n) instead of O(1) | code-proven | none |
-| LS-PERF-20 | **NEW** — delta `Filter: last_update >= t` has no index, so each pull scans every object | 1 | O(objects) per pull | ~8.4 ns/row (0.024 ms / 1279 services) | medium |
+| LS-PERF-20 | **NEW** — delta `Filter: last_update >= t` has no index, so each pull scans every object | 1 | O(objects) per pull | ~8.4 ns/row ≈ 1.0 ms per 120 k-service pull | medium–high |
 | LS-PERF-21 | **NEW** — `comments`/`downtimes` have no incremental fetch; all entries re-pulled every loop | 1 | O(entries) per pull | code-proven (0 entries on dev) | medium |
-| LS-PERF-07 | Double output via `snprintf("%.10e")` per value | 2 | O(values) | 0.25–0.33 µs/value | medium |
-| LS-PERF-08 | Integer/time output via `snprintf` per value | 2 | O(values) | 0.07 µs/value (int) | medium |
-| LS-PERF-09 | JSON string escaping emits one `addChar` call per byte | 2 | O(bytes) calls | JSON 1.5–5× CSV | **medium–high** |
+| LS-PERF-07 | Double output via `snprintf("%.10e")` per value | 2 | O(values) | 0.25–0.33 µs/value; dominates LMD's 84.7 MB services pull | **high** |
+| LS-PERF-08 | Integer/time output via `snprintf` per value | 2 | O(values) | 0.07 µs/value (int); ~20 numeric cols × 120 k rows per LMD pull | **high** |
+| LS-PERF-09 | **DONE 8f90314** — JSON string escaping emitted one `addChar` call per byte | 2 | O(bytes) calls | LMD initial services 1411 → 1185 ms; string-heavy 12 MB 61 → 29 ms | **medium–high** |
 | LS-PERF-10 | `TimeperiodsCache::inTimeperiod` takes a mutex + map lookup per row | 2 | O(rows) locks | code-proven | medium |
 | LS-PERF-11 | by-group tables allocate a node per member per query | 2 | O(members) allocs | code-proven | none |
 | LS-PERF-12 | `HostContactsColumn`/`ServiceContactsColumn` build + sort a `std::list` per row | 2 | O(contacts log contacts) | code-proven | medium |
@@ -954,6 +996,29 @@ exact escape sequences and the `chars_left` bounds checks. Optionally make `addC
 inline in `OutputBuffer.h` (they are tiny) so callers avoid the call overhead and the compiler
 can hoist capacity checks.
 
+**Implemented:** branch `perf-json-bulk-append-2` (commit `8f90314`, on top of upstream `f58f73a`).
+`addChar`/`addString`/`addBuffer` are now inline in `OutputBuffer.h`, a new inline
+`OutputBuffer::addUntilNextSignificantChar()` appends a run with one `memcpy`, and
+`Query::outputString` uses a `json_significant[256]` lookup table (bytes `0x00–0x1f`, `"`, `\`, and
+everything ≥ 0x80) to find those runs. The escape branches themselves are unchanged.
+
+**Measured (LMD's own column sets, 10 032 hosts / 120 079 services, interleaved against
+upstream master):**
+
+| Query | bytes | before | after | delta |
+|---|---|---|---|---|
+| LMD `services` initial column set | 86.7 MB | 837 ms | 704 ms | −16 % |
+| LMD `hosts` initial column set | 8.5 MB | 94.5 ms | 89.1 ms | −6 % |
+| LMD `services` delta (8 s window) | ~8.2 MB | 118 ms | 106 ms | −10 % |
+| string-heavy services list (`host_name description groups contacts …`) | 12.2 MB | 61 ms | 29 ms | **−52 %** |
+| string-heavy hosts list | 0.87 MB | 5.9 ms | 2.4 ms | **−60 %** |
+| `servicegroups name members` (one group holds nearly all 120 k services) | 6.6 MB | 74 ms | 49 ms | −33 % |
+
+LMD end to end on the same site: initial sync 2.25 s → 1.85 s, while the 7 s delta loop stays
+within noise because its 54-column answers are number-dominated. The gain tracks the *string*
+share of the answer, not its size. The inline appenders only pay off where the compiler can
+really inline them — see [§8.4](#84-cross-translation-unit-inlining-and--flto).
+
 **Compatibility:** the JSON/Python encodings and the `g_data_encoding` modes must produce
 identical bytes; this includes the 2/3/4-byte UTF-8 handling and the `\uXXXX` escapes.
 
@@ -1350,6 +1415,102 @@ a change touches.
 | `pnp_path` | broker module args | enables `pnpgraph_present` (access() cost) |
 | `g_disable_statehist_filtering` | `TableStateHistory.cc:27` | disables the object-filter pre-pass |
 
+### 8.4 Cross-translation-unit inlining and `-flto`
+
+The hot path is spread over many translation units: `Query::outputString`, `outputInteger`,
+`outputInteger64`, `outputDouble`, `outputTime` and `outputTimeVal` live in `Query.cc`, while the
+~100 `*Column::output()` implementations that call them live in their own `.cc` files. Without
+link-time optimization every one of those calls is a cross-TU call: `-O2` cannot inline it,
+propagate the `_output_format == CSV` test into the caller, or see through the `OutputBuffer`
+capacity checks.
+
+**How to enable it** (verified with the container's GCC 11.5). `make` does not track flag changes,
+so clean first or nothing gets rebuilt:
+
+```
+cd /src/naemon-livestatus/src
+make clean
+make -j4 CXXFLAGS="-g -O2 -flto" CFLAGS="-g -O2 -flto" LDFLAGS="-flto"
+```
+
+To make it permanent, add `-flto` to the three module-specific variables in
+[`src/Makefile.am`](../src/Makefile.am) — `livestatus_la_CXXFLAGS`, `livestatus_la_CFLAGS` and
+`livestatus_la_LDFLAGS`. The first two already start from `$(CXXFLAGS)`/`$(CFLAGS)` and automake
+appends `$(LDFLAGS)` to the libtool link line, which is why the command-line form above reaches
+both compile and link. `-flto` **must** be present at link time as well as compile time, and it
+must be used for the C sources too. Use `-flto=auto` (or `-flto=jobserver`) to let the LTRANS jobs
+run in parallel — with plain `-flto` plus `-j4` the link serializes them
+(`lto-wrapper: warning: using serial compilation of 6 LTRANS jobs`).
+
+**What LTO can and cannot do here.**
+
+- In principle it can inline the `Query::output*` formatters and the (now header-inline)
+  `OutputBuffer` appenders into each column's `output()`, and fold the format tests per call site.
+  In practice GCC 11 at `-O2 -flto` did **not** do it here: `objdump -d` finds the same number of
+  `call` sites to `Query::outputString(char const*)` (53) and `Query::outputInteger(int)` (28) with
+  and without `-flto`. The formatters are large and called from ~100 places, so the inliner leaves
+  them alone. The `OutputBuffer` appenders, being header-inline, were already inlined by the plain
+  build (zero `addChar`/`addBuffer` calls resolve into the module in either build).
+- It **cannot** devirtualize `Column::output()` / `Column::getValue()` in `Query::printRow()`:
+  those calls go through a `vector<Column *>` of base pointers, so the dynamic type is not
+  provable even with the whole program in view.
+- It cannot touch `snprintf` (libc) or anything inside `libnaemon.so`, which are not built with
+  LTO, and it does nothing for the `access(2)`, mutex and `std::string` per-row costs
+  (LS-PERF-02/10/13).
+
+**Measured result** (10 032 hosts / 120 079 services, branch `perf-json-bulk-append-2`, non-LTO and
+LTO `.so` swapped and restarted between runs, two runs each, response bytes identical):
+
+| Query | non-LTO | LTO | verdict |
+|---|---|---|---|
+| LMD `services` initial column set (86.7 MB) | 761 ms | 761 ms | equal |
+| LMD `hosts` initial column set (8.5 MB) | 82 ms | 83 ms | equal |
+| string-heavy services list (12.2 MB) | 34 ms | 32 ms | equal |
+| LMD `services` delta (~8.2 MB) | 115 ms | 115 ms | equal |
+| `servicegroups name members` (6.6 MB) | 49 ms | 55 ms | LTO ≈ 14 % worse |
+
+So on this workload `-flto` is a **space** change, not a speed one: the module shrinks from
+12.68 MB to 10.38 MB, output stays byte-identical, and the timings do not move beyond the
+run-to-run spread — consistent with the call-site counts above showing that the linker did not
+actually merge the cross-TU calls it was enabled for. It is not a quick win, and it should not be
+adopted without the same interleaved A/B.
+
+**Caveat: LTO surfaces three pre-existing ODR violations.** The non-LTO build compiles with zero
+warnings; the LTO build reports:
+
+| Reported at | Conflict |
+|---|---|
+| `HostlistColumn.cc:23` | `struct output_parameters` differs from the definition in `HostlistStateColumn.cc:32` |
+| `TableHosts.cc:332` | `struct by_group_parameters` differs from the definition in `TableServices.cc:36` |
+| `HostlistStateColumn.cc:12` | `extern TableServices *g_table_hosts;` while `tables.h:17` declares `TableHosts *g_table_hosts` |
+
+The first two are same-named types with different fields in different TUs — harmless while each TU
+only uses its own, undefined behaviour once a whole-program optimizer merges them. The third is a
+plain wrong-type declaration (it should be `TableHosts *`); its only use,
+`HostlistStateColumn.cc:45`, calls the virtual `Table::isAuthorized()`, so the vtable picks the
+right override today and the bug is invisible — exactly the kind of thing a type-based LTO
+transformation may exploit. Fix these first (rename them or make them file-local, correct the
+declaration), or at minimum build with `-fno-strict-aliasing` and re-run the byte-identity check.
+
+**Cheaper alternative worth trying first:** `-fno-semantic-interposition`. GCC assumes that
+default-visibility symbols in a shared library may be interposed, which suppresses some
+intra-library inlining even without LTO. Nothing ever links against `livestatus.so` — naemon loads
+it with `dlopen(..., RTLD_NOW)` and resolves only the module entry points — so interposition cannot
+happen here and the flag is safe. Unlike `-flto` it needs no link-time flag; it does still need a
+`make clean` before the rebuild, because `make` ignores flag changes. Measure it with the same A/B.
+
+**Verification recipe for any of these:**
+
+1. Byte identity, using the hash harness from [§8.2](#82-output-correctness-is-a-hard-constraint)
+   (`lmd-hash3.py` under `src/omd_utils/.gitignored/lmd-bench/`).
+2. That inlining really happened: `objdump -d -C --no-show-raw-insn src/.libs/livestatus.so` and
+   count the remaining `call` sites to `Query::outputString` / `OutputBuffer::addChar`, or
+   disassemble one column with
+   `objdump -d -C --disassemble='StringColumn::output(void*, void*)'`.
+3. Timings by **interleaving**: keep both `.so` files, copy the one under test over
+   `src/.libs/livestatus.so`, restart naemon, and alternate — run-to-run drift on this box reaches
+   ±20 %, which is larger than most of the effects being chased.
+
 ---
 
 ## 9. Suggested work order
@@ -1360,8 +1521,10 @@ and can be one).
 1. **LS-PERF-05** `tableNameOf` O(1). Trivial, measurable 100× on that query.
 2. **LS-PERF-06** host `name` index (+ contacts/commands/groups). Trivial, O(n)→O(1).
 3. **LS-PERF-07 / LS-PERF-08** fast double/int formatting. Local to `Query.cc`, big aggregate
-   win, easily unit-tested.
+   win, easily unit-tested. **Now the top LMD item**: the 84.7 MB initial services pull and the
+   54-column 7 s delta are mostly numbers.
 4. **LS-PERF-09** bulk JSON escaping. Local to `Query::outputString`.
+   **DONE — branch `perf-json-bulk-append-2`, commit 8f90314** (LMD initial sync 2.25 s → 1.85 s).
 5. **LS-PERF-02** per-query `pnpgraph_present` memo. Local, removes syscalls.
 6. **LS-PERF-03 / LS-PERF-04** per-query per-host service-aggregate cache. Big win for the most
    common Thruk host/service list queries. **DONE — commit 40b5140.**
@@ -1645,6 +1808,68 @@ comments, 0 downtimes, warm log cache, keep-alive connection.
 (parsing and caching log messages); "mean" is warm.
 
 ### B.7 LMD (see section 3.5)
+
+#### B.7.1 Current site — 10 032 hosts / 120 079 services
+
+LMD 2.8.2 against the dev site with `UpdateInterval = 7`, `UpdateOffset = 3`,
+`MaxParallelPeerConnections = 1`, `BackendKeepAlive = true`, `auth = ""`; JSON,
+`Limit: 500000`, keep-alive. Harness, raw logs and a summary table:
+`src/omd_utils/.gitignored/lmd-bench/` (`RESULTS.md`, `lmd-micro2.py`, `lmd-hash3.py`).
+
+Initial sync, LMD's own `initial table:` lines on the `perf-json-bulk-append-2` build
+(three runs):
+
+| Table | Rows | Time | Size |
+|---|---|---|---|
+| `hosts` | 10 032 | 157–179 ms | 8.7 MB |
+| `services` | 120 079 | 1.17–1.31 s | 84.7 MB |
+| `hostgroups` | 12 | 98–116 ms | 333 kB |
+| `servicegroups` | 13 | 96–128 ms | 6.5 MB |
+| `commands` | 40 | 0 s | 7 kB |
+| `columns` | 2 006 | 15 ms | 77 kB |
+| `status` / `timeperiods` / `contacts` / `contactgroups` | 1 / 3 / 3 / 2 | 0 s | 0 kB |
+| `comments` / `downtimes` | 3 / 0 | 0 s | 0 kB |
+| **initial sync total** | | **1.79–2.06 s** | |
+
+Same runs against upstream `f58f73a`, interleaved one pair per build:
+
+| Table | master | branch (LS-PERF-09) |
+|---|---|---|
+| `hosts` | 189 / 161 ms | 157 / 164 ms |
+| `hostgroups` | 123 / 109 ms | 116 / 98 ms |
+| `services` | 1411 / 1321 ms | 1309 / 1170 ms |
+| `servicegroups` | 150 / 116 ms | 128 / 96 ms |
+| **initial sync total** | **2.247 / 2.005 s** | **2.059 / 1.790 s** |
+
+Delta sync (`delta table:` lines, six runs / 14 loops): `hosts` 260–700 rows at 2.4–9.3 ms
+(≈1 500 rows on the first pull after a restart); `services` 4 000–7 000 rows at 31–117 ms (up to
+22 000 rows right after a restart); `status` 0.08–0.25 ms; `comments`/`downtimes` 0.02–0.07 ms.
+Per-byte rates: `hosts` 24.4 ns/byte (branch) vs 27.3 (master), `services` 16.3 vs 16.6 — inside
+the run-to-run spread, which is the point: the delta is not escaping-bound.
+
+Module-side microbench of the same queries, interleaved and using a fast `recv_into` client
+(mean of two runs; the static shapes have identical response bytes):
+
+| Query | bytes | master | branch | delta |
+|---|---|---|---|---|
+| LMD `services` initial column set | 86.7 MB | 837.5 ms | 704.3 ms | −16 % |
+| LMD `hosts` initial column set | 8.5 MB | 94.5 ms | 89.1 ms | −6 % |
+| LMD `services` delta (8 s window) | ~8.2 MB | 117.6 ms | 105.5 ms | −10 % |
+| string-heavy services list | 12.2 MB | 61.3 ms | 29.3 ms | −52 % |
+| string-heavy hosts list | 0.87 MB | 5.91 ms | 2.37 ms | −60 % |
+| `servicegroups name members` | 6.6 MB | 74.0 ms | 49.3 ms | −33 % |
+| `hostgroups name members` | 0.34 MB | 7.71 ms | 3.98 ms | −48 % |
+
+The same harness with `-flto`: byte-identical output, no timing difference beyond noise except
+`servicegroups name members` (49 → 55 ms), `.so` 12.68 → 10.38 MB — see
+[§8.4](#84-cross-translation-unit-inlining-and--flto).
+
+Correctness: 14 time-independent query shapes hashed identically on both builds and across
+repeated runs (`hash3-*.txt` in the same directory).
+
+#### B.7.2 Earlier site — 132 hosts / 1279 services
+
+Kept because the LS-PERF-03/04 verdict in section 3.5.5 is based on it.
 
 LMD log span ~2.5 minutes, one unix-socket backend, `UpdateInterval = 7`, no `AuthUser`.
 
