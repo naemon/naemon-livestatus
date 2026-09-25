@@ -2,7 +2,9 @@
 
 **Status:** investigation / backlog. **LS-PERF-03 and LS-PERF-04 are implemented** (commit
 `40b5140`); the rest are open. See the implementation notes at the end of those two sections.
-No other code has been changed by this document.
+[Section 3.5](#35-how-lmd-uses-this-module) records how LMD drives this module, which of these
+targets its sync loop actually exercises, and how much each fix would help there. No other code
+has been changed by this document.
 **Base commit:** `f58f73af52395a4664d91f3a89ffa742e1bc0cd9` (`origin/master`, `inqrphl/master` at the time of writing).
 All `file:line` references are relative to that commit. Re-check them before editing if the
 branch has moved.
@@ -19,6 +21,7 @@ re-doing the survey.
 1. [How to use this document](#1-how-to-use-this-document)
 2. [Measurement method and environment](#2-measurement-method-and-environment)
 3. [Architecture summary](#3-architecture-summary)
+3.5 [How LMD uses this module](#35-how-lmd-uses-this-module)
 4. [Target index](#4-target-index)
 5. [Tier 1 — superlinear or syscall-bound](#5-tier-1--superlinear-or-syscall-bound)
 6. [Tier 2 — per-row overheads](#6-tier-2--per-row-overheads)
@@ -173,29 +176,195 @@ structures.
 
 ---
 
+## 3.5 How LMD uses this module
+
+LMD is a Go daemon that merges several Livestatus backends (Naemon, Icinga, ...) into one
+Livestatus endpoint. It uses the module in two distinct ways, and they have very different
+performance profiles:
+
+1. **Pull-sync its own copy of the data** from every backend in background goroutines. This is
+   what the measurements below cover, and — at the configuration used — it is barely affected by
+   LS-PERF-03/04.
+2. **Proxy client queries.** When a client (Thruk, NagVis, ...) sends `GET ...` to LMD, LMD asks
+   the backends for the same query and merges the rows. Those *are* the Thruk-style queries this
+   document was written for: `AuthUser:`, `Sort:`, `Stats:`, `GET log`, `GET statehist`, joined
+   columns such as `services_with_info`. LS-PERF-03/04 apply fully there. The sync loop is the
+   exception, not the rule.
+
+### 3.5.1 Sync configuration measured
+
+From `/src/omd_utils/.gitignored/lmd_connected_to_omd_dev/lmd_connected_to_omd_dev.ini`:
+
+| Option | Value | Meaning |
+|---|---|---|
+| `UpdateInterval` | 7 | delta pull every 7 s |
+| `UpdateOffset` | 3 | pull window shifted back by 3 s |
+| `FullUpdateInterval` | unset | no periodic full re-pull; delta only after the initial sync |
+| `MaxParallelPeerConnections` | 1 | one backend connection at a time |
+| `BackendKeepAlive` | true | one long-lived livestatus client thread |
+| `IdleTimeout` / `IdleInterval` | 120 / 1800 | slower interval when idle |
+| `[[Connections]] auth` | `""` | **no `AuthUser:` header on sync queries** |
+
+`UpdateOffset` is why the logged filter values trail "now" by a few seconds:
+`Filter: last_update >= 1790275176.665651` while the current time was ~1790275180.
+
+### 3.5.2 Initial sync (once, at startup)
+
+Every table is fetched once with `OutputFormat: json`, `Limit: 500000`, `KeepAlive: on` and a
+large fixed column set. Numbers below are LMD's own `initial table:` log lines:
+
+| Table | Rows | Time | Size | Columns |
+|---|---|---|---|---|
+| `status` | 1 | 0 s | 0 kB | 35 |
+| `timeperiods` | 3 | 0 s | 0 kB | 11 |
+| `contacts` | 3 | 0 s | 0 kB | 25 |
+| `contactgroups` | 2 | 0 s | 0 kB | 3 |
+| `commands` | 40 | 0 s | 7 kB | 2 |
+| `hosts` | 132 | 3 ms | 114 kB | 89 |
+| `hostgroups` | 12 | 0 s | 4 kB | 17 |
+| `services` | 1279 | 17 ms | 913 kB | 82 |
+| `servicegroups` | 13 | 0 s | 61 kB | 17 |
+| `comments` | 0 | 0 s | 0 kB | 13 |
+| `downtimes` | 0 | 0 s | 0 kB | 13 |
+| `columns` | — | — | — | 2 (`table name`) |
+
+Two column sets matter for this document:
+
+- **hosts** requests all 12 service aggregates — `num_services`,
+  `num_services_{ok,warn,crit,unknown,pending}`, `num_services_hard_{ok,warn,crit,unknown}`,
+  `worst_service_state`, `worst_service_hard_state` — plus `services` (a `ServicelistColumn` on
+  the *hosts* table), `parents`, `childs`, `pnpgraph_present`, `contacts`, `contact_groups`,
+  `custom_variable_names/values`, and the three `*_expanded` macro columns.
+- **services** requests `parents` (a `ServicelistColumn` on the plain *services* table),
+  `pnpgraph_present`, `contacts`, `contact_groups`, `groups`,
+  `custom_variable_names/values`, `depends_exec`, `depends_notify` and the macro columns.
+
+### 3.5.3 Delta sync (every 7 s)
+
+`hosts` and `services` are fetched with a `last_update >= t` filter and a reduced column set
+(61 and 54 columns). Example, verbatim from the log:
+
+```
+GET hosts
+OutputFormat: json
+Columns: name ... num_services ... worst_service_state worst_service_hard_state ... last_update
+Filter: last_update >= 1790275176.665651
+```
+
+`status`, `comments` and `downtimes` are re-fetched **in full, with no filter, on every loop**
+(free on the dev site because it has 0 comments/downtimes). `hostgroups` and `servicegroups`
+(with all their aggregate columns) are also re-fetched periodically.
+
+Observed rows and fetch times over a ~2.5 minute run (`delta table:` log lines):
+
+| Table | Rows per pull | Fetch time |
+|---|---|---|
+| `hosts` | 6–12 | ~0 ms (outliers 3 ms, 10 ms) |
+| `services` | 266–276 | 1–2 ms (outliers 21 ms, 46 ms) |
+| `comments` | all (0 here) | ~0 ms |
+| `downtimes` | all (0 here) | ~0 ms |
+| `status` | 1 | ~0 ms |
+
+A steady-state sync therefore costs roughly **1–3 ms of livestatus query CPU every 7 s**
+(~0.02–0.04 % of one core) on this configuration, dominated by the services delta.
+
+Two facts drive the applicability ratings:
+
+- the sync queries contain **no `AuthUser:`** (0 occurrences in the log), so the per-service
+  authorization work that made LS-PERF-04 valuable is not paid;
+- they contain **no `services_with_info` / `host_services_with_info`** (0 occurrences), so
+  LS-PERF-03 never triggers.
+
+### 3.5.4 Per-target LMD benefit
+
+"Benefit" below means: how much fixing this item helps **LMD's sync loop**, not how useful the
+fix is in general. The same table is summarised as the `LMD sync benefit` column of the
+[target index](#4-target-index).
+
+| Id | LMD benefit | Reason |
+|---|---|---|
+| LS-PERF-01 | none | LMD never asks for the `comments`/`downtimes` list columns on hosts/services; it fetches the `comments`/`downtimes` *tables*, which use `TableDownComm::answerQuery`, not `DownCommColumn::output`. |
+| LS-PERF-02 | **high** | `pnpgraph_present` is in both host and service column sets, initial and delta. One `access(2)` per returned row (~1.4 µs), and the host variant repeats it per service row on the services table. |
+| LS-PERF-03 | none | Only triggers on a joined `ServicelistColumn` (`_indirect_offset >= 0`). LMD's only ones are `parents` (services) and `members`/`members_with_state` (servicegroups), all on plain tables (`_indirect_offset = -1`). |
+| LS-PERF-04 | low–medium | The host delta asks for the 12 aggregates, but only 6–12 hosts pass the filter and there is no auth user, so the saved walks are a few µs. The periodic `hostgroups`/`servicegroups` pulls use `HostlistStateColumn`/`ServicelistStateColumn` over every member and benefit more at scale. |
+| LS-PERF-05 | low | LMD issues `GET columns Columns: table name` once at startup — exactly the O(N²) `tableNameOf` path (~9 ms once on the dev site, quadratic with the column count). |
+| LS-PERF-06 | none | LMD sync filters on `last_update`, never on `name`. Proxied single-object client queries would benefit. |
+| LS-PERF-20 | medium | `Filter: last_update >= t` has no index, so every pull scans the full host/service list (~8.4 ns/row; ~0.8 ms per 100k services per pull). Small next to the output of the returned rows, but pure waste. |
+| LS-PERF-21 | medium | `comments`/`downtimes` are re-pulled in full every 7 s; `TableDownComm::answerQuery` iterates all entries under one global mutex and renders all of them. O(entries) per pull; a filterable `entry_time`/`id` would let LMD fetch only changes. |
+| LS-PERF-07 | medium | Host and service pulls return many doubles (`latency`, `execution_time`, `percent_state_change`, intervals, thresholds): one `snprintf("%.10e")` per value per returned row. |
+| LS-PERF-08 | medium | Same for the integer/time columns of every returned row. |
+| LS-PERF-09 | **medium–high** | Every LMD query uses `OutputFormat: json`, so every string goes through the per-byte escaping path; `plugin_output`, `long_plugin_output`, `perf_data` and custom variables are in the column sets. |
+| LS-PERF-10 | medium | `in_check_period`/`in_notification_period` are in both column sets; each row takes the `TimeperiodsCache` mutex. |
+| LS-PERF-11 | none | LMD uses `hosts`/`services`, not the by-group tables, so the wrapper nodes are not allocated for its sync. |
+| LS-PERF-12 | medium | `contacts` and `contact_groups` are in both column sets; each returned row builds and sorts a `std::list`. |
+| LS-PERF-13 | medium | `action_url_expanded`, `notes_url_expanded`, `notes_expanded`, `icon_image_expanded` and `staleness` are all in LMD's column sets — the per-row `strlen`/`std::string`/`time(0)` items. |
+| LS-PERF-14 | none (sync) | LMD's sync uses no `Sort:`; proxied client queries often do. |
+| LS-PERF-15 | none (sync) | LMD's sync uses no `Stats:`/`StatsGroupBy:`; proxied client queries do. |
+| LS-PERF-16 | none (sync) | LMD's sync never touches `log`/`statehist`; only proxied clients do. |
+| LS-PERF-17 | low | One keep-alive backend connection per peer, so few threads; but each new connection still creates one. |
+| LS-PERF-18 | low | LMD repeats the same column sets every 7 s, but the data genuinely changes; a cross-request cache needs invalidation. |
+| LS-PERF-19 | background | Applies to all query threads including LMD's; LS-PERF-03/04 sidestep it by being per-query. |
+
+### 3.5.5 Measured: LS-PERF-03/04 with LMD's exact column sets
+
+Column sets copied verbatim from the LMD log, JSON output, keep-alive client, `Limit` pinned to
+LMD's real delta/initial row counts (original = `f58f73a`, new = `f06b477`). Each cell is a range
+over repeated runs:
+
+| Query | original | new | verdict |
+|---|---|---|---|
+| hosts LMD cols, `Limit: 10` (≈ delta) | 0.128–0.142 ms | 0.125–0.164 ms | no difference |
+| hosts LMD cols, all 132 (≈ initial) | 1.02–1.31 ms | 1.13–1.56 ms | within run-to-run noise |
+| services LMD cols, `Limit: 273` (≈ delta) | 1.77–2.03 ms | 2.04–2.24 ms | no difference |
+| services LMD cols, all 1279 | 7.94–9.01 ms | 9.64–9.67 ms | no difference (an early 14 ms run was an outlier) |
+
+Why the aggregate cache does not show: with no `AuthUser`, the old per-column walk was only field
+reads. For the delta it is 10 hosts × 12 columns × ~10 services ≈ 1,200 pointer hops — a few µs
+inside a ~130 µs query.
+
+For contrast, the cases LS-PERF-03/04 *do* fix (measured with `AuthUser: dev_contact_0`, or a
+joined column which LMD never uses): 12 host aggregates 0.227→0.130 ms; 7 joined aggregates
+1.340→0.566 ms; `host_services_with_info` 2.75→1.04 ms; `host_services_with_state`
+1.75→0.30 ms.
+
+### 3.5.6 What to do if LMD is the target
+
+To speed up **LMD's sync loop**, work LS-PERF-02, LS-PERF-09, LS-PERF-07, LS-PERF-08,
+LS-PERF-12, LS-PERF-13 and LS-PERF-10 first (all directly in its column sets), then LS-PERF-21
+and LS-PERF-20. **LS-PERF-03 is irrelevant to LMD**, and LS-PERF-04 only matters for the
+periodic `hostgroups`/`servicegroups` pulls. Both stay the right fix for direct or proxied client
+queries with `AuthUser` and joined list columns.
+
+To reproduce: parse the LMD log into column sets (the `lmd-parse` snippet in
+[Appendix A](#appendix-a--benchmark-harness)) and feed them to the harness.
+
+---
+
 ## 4. Target index
 
-| Id | Title | Tier | Complexity | Measured signal |
-|----|-------|------|-----------|-----------------|
-| LS-PERF-01 | `DownCommColumn` scans all comments/downtimes per row under a global mutex | 1 | O(rows × entries) | not measurable on dev (0 entries); code-proven |
-| LS-PERF-02 | `pnpgraph_present` does `access(2)` per row | 1 | O(rows) syscalls | 1.4 µs/row, top cost with tiny output |
-| LS-PERF-03 | **DONE 40b5140** — `*_services_with_info` / `*_services_with_state` re-walk the service list per row | 1 | O(services²) per host | 2.1 / 1.4 µs/row |
-| LS-PERF-04 | **DONE 40b5140** — `num_services_*` aggregates re-iterate the service list per column | 1 | O(columns × services) | ~0.1 µs/row/column × 13 |
-| LS-PERF-05 | `GET columns` `tableNameOf` is O(tables × columns) per row | 1 | O(columns²) | 9.0–9.5 ms / 180 KB |
-| LS-PERF-06 | Missing single-object index for `Filter: name = X` on hosts (and contacts/commands/groups) | 1 | O(n) instead of O(1) | code-proven |
-| LS-PERF-07 | Double output via `snprintf("%.10e")` per value | 2 | O(values) | 0.25–0.33 µs/value |
-| LS-PERF-08 | Integer/time output via `snprintf` per value | 2 | O(values) | 0.07 µs/value (int) |
-| LS-PERF-09 | JSON string escaping emits one `addChar` call per byte | 2 | O(bytes) calls | JSON 1.5–5× CSV |
-| LS-PERF-10 | `TimeperiodsCache::inTimeperiod` takes a mutex + map lookup per row | 2 | O(rows) locks | code-proven |
-| LS-PERF-11 | by-group tables allocate a node per member per query | 2 | O(members) allocs | code-proven |
-| LS-PERF-12 | `HostContactsColumn`/`ServiceContactsColumn` build + sort a `std::list` per row | 2 | O(contacts log contacts) | code-proven |
-| LS-PERF-13 | Assorted per-row waste (prefix `strlen`, macro strings, `time(0)`, size/terminate checks) | 2 | constant per row | code-proven |
-| LS-PERF-14 | Sorting has no precomputed keys (virtual compare + `strcmp`) | 2 | O(n log n) expensive compares | 0.15 → 0.64 ms |
-| LS-PERF-15 | Grouped stats build `vector<string>` per row + `map<vector<string>>` lookup | 2 | O(rows) allocs + compares | code-proven |
-| LS-PERF-16 | Log path: 2× `strdup` + 4 hash lookups per line, `strstr` classifier, joined-column blow-up | 2 | O(lines) | log all-cols ≈ 19 µs/row |
-| LS-PERF-17 | Unbounded thread-per-connection + per-accept `realloc`/tryjoin | 3 | O(connections) threads | architectural |
-| LS-PERF-18 | No cross-request caching; Thruk re-issues identical queries | 3 | — | architectural |
-| LS-PERF-19 | Data races on host/service lists read by query threads | 3 | — | prerequisite |
+| Id | Title | Tier | Complexity | Measured signal | LMD sync benefit |
+|----|-------|------|-----------|-----------------|------------------|
+| LS-PERF-01 | `DownCommColumn` scans all comments/downtimes per row under a global mutex | 1 | O(rows × entries) | not measurable on dev (0 entries); code-proven | none |
+| LS-PERF-02 | `pnpgraph_present` does `access(2)` per row | 1 | O(rows) syscalls | 1.4 µs/row, top cost with tiny output | **high** |
+| LS-PERF-03 | **DONE 40b5140** — `*_services_with_info` / `*_services_with_state` re-walk the service list per row | 1 | O(services²) per host | 2.1 / 1.4 µs/row | none |
+| LS-PERF-04 | **DONE 40b5140** — `num_services_*` aggregates re-iterate the service list per column | 1 | O(columns × services) | ~0.1 µs/row/column × 13 | low–medium |
+| LS-PERF-05 | `GET columns` `tableNameOf` is O(tables × columns) per row | 1 | O(columns²) | 9.0–9.5 ms / 180 KB | low |
+| LS-PERF-06 | Missing single-object index for `Filter: name = X` on hosts (and contacts/commands/groups) | 1 | O(n) instead of O(1) | code-proven | none |
+| LS-PERF-20 | **NEW** — delta `Filter: last_update >= t` has no index, so each pull scans every object | 1 | O(objects) per pull | ~8.4 ns/row (0.024 ms / 1279 services) | medium |
+| LS-PERF-21 | **NEW** — `comments`/`downtimes` have no incremental fetch; all entries re-pulled every loop | 1 | O(entries) per pull | code-proven (0 entries on dev) | medium |
+| LS-PERF-07 | Double output via `snprintf("%.10e")` per value | 2 | O(values) | 0.25–0.33 µs/value | medium |
+| LS-PERF-08 | Integer/time output via `snprintf` per value | 2 | O(values) | 0.07 µs/value (int) | medium |
+| LS-PERF-09 | JSON string escaping emits one `addChar` call per byte | 2 | O(bytes) calls | JSON 1.5–5× CSV | **medium–high** |
+| LS-PERF-10 | `TimeperiodsCache::inTimeperiod` takes a mutex + map lookup per row | 2 | O(rows) locks | code-proven | medium |
+| LS-PERF-11 | by-group tables allocate a node per member per query | 2 | O(members) allocs | code-proven | none |
+| LS-PERF-12 | `HostContactsColumn`/`ServiceContactsColumn` build + sort a `std::list` per row | 2 | O(contacts log contacts) | code-proven | medium |
+| LS-PERF-13 | Assorted per-row waste (prefix `strlen`, macro strings, `time(0)`, size/terminate checks) | 2 | constant per row | code-proven | medium |
+| LS-PERF-14 | Sorting has no precomputed keys (virtual compare + `strcmp`) | 2 | O(n log n) expensive compares | 0.15 → 0.64 ms | none (sync) |
+| LS-PERF-15 | Grouped stats build `vector<string>` per row + `map<vector<string>>` lookup | 2 | O(rows) allocs + compares | code-proven | none (sync) |
+| LS-PERF-16 | Log path: 2× `strdup` + 4 hash lookups per line, `strstr` classifier, joined-column blow-up | 2 | O(lines) | log all-cols ≈ 19 µs/row | none (sync) |
+| LS-PERF-17 | Unbounded thread-per-connection + per-accept `realloc`/tryjoin | 3 | O(connections) threads | architectural | low |
+| LS-PERF-18 | No cross-request caching; Thruk re-issues identical queries | 3 | — | architectural | low |
+| LS-PERF-19 | Data races on host/service lists read by query threads | 3 | — | prerequisite | background |
 
 Severity is "how much per-query CPU this can consume at 100k services", not "how often Thruk
 uses the column". Several Tier 2 items are unconditional (every row of every large answer).
@@ -614,6 +783,86 @@ to the scan). Apply the same pattern to `TableContacts` (`find_contact`),
 - Add a regression test for "filter by name returns the same row as a full scan".
 
 **Effort:** small.
+
+---
+
+### LS-PERF-20 — delta `Filter: last_update >= t` has no index
+
+**Where**
+
+- Filter evaluation is per row in `Query::processDataset` (`src/Query.cc`); there is no index on
+  `last_update`.
+- LMD drives this from its 7 s delta sync (`UpdateInterval`, see [3.5](#35-how-lmd-uses-this-module)).
+
+**What it does / why it is slow**
+
+A delta consumer asks for objects whose `last_update` is newer than the previous pull.
+Livestatus only has `StringColumnFilter::indexFilter` for `name`/`host_name`/`groups`, so
+`last_update` is a linear scan of the whole table even when only ~10 hosts (or ~270 services)
+match.
+
+**Measured (dev site, 1279 services)**
+
+| Query | time |
+|---|---|
+| `GET services Columns: host_name ... Limit: 1` (scan 1) | 0.0136 ms |
+| same + `Filter: last_update >= 9999999999` (scan 1279, 0 rows) | 0.0243 ms |
+
+≈ **8.4 ns per scanned row**. At 100k services that is ~0.84 ms per pull just to find the
+changes, plus the same for hosts. Small next to rendering the changed rows, but pure waste, and
+it grows linearly with the installation.
+
+**Fix**
+
+Keep a "changed objects" structure that the NEB update path advances, or an index over
+`last_update`. A livestatus-only alternative (scan the table but skip the per-row virtual filter
+call) only removes part of the cost.
+
+**Verification**
+
+- Same rows for a range of `last_update` filters as today.
+- A zero-match `last_update` filter should stop scaling with the object count.
+
+**Effort:** medium–large (needs a naemon-core hook or an index).
+
+---
+
+### LS-PERF-21 — `comments`/`downtimes` have no incremental query
+
+**Where**
+
+- `src/TableDownComm.cc:198-221` (`answerQuery` locks `_entries_mutex` and iterates every entry).
+- LMD re-pulls both tables, all columns, with no filter, every 7 s (see [3.5.3](#35-how-lmd-uses-this-module)).
+
+**Why it is slow**
+
+Comments and downtimes have no `last_update` and no index on `entry_time`/`id`, so a consumer
+that wants "what changed" must re-read the whole table. `answerQuery` holds the global mutex for
+the entire iteration and renders every entry. It is free on the dev site (0 entries) but is
+O(entries) per pull, per backend, and it grows with every downtime scheduled during a
+maintenance window.
+
+**Fix**
+
+- Expose a filterable `entry_time` (and/or `id`) so a delta consumer can ask
+  `Filter: entry_time >= t`, implemented as an index rather than a scan.
+- Or keep `_entries` sorted by `entry_time` so a ranged query can binary-search the start
+  (`_entries` is currently `map<unsigned long id, DowntimeOrComment *>`; add a second structure
+  maintained in `add()`/`remove()`).
+- While there, snapshot the matching entries under the lock and render outside it to shorten the
+  mutex hold.
+
+**Compatibility / risks**
+
+- The protocol and column set must not change; only the filter handling.
+- The secondary index must be maintained under the same lock as `_entries`.
+
+**Verification**
+
+- Byte-compare `GET comments` / `GET downtimes` across a range of filters.
+- With N synthetic comments, a narrow time filter should not scale with N.
+
+**Effort:** medium.
 
 ---
 
@@ -1269,6 +1518,36 @@ For a quick spot check without the harness:
 printf "GET hosts\nColumns: name\n" | unixcat /omd/sites/dev/tmp/run/live
 ```
 
+### Extracting LMD's column sets
+
+LMD logs every backend query at `LogLevel = "Trace"`. This parses them into distinct
+(table, extra headers, columns) shapes and is how section
+[3.5](#35-how-lmd-uses-this-module) was produced:
+
+```python
+import re, collections
+raw = open("/src/lmd/lmd_connected_to_omd_dev.log", "rb").read().decode("utf-8", "replace")
+raw = re.sub(r"\x1b\[[0-9;]*m", "", raw)          # strip ANSI colour
+shapes, cols = collections.Counter(), {}
+for m in re.finditer(r"query: (GET [^\n]*)\n(.*?)(?:\n\n|\Z)", raw, re.S):
+    head, rest = m.group(1).strip(), m.group(2)
+    table = head.split()[1]
+    filters = tuple(sorted(l for l in rest.splitlines()
+                           if l.split(":")[0] in ("Filter", "Sort", "Limit")))
+    c = next((l[9:] for l in rest.splitlines() if l.startswith("Columns: ")), "")
+    shapes[(table,) + filters] += 1
+    cols.setdefault((table,) + filters, c)
+for k, n in shapes.most_common():
+    print(k, "x", n)
+    print("   ", cols[k])
+```
+
+To benchmark a shape, put its column list into a query in the harness above (add it to
+`QUERIES` or call `bench()` directly), and pin the row count with `Limit:` to LMD's observed
+delta/initial sizes (10 hosts, ~270 services) so the comparison is not dominated by how many
+checks happened to finish. That is exactly how the table in
+[3.5.5](#35-how-lmd-uses-this-module) was produced.
+
 ---
 
 ## Appendix B — raw measurements
@@ -1364,6 +1643,50 @@ comments, 0 downtimes, warm log cache, keep-alive connection.
 
 `naemon.log` at the time of measurement was ~203 MB. The "first" column is the cold-cache cost
 (parsing and caching log messages); "mean" is warm.
+
+### B.7 LMD (see section 3.5)
+
+LMD log span ~2.5 minutes, one unix-socket backend, `UpdateInterval = 7`, no `AuthUser`.
+
+Initial sync (LMD's own `initial table:` lines, JSON, `Limit: 500000`):
+
+| Table | Rows | Time | Size |
+|---|---|---|---|
+| hosts | 132 | 3 ms | 114 kB |
+| services | 1279 | 17 ms | 913 kB |
+| hostgroups | 12 | 0 s | 4 kB |
+| servicegroups | 13 | 0 s | 61 kB |
+| contacts | 3 | 0 s | 0 kB |
+| contactgroups | 2 | 0 s | 0 kB |
+| commands | 40 | 0 s | 7 kB |
+| timeperiods | 3 | 0 s | 0 kB |
+| status | 1 | 0 s | 0 kB |
+| comments / downtimes | 0 | 0 s | 0 kB |
+
+Delta sync (`delta table:` lines): hosts 6–12 rows at ~0 ms; services 266–276 rows at 1–2 ms
+(outliers 3/10 ms and 21/46 ms). `comments`, `downtimes` and `status` are re-pulled in full every
+loop.
+
+A/B with LMD's exact column sets, `Limit` pinned to LMD's delta/initial sizes (original
+`f58f73a`, new `f06b477`, min–max over repeated runs):
+
+| Query | original | new |
+|---|---|---|
+| hosts LMD cols, `Limit: 10` | 0.128–0.142 ms | 0.125–0.164 ms |
+| hosts LMD cols, all 132 | 1.02–1.31 ms | 1.13–1.56 ms |
+| services LMD cols, `Limit: 273` | 1.77–2.03 ms | 2.04–2.24 ms |
+| services LMD cols, all 1279 | 7.94–9.01 ms | 9.64–9.67 ms |
+
+`last_update` scan cost (new build, 1279 services):
+
+| Query | time |
+|---|---|
+| `Limit: 1` (scan 1) | 0.0136 ms |
+| `Filter: last_update >= 9999999999` (scan 1279, 0 rows) | 0.0243 ms |
+| `Filter: last_update >= now-10` (scan 1279, ~270 rows) | 0.1063 ms |
+| `Filter: host_name = dev_host_000` (indexed) | 0.0202 ms |
+
+⇒ ~8.4 ns per scanned row.
 
 ---
 
