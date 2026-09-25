@@ -16,7 +16,7 @@ using namespace std;
 #include "AndingFilter.h"
 #include "global_counters.h"
 #include "RowSortedSet.h"
-#include "ServicelistStateColumn.h" // for ServiceAggregates
+#include "ServicelistStateColumn.h"
 
 class Table;
 class Column;
@@ -89,13 +89,13 @@ class Query
 
     // Rendered output of columns whose output repeats across rows, for example host_services_with_info on the services table:
     // every service row of a host asks for the same host's service list.
-    // Keyed by (column, object).
-    // Bounded in size so a pathological query cannot grow it without limit; see storeCachedOutput().
+    // Keyed by a (column, object) pair for uniqueness.
     typedef map<pair<Column *, void *>, string> _output_cache_t;
     _output_cache_t _output_cache;
     size_t _output_cache_bytes;
 
-    // Scratch OutputBuffer used to render one column into a string before caching it. Lazily allocated, reused across captures, never flushed.
+    // Scratch OutputBuffer used to render one column into a string before caching it.
+    // Lazily allocated, reused across captures, never flushed.
     OutputBuffer *_capture;
     OutputBuffer *_capture_saved;
     int _capture_termination;

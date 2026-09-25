@@ -99,7 +99,7 @@ public:
     static int32_t getValue(int logictype, servicesmember *services, Query *);
     static bool svcStateIsWorse(int32_t state1, int32_t state2);
 
-    /* Single pass over a service list producing all aggregate values. */
+    // Single pass over a service list producing all aggregate values.
     static ServiceAggregates computeAggregates(servicesmember *services, Query *query);
 };
 

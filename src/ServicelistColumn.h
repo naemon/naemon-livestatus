@@ -16,7 +16,7 @@ class ServicelistColumn : public Column
     bool _show_host;
     int _info_depth;
 
-    /* The actual list rendering; output() wraps it with the per-query cache. */
+    // The actual list rendering; output() wraps it with the per-query cache.
     void render(void *data, Query *query);
 
 public:

@@ -26,7 +26,9 @@ class Column
     string _name;
     string _description;
 public:
-    // this offset is added to get to the column if it is not 0 or -1
+    // this offset is added to get a pointer to the memory location for the given column
+    // only added if it is not 0 or -1.
+    // when defining a column for nested objects, the indirect_offset moves the pointer to the nested object.
     int _indirect_offset;
 
 public:
