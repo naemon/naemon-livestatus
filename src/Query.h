@@ -16,6 +16,7 @@ using namespace std;
 #include "AndingFilter.h"
 #include "global_counters.h"
 #include "RowSortedSet.h"
+#include "ServicelistStateColumn.h"
 
 class Table;
 class Column;
@@ -79,6 +80,13 @@ class Query
     typedef map<_stats_group_spec_t, Aggregator **> _stats_groups_t;
     _stats_groups_t _stats_groups;
 
+    // Hold the cache and save a ServiceAggregate for this query.
+    // If the query requires a column that is in ServiceAggregate, e.g num_ok , num_hard_warn, worst_state etc.
+    // ServiceAggregate walks the services linked list once, and populates all available aggregates during that single walk
+    // No need to re-walk the services linked list for every column
+    typedef map<servicesmember *, ServiceAggregates> _service_aggregates_t;
+    _service_aggregates_t _service_aggregates;
+
 public:
     void *table_tmp_storage; // Used for tables to store per query temporary data
 
@@ -127,6 +135,10 @@ public:
     int timezoneOffset() { return _timezone_offset; }
     AndingFilter *filter() { return &_filter; }
     bool isSorting() { return _do_sorting; }
+
+    // Aggregates of one hosts or service group's service list, computed on first use and remembered for the rest of the query.
+    // Keyed by the list head pointer, so it works for hosts->services and servicegroups->services alike.
+    const ServiceAggregates &serviceAggregates(servicesmember *services);
 
 private:
     bool doStats();

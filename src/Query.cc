@@ -1119,6 +1119,21 @@ void Query::finish()
     }
 }
 
+
+// All the ServicelistStateColumn values for one service list, computed once.
+// A query typically asks for several of these columns (num_services,num_services_ok, worst_service_state, ...).
+// The key is the list head pointer, which works for a host (host->services) and for a service group (servicegroup->members) alike.
+const ServiceAggregates &Query::serviceAggregates(servicesmember *services)
+{
+    _service_aggregates_t::iterator it = _service_aggregates.find(services);
+    if (it != _service_aggregates.end())
+        return it->second;
+
+    ServiceAggregates aggregates =
+        ServicelistStateColumn::computeAggregates(services, this);
+    return _service_aggregates.insert(make_pair(services, aggregates)).first->second;
+}
+
 void *Query::findIndexFilter(const char *columnname)
 {
     return _filter.findIndexFilter(columnname);

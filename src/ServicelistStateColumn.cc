@@ -29,51 +29,46 @@ servicesmember *ServicelistStateColumn::getMembers(void *data)
 
 int32_t ServicelistStateColumn::getValue(int logictype, servicesmember *mem, Query *query)
 {
-    contact *auth_user = query->authUser();
-    int32_t result = 0;
-    int lt;
-
-    while (mem) {
-        service *svc = mem->service_ptr;
-        if (!auth_user || g_table_services->isAuthorized(auth_user, svc)) {
-            int lt = logictype;
-            int state;
-            int has_been_checked;
-            if (logictype >= 60) {
-                state = svc->last_hard_state;
-                lt -= 64;
-            }
-            else
-                state = svc->current_state;
-
-            has_been_checked = svc->has_been_checked;
-
-            switch (lt) {
-                case SLSC_WORST_STATE:
-                    if (svcStateIsWorse(state, result))
-                        result = state;
-                    break;
-                case SLSC_NUM:
-                    result++;
-                    break;
-                case SLSC_NUM_PENDING:
-                    if (!has_been_checked)
-                        result++;
-                    break;
-                default:
-                    if (has_been_checked && state == lt)
-                        result++;
-                    break;
-            }
-        }
-        mem = mem->next;
-    }
-    return result;
+    return query->serviceAggregates(mem).get(logictype);
 }
 
 
 int32_t ServicelistStateColumn::getValue(void *data, Query *query)
 {
-    servicesmember *mem = getMembers(data);
-    return getValue(_logictype, mem, query);
+    return getValue(_logictype, getMembers(data), query);
+}
+
+
+// Performs one traversal calculating every value of the ServiceAggregate
+// Getters then use saved of ServiceAggregate
+ServiceAggregates ServicelistStateColumn::computeAggregates(servicesmember *mem, Query *query)
+{
+    ServiceAggregates aggregates;
+    contact *auth_user = query->authUser();
+
+    while (mem) {
+        service *svc = mem->service_ptr;
+        if (!auth_user || g_table_services->isAuthorized(auth_user, svc)) {
+            aggregates.num++;
+
+            if (!svc->has_been_checked) {
+                aggregates.num_pending++;
+            } else {
+                int soft_state = svc->current_state;
+                if (soft_state >= 0 && soft_state <= 3)
+                    aggregates.soft[soft_state]++;
+                int hard_state = svc->last_hard_state;
+                if (hard_state >= 0 && hard_state <= 3)
+                    aggregates.hard[hard_state]++;
+            }
+
+            if (svcStateIsWorse(svc->current_state, aggregates.worst_soft))
+                aggregates.worst_soft = svc->current_state;
+            if (svcStateIsWorse(svc->last_hard_state, aggregates.worst_hard))
+                aggregates.worst_hard = svc->last_hard_state;
+        }
+        mem = mem->next;
+    }
+
+    return aggregates;
 }
