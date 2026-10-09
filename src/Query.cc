@@ -18,6 +18,7 @@
 #include "Column.h"
 #include "EmptyColumn.h"
 #include "OutputBuffer.h"
+#include "DoubleFormat.h"
 #include "InputBuffer.h"
 #include "StatsColumn.h"
 #include "Aggregator.h"
@@ -1206,8 +1207,10 @@ void Query::outputCounter(counter_t value)
 void Query::outputDouble(double value)
 {
     char buf[64];
-    int l = snprintf(buf, sizeof(buf), "%.10e", value);
-    _output->addBuffer(buf, l);
+    int l = formatDouble(buf, sizeof(buf), value);
+    if (l > 0) {
+        _output->addBuffer(buf, l);
+    }
 }
 
 void Query::outputNull()
