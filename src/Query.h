@@ -17,6 +17,7 @@ using namespace std;
 #include "global_counters.h"
 #include "RowSortedSet.h"
 #include "ServicelistStateColumn.h"
+#include "HostlistStateColumn.h"
 
 class Table;
 class Column;
@@ -87,6 +88,12 @@ class Query
     typedef map<servicesmember *, ServiceAggregates> _service_aggregates_t;
     _service_aggregates_t _service_aggregates;
 
+    // Same idea for the host side (hostgroups): cache the HostAggregate of one host list so a query
+    // asking for several host columns (num_hosts, num_hosts_up, worst_host_state, ...) walks the
+    // host tree once instead of once per column. Keyed by the GTree head pointer.
+    typedef map<GTree *, HostAggregates> _host_aggregates_t;
+    _host_aggregates_t _host_aggregates;
+
 public:
     void *table_tmp_storage; // Used for tables to store per query temporary data
 
@@ -139,6 +146,10 @@ public:
     // Aggregates of one hosts or service group's service list, computed on first use and remembered for the rest of the query.
     // Keyed by the list head pointer, so it works for hosts->services and servicegroups->services alike.
     const ServiceAggregates &serviceAggregates(servicesmember *services);
+
+    // Aggregates of one host list (hostgroup), computed on first use and remembered for the rest of the query.
+    // Keyed by the host list (GTree) pointer.
+    const HostAggregates &hostAggregates(GTree *members);
 
 private:
     bool doStats();

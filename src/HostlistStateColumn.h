@@ -33,6 +33,39 @@
 #define HLSC_WORST_HST_STATE  -12
 
 
+// Everything the host-state HostlistStateColumn values can be asked about one list of hosts,
+// computed in a single traversal. Query keeps one of these per host list (hostgroup) for the
+// duration of a query, so a query that asks for several host columns (num_hosts, num_hosts_up,
+// worst_host_state, ...) only walks the host tree once instead of once per column. Mirrors the
+// ServiceAggregates cache added in #145. (The hostgroup service columns reuse the per-host
+// ServiceAggregates cache and keep their own per-host walk, so they are not part of this.)
+struct HostAggregates {
+    int32_t num;          // HLSC_NUM_HST
+    int32_t num_pending;  // HLSC_NUM_HST_PENDING
+    int32_t up;           // HLSC_NUM_HST_UP
+    int32_t down;         // HLSC_NUM_HST_DOWN
+    int32_t unreach;      // HLSC_NUM_HST_UNREACH
+    int32_t worst_host;   // HLSC_WORST_HST_STATE
+
+    HostAggregates()
+        : num(0), num_pending(0), up(0), down(0), unreach(0), worst_host(0)
+    {
+    }
+
+    int32_t get(int logictype) const {
+        switch (logictype) {
+        case HLSC_NUM_HST:         return num;
+        case HLSC_NUM_HST_PENDING: return num_pending;
+        case HLSC_NUM_HST_UP:      return up;
+        case HLSC_NUM_HST_DOWN:    return down;
+        case HLSC_NUM_HST_UNREACH: return unreach;
+        case HLSC_WORST_HST_STATE: return worst_host;
+        default:                   return 0;
+        }
+    }
+};
+
+
 class HostlistStateColumn : public IntColumn
 {
     int _offset;
@@ -43,6 +76,9 @@ public:
         : IntColumn(name, description, indirect_offset), _offset(offset), _logictype(logictype) {}
     int32_t getValue(void *data, Query *);
     GTree *getMembers(gpointer data);
+
+    // Single pass over a host list producing all aggregate values.
+    static HostAggregates computeAggregates(GTree *members, Query *query);
 };
 
 

@@ -84,14 +84,80 @@ static gboolean get_subvalue(gpointer _name, gpointer _hst, gpointer user_data)
     return FALSE;
 }
 
+// A host-state aggregate column (as opposed to a hostgroup service column, which keeps the
+// per-host ServicelistStateColumn walk and is served from #145's per-host service cache).
+static bool isHostStateLogicType(int logictype)
+{
+    switch (logictype) {
+    case HLSC_NUM_HST:
+    case HLSC_NUM_HST_PENDING:
+    case HLSC_NUM_HST_UP:
+    case HLSC_NUM_HST_DOWN:
+    case HLSC_NUM_HST_UNREACH:
+    case HLSC_WORST_HST_STATE:
+        return true;
+    default:
+        return false;
+    }
+}
+
+struct host_aggregate_ctx {
+    contact *auth_user;
+    HostAggregates *aggregates;
+};
+
+// One traversal over a host list (hostgroup) computing every host-state aggregate.
+static gboolean accumulate_host(gpointer _name, gpointer _hst, gpointer user_data)
+{
+    host *hst = (host *)_hst;
+    host_aggregate_ctx *ctx = (host_aggregate_ctx *)user_data;
+
+    if (ctx->auth_user && !g_table_hosts->isAuthorized(ctx->auth_user, hst))
+        return FALSE;
+
+    HostAggregates &a = *ctx->aggregates;
+    a.num++;
+    if (!hst->has_been_checked) {
+        a.num_pending++;
+    } else {
+        switch (hst->current_state) {
+            case 0: a.up++;      break;
+            case 1: a.down++;    break;
+            case 2: a.unreach++; break;
+        }
+    }
+    if (hst_state_is_worse(hst->current_state, a.worst_host))
+        a.worst_host = hst->current_state;
+    return FALSE;
+}
+
+HostAggregates HostlistStateColumn::computeAggregates(GTree *members, Query *query)
+{
+    HostAggregates aggregates;
+    if (members == NULL)
+        return aggregates;
+
+    host_aggregate_ctx ctx;
+    ctx.auth_user = query->authUser();
+    ctx.aggregates = &aggregates;
+    g_tree_foreach(members, accumulate_host, &ctx);
+    return aggregates;
+}
+
 int32_t HostlistStateColumn::getValue(void *data, Query *query)
 {
+    // Host-state columns are cached per host list so a query asking for several of them
+    // walks the host tree once instead of once per column. Service columns keep the
+    // per-host walk (served from #145's per-host service cache).
+    if (isHostStateLogicType(_logictype))
+        return query->hostAggregates(getMembers(data)).get(_logictype);
+
     GTree *mem = getMembers(data);
     output_parameters params;
     params.query = query;
     params.logictype = _logictype;
     params.result = 0;
-    if(mem == NULL)
+    if (mem == NULL)
         return params.result;
     g_tree_foreach(mem, get_subvalue, &params);
     return params.result;

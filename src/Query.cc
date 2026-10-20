@@ -1134,6 +1134,20 @@ const ServiceAggregates &Query::serviceAggregates(servicesmember *services)
     return _service_aggregates.insert(make_pair(services, aggregates)).first->second;
 }
 
+// All the HostlistStateColumn values for one host list (hostgroup), computed once.
+// A query typically asks for several of these columns (num_hosts, num_hosts_up, worst_host_state, ...).
+// The key is the host list (GTree) head pointer.
+const HostAggregates &Query::hostAggregates(GTree *members)
+{
+    _host_aggregates_t::iterator it = _host_aggregates.find(members);
+    if (it != _host_aggregates.end())
+        return it->second;
+
+    HostAggregates aggregates =
+        HostlistStateColumn::computeAggregates(members, this);
+    return _host_aggregates.insert(make_pair(members, aggregates)).first->second;
+}
+
 void *Query::findIndexFilter(const char *columnname)
 {
     return _filter.findIndexFilter(columnname);
