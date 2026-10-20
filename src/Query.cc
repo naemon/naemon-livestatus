@@ -1259,6 +1259,28 @@ void Query::outputBlob(const char *buffer, int size)
         _output->addBuffer(buffer, size);
 }
 
+// Which bytes need the JSON escaping logic in outputString()
+// control characters , including NUL, which terminates the string
+// the two characters that get a escape backslash: double quoutes and backslash
+// every byte >= 0x80, which is handled by the UTF-8/latin1 code.
+#define S16_1 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+#define S16_0 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+static const unsigned char json_significant[256] = {
+    S16_1, S16_1,                        /* 0x00-0x1f: control chars + NUL */
+    0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,     /* 0x20-0x2f: '"' at 0x22 */
+    S16_0,                               /* 0x30-0x3f */
+    S16_0,                               /* 0x40-0x4f */
+    0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,     /* 0x50-0x5f: '\' at 0x5c */
+    S16_0,                               /* 0x60-0x6f */
+    S16_0,                               /* 0x70-0x7f */
+    S16_1, S16_1,                        /* 0x80-0x9f */
+    S16_1, S16_1,                        /* 0xa0-0xbf */
+    S16_1, S16_1,                        /* 0xc0-0xdf */
+    S16_1, S16_1,                        /* 0xe0-0xff */
+};
+#undef S16_1
+#undef S16_0
+
 
 void Query::outputString(const char *value)
 {
@@ -1277,16 +1299,21 @@ void Query::outputString(const char *value)
             _output->addChar('u'); // mark strings as unicode
         _output->addChar('"');
         const char *r = value;
-        int chars_left = strlen(r);
+        int chars_left = (int)strlen(r);
         while (*r) {
+            const char *plain = r;
+            _output->addUntilNextSignificantChar(&r, json_significant);
+            chars_left -= (int)(r - plain);
+            if (!*r)
+                break;
+
             // Always escape control characters (1..31)
             if (*r < 32 && *r >= 0)
                 outputUnicodeEscape((unsigned)*r);
 
-            // Output ASCII characters unencoded
-            else if (*r >= 32) {
-                if (*r == '"' || *r == '\\')
-                    _output->addChar('\\');
+            // '"' and '\\' are the only ASCII characters that get a backslash
+            else if (*r == '"' || *r == '\\') {
+                _output->addChar('\\');
                 _output->addChar(*r);
             }
 

@@ -38,24 +38,7 @@ void OutputBuffer::reset()
     _error_message = "";
 }
 
-void OutputBuffer::addChar(char c)
-{
-    needSpace(1);
-    *_writepos++ = c;
-}
-
-void OutputBuffer::addString(const char *s)
-{
-    int l = strlen(s);
-    addBuffer(s, l);
-}
-
-void OutputBuffer::addBuffer(const char *buf, size_t len)
-{
-    needSpace(len);
-    memcpy(_writepos, buf, len);
-    _writepos += len;
-}
+// addChar(), addString() and addBuffer() are inline in OutputBuffer.h so callers in other translation units can inline them.
 
 void OutputBuffer::needSpace(size_t len)
 {

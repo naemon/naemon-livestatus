@@ -8,6 +8,7 @@
 #include "config.h"
 
 #include <string>
+#include <string.h>
 using namespace std;
 
 #define INITIAL_OUTPUT_BUFFER_SIZE 1024
@@ -38,9 +39,45 @@ public:
     ~OutputBuffer();
     const char *buffer() { return _buffer; }
     size_t size() { return _writepos - _buffer; }
-    void addChar(char c);
-    void addString(const char *);
-    void addBuffer(const char *, size_t);
+
+    // The append helpers addChar, addString and addBuffer are defined here rather than in OutputBuffer.cc so
+    // that callers in other translation units (Query.cc) can inline them.
+
+    inline void addChar(char c)
+    {
+        if (_writepos + 1 > _end)
+            needSpace(1);
+        *_writepos++ = c;
+    }
+
+    inline void addString(const char *s)
+    {
+        addBuffer(s, strlen(s));
+    }
+
+    inline void addBuffer(const char *buf, size_t len)
+    {
+        if (_writepos + len > _end)
+            needSpace(len);
+        memcpy(_writepos, buf, len);
+        _writepos += len;
+    }
+
+    // Appends the run of bytes starting at *src up to (but not including) the first byte for which is_significant[*src] != 0,
+    // then advances *src to that byte so the caller can handle it.
+    inline void addUntilNextSignificantChar(const char **src,
+                                            const unsigned char *is_significant)
+    {
+        const char *start = *src;
+        const char *p = start;
+        while (is_significant[(unsigned char)*p] == 0)
+            p++;
+        if (p != start) {
+            addBuffer(start, (size_t)(p - start));
+            *src = p;
+        }
+    }
+
     void reset();
     void flush(int fd);
     bool shouldTerminate();
