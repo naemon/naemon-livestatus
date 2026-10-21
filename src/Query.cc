@@ -18,6 +18,7 @@
 #include "Column.h"
 #include "EmptyColumn.h"
 #include "OutputBuffer.h"
+#include "IntFormat.h"
 #include "InputBuffer.h"
 #include "StatsColumn.h"
 #include "Aggregator.h"
@@ -1193,16 +1194,18 @@ void Query::outputFieldSeparator()
 
 void Query::outputInteger(int32_t value)
 {
-    char buf[32];
-    int l = snprintf(buf, 32, "%d", value);
-    _output->addBuffer(buf, l);
+    char buf[16];
+    char *end = buf + sizeof(buf);
+    char *p = formatIntegerBackward(end, value);
+    _output->addBuffer(p, (size_t)(end - p));
 }
 
 void Query::outputInteger64(int64_t value)
 {
-    char buf[32];
-    int l = snprintf(buf, 32, "%lld", (long long int )value);
-    _output->addBuffer(buf, l);
+    char buf[24];
+    char *end = buf + sizeof(buf);
+    char *p = formatIntegerBackward(end, value);
+    _output->addBuffer(p, (size_t)(end - p));
 }
 
 void Query::outputTime(time_t value)
@@ -1220,16 +1223,18 @@ void Query::outputTimeVal(timeval value)
 
 void Query::outputUnsignedLong(unsigned long value)
 {
-    char buf[64];
-    int l = snprintf(buf, sizeof(buf), "%lu", value);
-    _output->addBuffer(buf, l);
+    char buf[24];
+    char *end = buf + sizeof(buf);
+    char *p = formatUnsignedBackward(end, (uint64_t)value);
+    _output->addBuffer(p, (size_t)(end - p));
 }
 
 void Query::outputCounter(counter_t value)
 {
-    char buf[64];
-    int l = snprintf(buf, sizeof(buf), "%llu", (unsigned long long)value);
-    _output->addBuffer(buf, l);
+    char buf[24];
+    char *end = buf + sizeof(buf);
+    char *p = formatUnsignedBackward(end, (uint64_t)(unsigned long long)value);
+    _output->addBuffer(p, (size_t)(end - p));
 }
 
 void Query::outputDouble(double value)

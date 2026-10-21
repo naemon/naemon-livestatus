@@ -4,6 +4,7 @@
 
 #include "IntColumn.h"
 #include "IntColumnFilter.h"
+#include "IntFormat.h"
 #include "Query.h"
 
 void IntColumn::output(void *data, Query *query)
@@ -19,9 +20,10 @@ Filter *IntColumn::createFilter(int operator_id, char *value)
 
 string IntColumn::valueAsString(void *data, Query *query)
 {
-    char i[16];
-    snprintf(i, sizeof(i), "%d", getValue(data, query));
-    return i;
+    char buf[16];
+    char *end = buf + sizeof(buf);
+    char *p = formatIntegerBackward(end, getValue(data, query));
+    return string(p, (size_t)(end - p));
 }
 
 int IntColumn::compare(void *dataa, void*datab, Query *query) {
