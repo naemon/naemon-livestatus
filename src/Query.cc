@@ -21,6 +21,7 @@
 #include "InputBuffer.h"
 #include "StatsColumn.h"
 #include "Aggregator.h"
+#include "TimeValFormat.h"
 #include "OringFilter.h"
 #include "NegatingFilter.h"
 #include "RowSortedSet.h"
@@ -1213,8 +1214,16 @@ void Query::outputTime(time_t value)
 
 void Query::outputTimeVal(timeval value)
 {
-    char buf[64];
-    int l = snprintf(buf, sizeof(buf), "%lu.%06lu", value.tv_sec + _timezone_offset, value.tv_usec);
+    time_t seconds = value.tv_sec + _timezone_offset;
+    char buf[40];
+
+    // formatTimeVal only works on this conditions
+    if (seconds >= 0 && value.tv_usec >= 0 && value.tv_usec <= 999999) {
+        _output->addBuffer(buf, (size_t)formatTimeVal(buf, seconds, value.tv_usec));
+        return;
+    }
+
+    int l = snprintf(buf, sizeof(buf), "%lu.%06lu", seconds, value.tv_usec);
     _output->addBuffer(buf, l);
 }
 
