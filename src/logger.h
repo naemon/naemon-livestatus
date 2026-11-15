@@ -8,12 +8,14 @@
 #include "config.h"
 #include "nagios.h"
 
-#define LG_INFO  NSLOG_INFO_MESSAGE
-#define LG_WARN  LG_INFO
-#define LG_ERR   LG_INFO
-#define LG_CRIT  LG_INFO
-#define LG_DEBUG LG_INFO
-#define LG_ALERT LG_INFO
+/* internal severity tags, written as [I/W/D/E] prefix to the livestatus logfile;
+ * the main-thread path is always logged to naemon as NSLOG_INFO_MESSAGE */
+#define LG_INFO  0
+#define LG_WARN  1
+#define LG_ERR   2
+#define LG_CRIT  3
+#define LG_DEBUG 4
+#define LG_ALERT 5
 
 #ifdef __cplusplus
 extern "C" {

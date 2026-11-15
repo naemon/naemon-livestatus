@@ -21,6 +21,10 @@ static pthread_mutex_t g_log_file_mutex;
 
 FILE *g_logfile = 0;
 
+/* severity tags written to the livestatus logfile, indexed by LG_* value;
+ * LG_CRIT and LG_ALERT map to E */
+static const char *const log_severity_tags[6] = { "I", "W", "E", "E", "D", "E" };
+
 static void lock_mutex_or_die(pthread_mutex_t *mutex) {
     int status;
 
@@ -97,21 +101,22 @@ void logger(int priority, const char *loginfo, ...)
         vsnprintf(buffer + strlen(buffer),
         sizeof(buffer) - strlen(buffer), loginfo, ap);
         va_end(ap);
-        nm_log(priority, "%s", buffer);
+        nm_log(NSLOG_INFO_MESSAGE, "%s", buffer);
     } else {
         lock_mutex_or_die(&g_log_file_mutex);
         if (g_logfile) {
-            /* write date/time */
-            char timestring[64];
+            /* write date/time and severity tag */
+            char timestring[80];
             struct timeval tv;
             gettimeofday(&tv, NULL);
+            const char *tag = (priority >= 0 && priority < 6) ? log_severity_tags[priority] : "I";
             struct tm now; localtime_r(&tv.tv_sec, &now);
-            strftime(timestring, 64, "[%F %T", &now);
+            strftime(timestring, 80, "[%F %T", &now);
             fputs(timestring, g_logfile);
             if (g_debug_level > 0)
-                snprintf(timestring, 64, ".%03ld][thr-%ld] ", tv.tv_usec/1000, tid);
+                snprintf(timestring, 80, ".%03ld][thr-%ld] [%s] ", tv.tv_usec/1000, tid, tag);
             else
-                snprintf(timestring, 64, ".%03ld] ", tv.tv_usec/1000);
+                snprintf(timestring, 80, ".%03ld] [%s] ", tv.tv_usec/1000, tag);
             fputs(timestring, g_logfile);
 
             /* write log message */
