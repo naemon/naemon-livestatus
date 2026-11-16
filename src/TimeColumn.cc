@@ -4,6 +4,7 @@
 
 #include "TimeColumn.h"
 #include "TimeColumnFilter.h"
+#include "IntFormat.h"
 #include "Query.h"
 
 void TimeColumn::output(void *data, Query *query)
@@ -19,9 +20,10 @@ Filter *TimeColumn::createFilter(int operator_id, char *value)
 
 string TimeColumn::valueAsString(void *data, Query *query)
 {
-    char i[32];
-    snprintf(i, sizeof(i), "%lld", (long long int)getValue(data, query));
-    return i;
+    char buf[24];
+    char *end = buf + sizeof(buf);
+    char *p = formatIntegerBackward(end, (int64_t)getValue(data, query));
+    return string(p, (size_t)(end - p));
 }
 
 int TimeColumn::compare(void *dataa, void*datab, Query *query) {
