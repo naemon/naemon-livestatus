@@ -1,5 +1,6 @@
 if HAVE_CPPUNIT
 check_PROGRAMS = \
+	DoubleFormatTest \
 	LogEntryTest \
 	StringColumnFilterTest \
 	HostlistColumnFilterTest
@@ -20,5 +21,10 @@ HostlistColumnFilterTest_SOURCES = $(top_builddir)/src/StringColumnFilter.h $(to
 HostlistColumnFilterTest_CXXFLAGS = $(CPPUNIT_FLAGS) -I$(top_builddir) $(NAEMON_CFLAGS)
 HostlistColumnFilterTest_LDFLAGS = $(CPPUNIT_LIBS) -ldl -no-install $(NAEMON_LIBS)
 HostlistColumnFilterTest_LDADD = $(top_builddir)/src/livestatus.la
+
+DoubleFormatTest_SOURCES = $(top_builddir)/src/DoubleFormat.h stubs.c DoubleFormatTest.h DoubleFormatTest.cc
+DoubleFormatTest_CXXFLAGS = $(CPPUNIT_FLAGS) -I$(top_builddir) $(NAEMON_CFLAGS)
+DoubleFormatTest_LDFLAGS = $(CPPUNIT_LIBS) -ldl -no-install $(NAEMON_LIBS)
+DoubleFormatTest_LDADD = $(top_builddir)/src/livestatus.la
 
 endif
