@@ -4,6 +4,7 @@
 
 #include "TimeValColumn.h"
 #include "TimeValColumnFilter.h"
+#include "TimeValFormat.h"
 #include "Query.h"
 
 void TimeValColumn::output(void *data, Query *query)
@@ -19,8 +20,15 @@ Filter *TimeValColumn::createFilter(int operator_id, char *value)
 
 string TimeValColumn::valueAsString(void *data, Query *query)
 {
-    char i[64];
     struct timeval value = (struct timeval)getValue(data, query);
+
+    // formatTimeVal only works on this conditions
+    if (value.tv_sec >= 0 && value.tv_usec >= 0 && value.tv_usec <= 999999) {
+        char buf[40];
+        return string(buf, (size_t)formatTimeVal(buf, value.tv_sec, value.tv_usec));
+    }
+
+    char i[64];
     snprintf(i, sizeof(i), "%lu.%06lu", value.tv_sec, value.tv_usec);
     return i;
 }
